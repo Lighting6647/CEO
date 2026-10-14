@@ -30,3 +30,13 @@ dist-ssr
 comparison_report.html
 comparison_report.pdf
 weekly-plan/
+*.mp3
+*.mp4
+.codex/
+.codex-temp/
+.agent/
+.agents/
+.gemini/
+video_assets/
+
+

@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบบริหารองค์กร — วิดีโอแนะนำการใช้งาน</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '"Noto Sans Thai"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #050811;
+      color: #f1f5f9;
+      user-select: none;
+    }
+    .cinema-screen {
+      aspect-ratio: 16 / 9;
+      background: radial-gradient(circle at 50% 15%, rgba(14, 165, 233, 0.1) 0%, #060a14 75%);
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 35px rgba(14, 165, 233, 0.12);
+    }
+    .slide-enter {
+      animation: fadeInScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.98) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .step-pill.active {
+      background: rgba(14, 165, 233, 0.25);
+      border-color: rgba(56, 189, 248, 0.6);
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-2 sm:p-5 bg-[#050811]">
+
+  <!-- Top Bar -->
+  <header class="w-full max-w-6xl mb-3 flex flex-wrap items-center justify-between gap-3 px-2">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-sky-500/20">
+        <i class="fa-solid fa-play text-sm"></i>
+      </div>
+      <div>
+        <h1 class="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-2">
+          ระบบบริหารองค์กร — แนะนำการใช้งาน 5 แอพ
+          <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-500/30 text-sky-300">ฉบับกระชับ</span>
+        </h1>
+        <p class="text-xs text-slate-400">วิธีใช้งานเบื้องต้น 5 แอพ เสียงบรรยายภาษาไทย เด็กผู้หญิง Gen Z สดใส คล่องแคล่ว</p>
+      </div>
+    </div>
+
+    <!-- Voice Engine & Audio Controls -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <a href="enterprise_presentation.mp4" download="enterprise_presentation.mp4" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-900 text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/25" title="ดาวน์โหลดไฟล์ MP4 (7.34 MB)">
+        <i class="fa-solid fa-download"></i> ดาวน์โหลด MP4 (3.79 MB)
+      </a>
+
+      <!-- Voice Selector Dropdown -->
+      <div class="relative flex items-center bg-white/5 border border-white/10 rounded-lg px-2 py-1">
+        <i class="fa-solid fa-microphone text-sky-400 text-xs mr-2"></i>
+        <select id="voiceSelect" onchange="onVoiceChange()" class="bg-transparent text-xs text-slate-200 outline-none cursor-pointer max-w-[140px] sm:max-w-[200px] truncate">
+          <option value="" class="bg-slate-900 text-slate-400">กำลังค้นหาเสียงพากย์ไทย...</option>
+        </select>
+      </div>
+
+      <button id="testVoiceBtn" onclick="testVoice()" class="px-2.5 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/30 text-xs font-semibold text-sky-300 transition flex items-center gap-1.5" title="ทดสอบเสียง">
+        <i class="fa-solid fa-volume-high"></i> ทดสอบเสียง
+      </button>
+
+      <button id="toggleVoiceBtn" onclick="toggleVoice()" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-200 flex items-center gap-1.5 transition">
+        <i id="voiceIcon" class="fa-solid fa-volume-high text-emerald-400"></i>
+        <span id="voiceStatusText">เสียง: เปิด</span>
+      </button>
+
+      <button onclick="toggleFullscreen()" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-xs transition" title="เต็มจอ">
+        <i class="fa-solid fa-expand"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Video Cinema Frame (16:9) -->
+  <div id="videoContainer" class="w-full max-w-6xl cinema-screen rounded-2xl border border-white/10 relative overflow-hidden flex flex-col justify-between">
+
+    <!-- Top Watermark & Navigation Indicator -->
+    <div class="absolute top-4 left-6 right-6 flex items-center justify-between z-30 pointer-events-none">
+      <div class="flex items-center gap-2 bg-black/50 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 shadow-lg">
+        <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+        <span id="badgeChapter" class="text-xs font-bold text-slate-200">01/07 • ภาพรวมและปัญหา</span>
+      </div>
+      <div class="text-xs font-semibold text-slate-300 bg-black/50 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 shadow-lg">
+        🏢 ซอฟต์แวร์องค์กร 5 ระบบ
+      </div>
+    </div>
+
+    <!-- MAIN SLIDE STAGE -->
+    <div id="slideStage" class="w-full h-full flex items-center justify-center p-4 sm:p-8 relative z-10 overflow-hidden">
+      <!-- Injected by JavaScript dynamically -->
+    </div>
+
+    <!-- Voiceover Subtitle Banner -->
+    <div class="w-full px-6 py-2.5 bg-gradient-to-t from-black/95 via-black/75 to-transparent z-20 flex flex-col items-center justify-center text-center">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+        <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">บทบรรยายภาษาไทย</span>
+      </div>
+      <p id="subtitleText" class="text-xs sm:text-sm md:text-base font-semibold text-sky-200 max-w-4xl leading-relaxed drop-shadow-md">
+        กำลังโหลดบทบรรยาย...
+      </p>
+    </div>
+
+    <!-- PLAYER CONTROLS & TIMELINE -->
+    <div class="w-full bg-black/85 backdrop-blur-xl border-t border-white/10 px-4 sm:px-6 py-3 z-30 flex flex-col gap-2">
+      <!-- Progress Bar -->
+      <div class="w-full h-1.5 bg-slate-800 rounded-full cursor-pointer relative overflow-hidden group" onclick="seekTimeline(event)">
+        <div id="progressBar" class="h-full bg-gradient-to-r from-sky-400 via-indigo-500 to-emerald-400 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+
+      <!-- Controls Row -->
+      <div class="flex items-center justify-between text-xs text-slate-300">
+        <div class="flex items-center gap-2.5">
+          <button onclick="prevSlide()" class="p-2 rounded-lg hover:bg-white/10 transition text-slate-200 hover:text-white" title="ฉากก่อนหน้า">
+            <i class="fa-solid fa-backward-step text-sm"></i>
+          </button>
+          <button id="playPauseBtn" onclick="togglePlayPause()" class="w-8 h-8 rounded-full bg-sky-500 hover:bg-sky-400 text-white flex items-center justify-center shadow-lg shadow-sky-500/30 transition">
+            <i id="playIcon" class="fa-solid fa-pause text-xs"></i>
+          </button>
+          <button onclick="nextSlide()" class="p-2 rounded-lg hover:bg-white/10 transition text-slate-200 hover:text-white" title="ฉากถัดไป">
+            <i class="fa-solid fa-forward-step text-sm"></i>
+          </button>
+          <span id="timeCounter" class="text-slate-400 font-mono ml-2 text-[11px]">00:00 / 03:00</span>
+        </div>
+
+        <!-- Chapters Selector -->
+        <div class="hidden lg:flex items-center gap-1">
+          <button onclick="goToSlide(0)" class="chap-btn px-2 py-1 rounded text-[11px] bg-white/10 text-white font-medium">1. ปัญหา</button>
+          <button onclick="goToSlide(1)" class="chap-btn px-2 py-1 rounded text-[11px] bg-white/5 text-slate-400 hover:text-white">2. แดชบอร์ด IT</button>
+          <button onclick="goToSlide(2)" class="chap-btn px-2 py-1 rounded text-[11px] bg-white/5 text-slate-400 hover:text-white">3. Passly Vault</button>
+          <button onclick="goToSlide(3)" class="chap-btn px-2 py-1 rounded text-[11px] bg-white/5 text-slate-400 hover:text-white">4. ตรวจนับทรัพย์สิน</button>
+          <button onclick="goToSlide(4)" class="chap-btn px-2 py-1 rounded text-[11px] bg-white/5 text-slate-400 hover:text-white">5. บัญชีไทย</button>
+          <button onclick="goToSlide(5)" class="chap-btn px-2 py-1 rounded text-[11px] bg-white/5 text-slate-400 hover:text-white">6. คลัง & POS</button>
+          <button onclick="goToSlide(6)" class="chap-btn px-2 py-1 rounded text-[11px] bg-white/5 text-slate-400 hover:text-white">7. ปิดการขาย</button>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button onclick="restartPresentation()" class="hover:text-white transition flex items-center gap-1">
+            <i class="fa-solid fa-rotate-left"></i> เล่นใหม่
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Interactive Walkthrough & Script Guide -->
+  <div class="w-full max-w-6xl mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Quick How-To -->
+    <div class="bg-slate-900/60 rounded-xl p-4 border border-white/5">
+      <h3 class="text-xs font-bold text-sky-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-sliders"></i> วิธีใช้งานหน้านี้
+      </h3>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        กดปุ่ม <strong>"ฉากก่อนหน้า / ถัดไป"</strong> หรือเลือกหมายเลขแอพด้านล่าง เพื่อดูวิธีใช้งานแต่ละแอพ ระบบจะอ่านบทบรรยายให้อัตโนมัติค่ะ
+      </p>
+    </div>
+
+    <!-- Voice Diagnostic -->
+    <div class="bg-slate-900/60 rounded-xl p-4 border border-white/5">
+      <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-headset"></i> เสียงบรรยายภาษาไทย
+      </h3>
+      <p id="voiceDiagnosticText" class="text-xs text-slate-300 leading-relaxed">
+        ระบบจะเลือกเสียงภาษาไทยให้อัตโนมัติ หากเสียงไม่ออกให้กดปุ่ม "ทดสอบเสียง" ด้านบน
+      </p>
+    </div>
+
+    <!-- Full Document Link -->
+    <div class="bg-slate-900/60 rounded-xl p-4 border border-white/5 flex flex-col justify-between">
+      <h3 class="text-xs font-bold text-purple-400 uppercase tracking-wider mb-1 flex items-center gap-2">
+        <i class="fa-solid fa-book-bookmark"></i> คู่มือบทบรรยายฉบับเต็ม
+      </h3>
+      <p class="text-xs text-slate-400 mb-2">เปิดดูบทบรรยาย วิธีใช้งาน และรายละเอียดแต่ละแอพ</p>
+      <a href="sales_presentation_playbook.md" target="_blank" class="w-full py-2 px-3 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 text-xs font-semibold text-center transition flex items-center justify-center gap-2">
+        <i class="fa-solid fa-file-lines"></i> เปิดคู่มือฉบับเต็ม
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // 7 SLIDES WITH DETAILED 4-STEP WALKTHROUGHS AND NATURAL THAI SCRIPTS
+    const slides = [
+      {
+        id: "intro",
+        badge: "01/07 • ภาพรวมปัญหาและความท้าทาย",
+        duration: 18,
+        script: "เบื่อไหมคะกับปัญหารหัสผ่านรั่วไหล อุปกรณ์ไอทีสูญหาย ใบเสร็จหายจนภาษีผิด และสต็อกสินค้าไม่ตรง วันนี้เราขอแนะนำชุดซอฟต์แวร์ 5 ระบบครบวงจร ที่ช่วยให้คุณบริหารงานทุกอย่างได้ง่าย รวดเร็ว และปลอดภัยค่ะ",
+        render: () => `
+          <div class="slide-enter flex flex-col items-center text-center max-w-3xl">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold mb-3">
+              <i class="fa-solid fa-triangle-exclamation"></i> 4 จุดรั่วไหลและต้นทุนแฝงที่พบบ่อยในองค์กร
+            </div>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white leading-tight mb-3">
+              จบปัญหาความยุ่งยากในองค์กร <br/>
+              <span class="bg-clip-text text-transparent bg-gradient-to-r from-red-400 via-amber-400 to-sky-400">
+                ด้วยชุดซอฟต์แวร์บริหารงาน 5 ระบบ
+              </span>
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full mt-5 text-left">
+              <div class="p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-red-500/30 transition">
+                <i class="fa-solid fa-key text-red-400 text-xl mb-1.5"></i>
+                <div class="text-xs font-bold text-white">รหัสผ่านรั่วไหล</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">ส่งผ่านแชต เสี่ยงถูกขโมย</div>
+              </div>
+              <div class="p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-amber-500/30 transition">
+                <i class="fa-solid fa-laptop text-amber-400 text-xl mb-1.5"></i>
+                <div class="text-xs font-bold text-white">อุปกรณ์สูญหาย</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">ไม่รู้สถานะ ใครถือเครื่อง</div>
+              </div>
+              <div class="p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-sky-500/30 transition">
+                <i class="fa-solid fa-file-invoice-dollar text-sky-400 text-xl mb-1.5"></i>
+                <div class="text-xs font-bold text-white">ใบเสร็จหาย-ภาษีผิด</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">เสี่ยงถูกสรรพากรเรียกปรับ</div>
+              </div>
+              <div class="p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-purple-500/30 transition">
+                <i class="fa-solid fa-boxes-stacked text-purple-400 text-xl mb-1.5"></i>
+                <div class="text-xs font-bold text-white">สต็อกไม่ตรง</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">ขายหน้าร้านแต่สต็อกเพี้ยน</div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "dashboard",
+        badge: "02/07 • พอร์ทัลและแดชบอร์ดงานไอที (IT PORTAL)",
+        duration: 15,
+        script: "แอพแรก IT Portal ผู้แจ้งเข้าลิงก์ตามสิทธิ์ เพื่อแจ้งซ่อมเปิด Ticket, ขอเบิกหรือคืนอุปกรณ์ได้ทันที พร้อมติดตามสถานะความคืบหน้างานต่างๆ ในฝ่ายไอทีได้แบบเรียลไทม์ และส่งออกรายงาน Excel ในคลิกเดียวค่ะ",
+        render: () => `
+          <div class="slide-enter w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+            <div>
+              <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-bold mb-2">
+                แอพ 1: ระบบแจ้งซ่อมและติดตามงานไอที
+              </div>
+              <h2 class="text-xl sm:text-2xl font-bold text-white mb-1.5">
+                ระบบแจ้งซ่อม เบิก-คืนอุปกรณ์ และติดตามงานไอที
+              </h2>
+              <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                เข้าเว็บไซต์ตามสิทธิ์ แจ้งซ่อม เบิก-คืนอุปกรณ์ และดูความคืบหน้างานไอทีได้ทันที
+              </p>
+              
+              <div class="space-y-1.5 text-xs">
+                <div class="p-2 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-sky-500 text-slate-950 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
+                  <div>
+                    <strong class="text-white text-[12px]">เข้าเว็บไซต์ตามสิทธิ์:</strong>
+                    <div class="text-slate-400 text-[11px]">ล็อกอินเข้าระบบตามสิทธิ์ เช่น พนักงาน, ช่างไอที, หรือผู้บริหาร</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
+                  <div>
+                    <strong class="text-white text-[12px]">แจ้งซ่อม (เปิดใบแจ้งงาน):</strong>
+                    <div class="text-slate-400 text-[11px]">กดปุ่ม 'แจ้งซ่อม' ระบุปัญหา ช่างไอทีรับเรื่องได้ทันที</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
+                  <div>
+                    <strong class="text-white text-[12px]">เบิก-คืนอุปกรณ์:</strong>
+                    <div class="text-slate-400 text-[11px]">กด 'เบิกอุปกรณ์' หรือ 'คืนอุปกรณ์' ระบบบันทึกประวัติให้อัตโนมัติ</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">4</span>
+                  <div>
+                    <strong class="text-white text-[12px]">ดูความคืบหน้างานไอที:</strong>
+                    <div class="text-slate-400 text-[11px]">ดูสถานะงานซ่อม การตรวจเช็คอุปกรณ์ และงานต่างๆ แบบเรียลไทม์</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Real Screenshot Window -->
+            <div class="rounded-xl border border-sky-500/40 bg-slate-900/95 shadow-2xl overflow-hidden text-left">
+              <div class="bg-slate-800/80 px-3 py-2 border-b border-white/10 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  </div>
+                  <span class="text-[11px] font-bold text-slate-200 ml-1">หน้าหลัก: ระบบแจ้งซ่อมและติดตามงานไอที</span>
+                </div>
+                <span class="text-[10px] text-sky-400 font-semibold px-2 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">[แจ้งซ่อม-เบิกคืน]</span>
+              </div>
+              <div class="p-2 bg-black/40">
+                <img src="video_assets/app1_it_dashboard.png" alt="IT Monthly Dashboard" class="w-full rounded border border-white/10 shadow-lg object-contain cursor-pointer hover:scale-[1.01] transition duration-200" onclick="window.open('video_assets/app1_it_dashboard.png', '_blank')" />
+              </div>
+              <div class="p-2.5 bg-slate-950/70 border-t border-white/5 space-y-1.5 text-left">
+                <div class="text-[10px] font-bold text-sky-400">&gt;&gt; วิธีใช้งานเบื้องต้น:</div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold text-[10px] shrink-0">[เข้าระบบ]</span>
+                  <span class="text-slate-300 text-[10px]">ล็อกอินเข้าเว็บตามสิทธิ์ของผู้ใช้</span>
+                </div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold text-[10px] shrink-0">[แจ้งซ่อม/เบิก-คืน]</span>
+                  <span class="text-slate-300 text-[10px]">กดแจ้งซ่อม • เบิกอุปกรณ์ • คืนอุปกรณ์</span>
+                </div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold text-[10px] shrink-0">[ติดตามงาน]</span>
+                  <span class="text-slate-300 text-[10px]">ดูสถานะงานซ่อมและงานไอทีแบบเรียลไทม์</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "passly",
+        badge: "03/07 • ระบบรหัสผ่านองค์กร (PASSLY VAULT)",
+        duration: 15,
+        script: "แอพที่สอง Passly Vault จัดเก็บรหัสผ่านแบบ Zero-Knowledge ปลอดภัยสูงสุด กดสร้างรายการใหม่ แบ่งกลุ่มตามแผนก พร้อมระบบขอรหัสผ่านและส่งลิงก์ทำลายตัวเองอัตโนมัติ ป้องกันข้อมูลรั่วไหลร้อยเปอร์เซ็นต์ค่ะ",
+        render: () => `
+          <div class="slide-enter w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+            <div>
+              <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-bold mb-2">
+                แอพ 2: จัดเก็บรหัสผ่านองค์กร
+              </div>
+              <h2 class="text-xl sm:text-2xl font-bold text-white mb-1.5">
+                ระบบจัดเก็บรหัสผ่าน (Passly Vault)
+              </h2>
+              <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                เก็บรหัสผ่านเข้ารหัสปลอดภัยสูงสุด แบ่งกลุ่มตามแผนก พร้อมระบบขออนุมัติ
+              </p>
+              
+              <div class="space-y-1.5 text-xs">
+                <div class="p-2 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-purple-500 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
+                  <div>
+                    <strong class="text-white text-[12px]">สร้างรหัสผ่านใหม่:</strong>
+                    <div class="text-slate-400 text-[11px]">กด '+ รายการใหม่' บันทึกข้อมูลล็อกอิน หรือสร้างรหัสผ่านที่แข็งแรง</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
+                  <div>
+                    <strong class="text-white text-[12px]">แบ่งกลุ่มตามแผนก:</strong>
+                    <div class="text-slate-400 text-[11px]">แยกรหัสผ่านตามแผนก เช่น บัญชี, การตลาด, ไอที</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
+                  <div>
+                    <strong class="text-white text-[12px]">ตรวจสุขภาพรหัสผ่าน:</strong>
+                    <div class="text-slate-400 text-[11px]">ตรวจรหัสที่อ่อน ซ้ำ หรือเก่าเกิน 90 วัน พร้อมแก้ไขได้ทันที</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">4</span>
+                  <div>
+                    <strong class="text-white text-[12px]">ขอรหัสผ่าน & ดูประวัติ:</strong>
+                    <div class="text-slate-400 text-[11px]">ส่งคำขอรหัสผ่านผ่านระบบ ดูประวัติย้อนหลังได้โปร่งใส</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Real Screenshot Window -->
+            <div class="rounded-xl border border-purple-500/40 bg-slate-900/95 shadow-2xl overflow-hidden text-left">
+              <div class="bg-slate-800/80 px-3 py-2 border-b border-white/10 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  </div>
+                  <span class="text-[11px] font-bold text-slate-200 ml-1">หน้าหลัก: ระบบจัดเก็บรหัสผ่านองค์กร</span>
+                </div>
+                <span class="text-[10px] text-purple-400 font-semibold px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">[รหัสผ่านองค์กร]</span>
+              </div>
+              <div class="p-2 bg-black/40">
+                <img src="video_assets/app2_passly.png" alt="ระบบจัดเก็บรหัสผ่าน (Passly Vault)" class="w-full rounded border border-white/10 shadow-lg object-contain cursor-pointer hover:scale-[1.01] transition duration-200" onclick="window.open('video_assets/app2_passly.png', '_blank')" />
+              </div>
+              <div class="p-2.5 bg-slate-950/70 border-t border-white/5 space-y-1.5 text-left">
+                <div class="text-[10px] font-bold text-purple-400">&gt;&gt; วิธีใช้งานเบื้องต้น:</div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold text-[10px] shrink-0">[+ รายการใหม่]</span>
+                  <span class="text-slate-300 text-[10px]">สร้างและเก็บรหัสผ่านเข้ารหัสปลอดภัยสูง</span>
+                </div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold text-[10px] shrink-0">[ตรวจสุขภาพ]</span>
+                  <span class="text-slate-300 text-[10px]">เช็คคะแนนรหัส 100/100 • ตรวจจับรหัสอ่อนและซ้ำ</span>
+                </div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold text-[10px] shrink-0">[ความปลอดภัย]</span>
+                  <span class="text-slate-300 text-[10px]">ตรวจรหัสหมดอายุ 90 วัน • ดูประวัติการใช้งาน</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "asset",
+        badge: "04/07 • ตรวจนับอุปกรณ์และทรัพย์สิน (IOS & ASSET)",
+        duration: 19,
+        script: "แอพที่สาม ระบบตรวจนับอุปกรณ์และทรัพย์สิน มี 2 โหมดชัดเจน โหมดแรก ตรวจอุปกรณ์ไอทีออนไลน์ผ่านลิงก์ทุก 15 วัน เช็คพิกัดและสถานะทันที โหมดที่สอง ลงทะเบียนโต๊ะ เก้าอี้ แอร์ ออก QR Code พิมพ์ติด แล้วใช้มือถือสแกนตรวจนับและส่งออก Excel ได้ทันทีค่ะ",
+        render: () => `
+          <div class="slide-enter w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+            <div>
+              <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold mb-2">
+                แอพ 3: ตรวจนับอุปกรณ์และทรัพย์สิน (2 โหมด)
+              </div>
+              <h2 class="text-xl sm:text-2xl font-bold text-white mb-1.5">
+                ระบบตรวจนับอุปกรณ์ IT และทรัพย์สิน
+              </h2>
+              <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                ตรวจอุปกรณ์ IT ออนไลน์ทุก 15 วัน และลงทะเบียนทรัพย์สินออก QR Code
+              </p>
+              
+              <div class="space-y-1.5 text-xs">
+                <div class="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
+                  <div>
+                    <strong class="text-white text-[12px]">โหมด 1: ตรวจอุปกรณ์ IT ทุก 15 วัน:</strong>
+                    <div class="text-slate-400 text-[11px]">พนักงานกดลิงก์ยืนยัน ระบบอัปเดตสถานะ Active และพิกัดทันที</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
+                  <div>
+                    <strong class="text-white text-[12px]">โหมด 2: ลงทะเบียนทรัพย์สิน:</strong>
+                    <div class="text-slate-400 text-[11px]">บันทึกโต๊ะ เก้าอี้ แอร์ ระบบสร้าง QR Code ให้อัตโนมัติ</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
+                  <div>
+                    <strong class="text-white text-[12px]">สแกน QR ตรวจนับ:</strong>
+                    <div class="text-slate-400 text-[11px]">ใช้กล้องมือถือสแกน QR ตรวจนับได้แม่นยำ</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">4</span>
+                  <div>
+                    <strong class="text-white text-[12px]">ดูแผนที่ & ส่งออกรายงาน:</strong>
+                    <div class="text-slate-400 text-[11px]">ดูพิกัดอุปกรณ์บนแผนที่ แล้วกดส่งออก Excel สรุปผลตรวจนับ</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Real Screenshot Window -->
+            <div class="rounded-xl border border-emerald-500/40 bg-slate-900/95 shadow-2xl overflow-hidden text-left">
+              <div class="bg-slate-800/80 px-3 py-2 border-b border-white/10 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  </div>
+                  <span class="text-[11px] font-bold text-slate-200 ml-1">หน้าหลัก: ตรวจนับอุปกรณ์ IT & ทรัพย์สิน</span>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-semibold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">[ตรวจนับ-สแกน]</span>
+              </div>
+              <div class="p-2 bg-black/40">
+                <img src="video_assets/app3_asset_audit.png" alt="Asset & IT Audit" class="w-full rounded border border-white/10 shadow-lg object-contain cursor-pointer hover:scale-[1.01] transition duration-200" onclick="window.open('video_assets/app3_asset_audit.png', '_blank')" />
+              </div>
+              <div class="p-2.5 bg-slate-950/70 border-t border-white/5 space-y-1.5 text-left">
+                <div class="text-[10px] font-bold text-emerald-400">&gt;&gt; วิธีใช้งานเบื้องต้น:</div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px] shrink-0">[โหมด 1: 15 วัน]</span>
+                  <span class="text-slate-300 text-[10px]">ตรวจอุปกรณ์ IT ผ่านลิงก์ยืนยัน • ดูสถานะ Active</span>
+                </div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px] shrink-0">[โหมด 2: QR Code]</span>
+                  <span class="text-slate-300 text-[10px]">ลงทะเบียนทรัพย์สิน • ออก QR Code สแกนผ่านมือถือ</span>
+                </div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px] shrink-0">[เครื่องมือด่วน]</span>
+                  <span class="text-slate-300 text-[10px]">สแกน QR • ดูพิกัดแผนที่ • ส่งออก Excel</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "accounting",
+        badge: "05/07 • ระบบบัญชีและภาษีสรรพากร (THAI ACCOUNTING)",
+        duration: 18,
+        script: "แอพที่สี่ Thai Accounting ระบบบัญชีและภาษีไทย ออกใบแจ้งหนี้ ใบเสร็จรับเงิน ตัดสต็อกอัตโนมัติ บันทึกค่าใช้จ่ายและคำนวณหัก ณ ที่จ่าย ภ.ง.ด.3, 53 และ ภ.พ.30 พร้อมดูกราฟสรุปกำไรสุทธิย้อนหลัง 6 เดือนได้ทันทีค่ะ",
+        render: () => `
+          <div class="slide-enter w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+            <div>
+              <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold mb-2">
+                แอพ 4: ระบบบัญชีและภาษีไทย
+              </div>
+              <h2 class="text-xl sm:text-2xl font-bold text-white mb-1.5">
+                ระบบบัญชีและภาษีไทย
+              </h2>
+              <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                ออกใบแจ้งหนี้ บันทึกรายจ่าย คำนวณภาษี ถูกต้องตามระเบียบสรรพากร
+              </p>
+              
+              <div class="space-y-1.5 text-xs">
+                <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
+                  <div>
+                    <strong class="text-white text-[12px]">ออกใบแจ้งหนี้ & ใบเสร็จ:</strong>
+                    <div class="text-slate-400 text-[11px]">ออกเอกสารขาย ตัดสต๊อก และคำนวณ VAT 7% อัตโนมัติ</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
+                  <div>
+                    <strong class="text-white text-[12px]">บันทึกรายจ่าย:</strong>
+                    <div class="text-slate-400 text-[11px]">บันทึกค่าใช้จ่าย แนบสลิป และลงทะเบียนสินทรัพย์</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
+                  <div>
+                    <strong class="text-white text-[12px]">คำนวณภาษีหัก ณ ที่จ่าย:</strong>
+                    <div class="text-slate-400 text-[11px]">คำนวณหัก ณ ที่จ่าย พร้อมนำส่ง ภ.ง.ด.3, 53 และ ภ.พ.30</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">4</span>
+                  <div>
+                    <strong class="text-white text-[12px]">ดูกราฟกำไร-ขาดทุน 6 เดือน:</strong>
+                    <div class="text-slate-400 text-[11px]">ดูรายได้ ค่าใช้จ่าย กำไรสุทธิ และยอด VAT แบบเรียลไทม์</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Real Screenshot Window -->
+            <div class="rounded-xl border border-amber-500/40 bg-slate-900/95 shadow-2xl overflow-hidden text-left">
+              <div class="bg-slate-800/80 px-3 py-2 border-b border-white/10 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  </div>
+                  <span class="text-[11px] font-bold text-slate-200 ml-1">หน้าหลัก: ระบบบัญชีและภาษีไทย</span>
+                </div>
+                <span class="text-[10px] text-amber-400 font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">[บัญชี-ภาษี]</span>
+              </div>
+              <div class="p-2 bg-black/40">
+                <img src="video_assets/app4_accounting.png" alt="Thai Accounting System" class="w-full rounded border border-white/10 shadow-lg object-contain cursor-pointer hover:scale-[1.01] transition duration-200" onclick="window.open('video_assets/app4_accounting.png', '_blank')" />
+              </div>
+              <div class="p-2.5 bg-slate-950/70 border-t border-white/5 space-y-1.5 text-left">
+                <div class="text-[10px] font-bold text-amber-400">&gt;&gt; วิธีใช้งานเบื้องต้น:</div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[10px] shrink-0">[รายรับ & สต๊อก]</span>
+                  <span class="text-slate-300 text-[10px]">ออกใบแจ้งหนี้ • ใบเสร็จ • ตัดสต็อกอัตโนมัติ</span>
+                </div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[10px] shrink-0">[รายจ่าย & WHT]</span>
+                  <span class="text-slate-300 text-[10px]">บันทึกรายจ่าย • หัก ณ ที่จ่าย 3%/1% • VAT</span>
+                </div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[10px] shrink-0">[Dashboard 6 เดือน]</span>
+                  <span class="text-slate-300 text-[10px]">กราฟกำไร-ขาดทุน 6 เดือน • สรุปกำไรสุทธิ</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "inventory",
+        badge: "06/07 • คลังสินค้าและขายหน้าร้าน (INVENTORY & POS)",
+        duration: 16,
+        script: "แอพที่ห้า ระบบดีพอส รวมคลังสินค้าและการขายหน้าร้านแบบ Single Screen สแกนบาร์โค้ดคิดเงินออกใบเสร็จใน 5 วินาที ตัดสต็อกเรียลไทม์ เตือนสั่งซื้อของไม่ขาดมือ และเช็คยอดขายรายวันได้ครบจบในหน้าเดียวค่ะ",
+        render: () => `
+          <div class="slide-enter w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+            <div>
+              <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-bold mb-2">
+                แอพ 5: คลังสินค้าและขายหน้าร้าน
+              </div>
+              <h2 class="text-xl sm:text-2xl font-bold text-white mb-1.5">
+                ระบบคลังสินค้าและขายหน้าร้าน (DPOS)
+              </h2>
+              <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                รวมงานขาย สต็อก และจัดซื้อในหน้าจอเดียว สแกนบาร์โค้ดขายได้ทันที
+              </p>
+              
+              <div class="space-y-1.5 text-xs">
+                <div class="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
+                  <div>
+                    <strong class="text-white text-[12px]">ขายหน้าร้าน:</strong>
+                    <div class="text-slate-400 text-[11px]">สแกนบาร์โค้ด คิดเงิน ออกใบเสร็จใน 5 วินาที</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
+                  <div>
+                    <strong class="text-white text-[12px]">จัดการสินค้า & เติมสต็อก:</strong>
+                    <div class="text-slate-400 text-[11px]">ตั้งราคาสินค้า และสั่งซื้อเติมสต็อกเมื่อของใกล้หมด</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
+                  <div>
+                    <strong class="text-white text-[12px]">บริหารลูกค้า & รายจ่าย:</strong>
+                    <div class="text-slate-400 text-[11px]">จัดการลูกค้า ผู้จำหน่าย และบันทึกค่าใช้จ่ายร้าน</div>
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">4</span>
+                  <div>
+                    <strong class="text-white text-[12px]">ดูยอดขายรายวัน:</strong>
+                    <div class="text-slate-400 text-[11px]">ดูยอดขาย ยอดรับชำระ และสินค้าใหม่ในหน้าจอเดียว</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Real Screenshot Window -->
+            <div class="rounded-xl border border-indigo-500/40 bg-slate-900/95 shadow-2xl overflow-hidden text-left">
+              <div class="bg-slate-800/80 px-3 py-2 border-b border-white/10 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  </div>
+                  <span class="text-[11px] font-bold text-slate-200 ml-1">หน้าหลัก: ระบบคลังสินค้าและขายหน้าร้าน</span>
+                </div>
+                <span class="text-[10px] text-indigo-400 font-semibold px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">[คลังสินค้า-ขาย]</span>
+              </div>
+              <div class="p-2 bg-black/40">
+                <img src="video_assets/app5_dpos.png" alt="DPOS Single Screen" class="w-full rounded border border-white/10 shadow-lg object-contain cursor-pointer hover:scale-[1.01] transition duration-200" onclick="window.open('video_assets/app5_dpos.png', '_blank')" />
+              </div>
+              <div class="p-2.5 bg-slate-950/70 border-t border-white/5 space-y-1.5 text-left">
+                <div class="text-[10px] font-bold text-indigo-400">&gt;&gt; วิธีใช้งานเบื้องต้น:</div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold text-[10px] shrink-0">[งานขาย & POS]</span>
+                  <span class="text-slate-300 text-[10px]">สแกนบาร์โค้ด • คิดเงิน • รับพร้อมเพย์</span>
+                </div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold text-[10px] shrink-0">[สินค้า & จัดซื้อ]</span>
+                  <span class="text-slate-300 text-[10px]">จัดการสินค้า • ควบคุมสต็อก • สั่งซื้อเมื่อของหมด</span>
+                </div>
+                <div class="flex items-center gap-2 p-1.5 rounded bg-white/5 text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold text-[10px] shrink-0">[หน้าจอรวม]</span>
+                  <span class="text-slate-300 text-[10px]">ยอดขายวันนี้ • ยอดรับชำระ • กราฟยอดขายเดือน</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "closing",
+        badge: "07/07 • คุ้มค่าและปิดการขาย (3 เดือน)",
+        duration: 19,
+        script: "ยกระดับองค์กรด้วย 5 ซอฟต์แวร์คุณภาพ ประหยัดงบกว่า 70 เปอร์เซ็นต์ ได้เป็นเจ้าของระบบเอง ข้อมูลปลอดภัยสูงสุด พิเศษวันนี้ รับสิทธิ์ทดลองใช้งานฟรีเต็มระบบนาน 3 เดือน ติดต่อคุณโอม โทร 095-465-4698 ได้ทันทีค่ะ ขอบคุณค่ะ",
+        render: () => `
+          <div class="slide-enter flex flex-col items-center text-center max-w-3xl">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold mb-3">
+              <i class="fa-solid fa-gift"></i> ข้อเสนอพิเศษและบริการติดตั้งครบวงจร
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-2">
+              ยกระดับธุรกิจด้วย 5 ซอฟต์แวร์องค์กร <br/>
+              <span class="bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-indigo-400 to-emerald-400">
+                ประหยัดงบ ปลอดภัย พร้อมใช้งานทันที
+              </span>
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full my-4 text-left">
+              <div class="p-3.5 rounded-xl bg-white/5 border border-white/10">
+                <div class="text-xl font-bold text-sky-400 mb-1">ประหยัด 70%</div>
+                <div class="text-xs font-bold text-white mb-0.5">ลดค่าซอฟต์แวร์รายเดือน</div>
+                <div class="text-[11px] text-slate-400">ไม่ต้องจ่ายค่า Subscription ต่างประเทศหลายเจ้าซ้ำซ้อน</div>
+              </div>
+              <div class="p-3.5 rounded-xl bg-white/5 border border-white/10">
+                <div class="text-xl font-bold text-purple-400 mb-1">ปลอดภัย 100%</div>
+                <div class="text-xs font-bold text-white mb-0.5">ความปลอดภัยข้อมูลสูงสุด</div>
+                <div class="text-[11px] text-slate-400">รหัสผ่านและข้อมูลอยู่ในการดูแลของคุณเอง</div>
+              </div>
+              <div class="p-3.5 rounded-xl bg-white/5 border border-emerald-500/30 bg-emerald-500/10">
+                <div class="text-xl font-bold text-emerald-400 mb-1">ทดลองใช้ฟรี 3 เดือน</div>
+                <div class="text-xs font-bold text-white mb-0.5">เปิดสิทธิ์ทดสอบเต็มระบบ</div>
+                <div class="text-[11px] text-slate-300">ทีมงานติดตั้งและสอนการใช้งานจนพนักงานใช้งานเป็น</div>
+              </div>
+            </div>
+
+            <!-- Prominent Contact Box -->
+            <div class="w-full p-4 rounded-xl bg-gradient-to-r from-emerald-500/15 via-sky-500/15 to-indigo-500/15 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-left mb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-emerald-500 text-slate-950 flex items-center justify-center text-xl shrink-0 font-bold">
+                  <i class="fa-solid fa-phone"></i>
+                </div>
+                <div>
+                  <div class="text-xs text-emerald-300 font-bold uppercase tracking-wider">ติดต่อสอบถาม / ขอรับสิทธิ์ทดลองใช้งาน 3 เดือน:</div>
+                  <div class="text-lg font-extrabold text-white">ติดต่อ: <span class="text-amber-300">095-465-4698</span> คุณ โอม</div>
+                </div>
+              </div>
+              <a href="tel:0954654698" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition shrink-0 flex items-center gap-2 shadow-lg shadow-emerald-500/25">
+                <i class="fa-solid fa-phone-flip"></i> โทรติดต่อทันที
+              </a>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button onclick="restartPresentation()" class="px-6 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition border border-white/10 flex items-center gap-2">
+                <i class="fa-solid fa-rotate-left"></i> ชมพรีเซนเทชันซ้ำอีกรอบ
+              </button>
+            </div>
+          </div>
+        `
+      }
+    ];
+
+    let currentSlide = 0;
+    let isPlaying = true;
+    let timer = null;
+    let elapsedSeconds = 0;
+    let totalSeconds = slides.reduce((acc, s) => acc + s.duration, 0);
+    let voiceEnabled = true;
+    let synth = window.speechSynthesis;
+    let availableVoices = [];
+    let selectedVoice = null;
+
+    // Load and filter Thai voices
+    function initVoices() {
+      if (!synth) return;
+      availableVoices = synth.getVoices();
+      const select = document.getElementById('voiceSelect');
+      select.innerHTML = '';
+
+      // Find Thai voices
+      const thaiVoices = availableVoices.filter(v => 
+        v.lang === 'th-TH' || v.lang.startsWith('th') || 
+        v.name.includes('Thai') || v.name.includes('ภาษาไทย') || 
+        v.name.includes('Premwadee') || v.name.includes('Niwat')
+      );
+
+      if (thaiVoices.length > 0) {
+        selectedVoice = thaiVoices[0];
+        thaiVoices.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.name;
+          opt.innerText = `🇹🇭 ${v.name} (${v.lang})`;
+          opt.className = "bg-slate-900 text-white";
+          select.appendChild(opt);
+        });
+        document.getElementById('voiceDiagnosticText').innerText = 
+          `ตรวจพบเสียงภาษาไทย: "${selectedVoice.name}" ใช้เสียงนี้เรียบร้อยแล้ว`;
+      } else {
+        // Fallback: list all voices
+        const opt = document.createElement('option');
+        opt.value = "";
+        opt.innerText = "⚠️ ไม่พบเสียงภาษาไทยในเบราว์เซอร์นี้ (จะแสดงซับไตเติลภาษาไทย)";
+        opt.className = "bg-slate-900 text-amber-400";
+        select.appendChild(opt);
+        
+        availableVoices.slice(0, 10).forEach(v => {
+          const o = document.createElement('option');
+          o.value = v.name;
+          o.innerText = `${v.name} (${v.lang})`;
+          o.className = "bg-slate-900 text-slate-300";
+          select.appendChild(o);
+        });
+
+        document.getElementById('voiceDiagnosticText').innerText = 
+          "เครื่องไม่มีเสียงไทย แต่สามารถอ่านบทบรรยายภาษาไทยบนหน้าจอได้ค่ะ";
+      }
+    }
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = initVoices;
+    }
+
+    function onVoiceChange() {
+      const select = document.getElementById('voiceSelect');
+      const voice = availableVoices.find(v => v.name === select.value);
+      if (voice) {
+        selectedVoice = voice;
+        speakScript("เปลี่ยนเสียงเรียบร้อยค่ะ");
+      }
+    }
+
+    function testVoice() {
+      speakScript("สวัสดีค่ะ นี่คือระบบเสียงบรรยายภาษาไทย สำหรับแนะนำการใช้งานแอพพลิเคชันค่ะ");
+    }
+
+    function renderSlide(idx) {
+      const stage = document.getElementById('slideStage');
+      const data = slides[idx];
+      stage.innerHTML = data.render();
+      document.getElementById('badgeChapter').innerText = data.badge;
+      document.getElementById('subtitleText').innerText = data.script;
+
+      // Update Chapter Buttons
+      document.querySelectorAll('.chap-btn').forEach((btn, i) => {
+        if (i === idx) {
+          btn.className = "chap-btn px-2.5 py-1 rounded text-[11px] bg-sky-500 text-white font-bold shadow-md shadow-sky-500/20";
+        } else {
+          btn.className = "chap-btn px-2.5 py-1 rounded text-[11px] bg-white/5 text-slate-400 hover:text-white";
+        }
+      });
+
+      // Voice Narration
+      speakScript(data.script);
+    }
+
+    function speakScript(text) {
+      if (!voiceEnabled || !synth) return;
+      synth.cancel(); // Cancel current speaking
+      
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'th-TH';
+      utter.rate = 1.22;
+      utter.pitch = 1.35;
+
+      // Ensure Thai voice if available
+      if (selectedVoice) {
+        utter.voice = selectedVoice;
+      } else {
+        const thai = availableVoices.find(v => v.lang.startsWith('th') || v.name.includes('Thai') || v.name.includes('ภาษาไทย'));
+        if (thai) utter.voice = thai;
+      }
+
+      synth.speak(utter);
+    }
+
+    function toggleVoice() {
+      voiceEnabled = !voiceEnabled;
+      const icon = document.getElementById('voiceIcon');
+      const text = document.getElementById('voiceStatusText');
+      if (voiceEnabled) {
+        icon.className = "fa-solid fa-volume-high text-emerald-400";
+        text.innerText = "เสียง: เปิด";
+        speakScript(slides[currentSlide].script);
+      } else {
+        icon.className = "fa-solid fa-volume-xmark text-slate-400";
+        text.innerText = "เสียง: ปิด";
+        if (synth) synth.cancel();
+      }
+    }
+
+    function tick() {
+      if (!isPlaying) return;
+      elapsedSeconds++;
+      if (elapsedSeconds > totalSeconds) {
+        elapsedSeconds = totalSeconds;
+        isPlaying = false;
+        updatePlayBtn();
+      }
+
+      // Calculate progress
+      const percent = (elapsedSeconds / totalSeconds) * 100;
+      document.getElementById('progressBar').style.width = percent + '%';
+
+      // Update Time
+      document.getElementById('timeCounter').innerText = formatTime(elapsedSeconds) + ' / ' + formatTime(totalSeconds);
+
+      // Check Slide Transition
+      let accumulated = 0;
+      for (let i = 0; i < slides.length; i++) {
+        accumulated += slides[i].duration;
+        if (elapsedSeconds <= accumulated) {
+          if (currentSlide !== i) {
+            currentSlide = i;
+            renderSlide(currentSlide);
+          }
+          break;
+        }
+      }
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function togglePlayPause() {
+      isPlaying = !isPlaying;
+      updatePlayBtn();
+      if (!isPlaying && synth) {
+        synth.cancel();
+      } else if (isPlaying) {
+        speakScript(slides[currentSlide].script);
+      }
+    }
+
+    function updatePlayBtn() {
+      const icon = document.getElementById('playIcon');
+      if (isPlaying) {
+        icon.className = "fa-solid fa-pause text-xs";
+      } else {
+        icon.className = "fa-solid fa-play text-xs ml-0.5";
+      }
+    }
+
+    function nextSlide() {
+      let accumulated = 0;
+      for (let i = 0; i <= currentSlide; i++) {
+        accumulated += slides[i].duration;
+      }
+      elapsedSeconds = accumulated;
+      if (elapsedSeconds >= totalSeconds) elapsedSeconds = totalSeconds - 1;
+      tick();
+    }
+
+    function prevSlide() {
+      if (currentSlide === 0) {
+        elapsedSeconds = 0;
+      } else {
+        let accumulated = 0;
+        for (let i = 0; i < currentSlide - 1; i++) {
+          accumulated += slides[i].duration;
+        }
+        elapsedSeconds = accumulated;
+      }
+      tick();
+    }
+
+    function goToSlide(idx) {
+      let accumulated = 0;
+      for (let i = 0; i < idx; i++) {
+        accumulated += slides[i].duration;
+      }
+      elapsedSeconds = accumulated;
+      currentSlide = idx;
+      renderSlide(currentSlide);
+      tick();
+    }
+
+    function seekTimeline(e) {
+      const bar = e.currentTarget;
+      const rect = bar.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const percent = clickX / rect.width;
+      elapsedSeconds = Math.floor(percent * totalSeconds);
+      tick();
+    }
+
+    function restartPresentation() {
+      elapsedSeconds = 0;
+      currentSlide = 0;
+      isPlaying = true;
+      updatePlayBtn();
+      renderSlide(0);
+      tick();
+    }
+
+    function toggleFullscreen() {
+      const container = document.getElementById('videoContainer');
+      if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => alert(err.message));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Initialize Presentation
+    window.addEventListener('DOMContentLoaded', () => {
+      initVoices();
+      renderSlide(0);
+      timer = setInterval(tick, 1000);
+    });
+  </script>
+</body>
+</html>
