@@ -14,17 +14,22 @@ import {
   MessageSquare,
   FolderLock,
   ArrowRight,
+  Code,
+  Cpu,
+  Workflow,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { KnowledgeVaultView } from './KnowledgeVaultView';
 import { AgentPipelineModal } from './AgentPipelineModal';
 import { AgentLiveChatModal } from './AgentLiveChatModal';
+import { CodingTaskDelegatorModal } from './CodingTaskDelegatorModal';
+import { CODING_AGENTS } from '../../data/codingSquadData';
 import { INITIAL_VAULT_ITEMS } from '../../data/agentInitialVault';
 import { playClickSound, playSuccessSound } from '../../utils/soundEffects';
 
 const STORAGE_KEY = 'antigravity_agent_vault_items';
 
-const AGENTS = [
+const EXECUTIVE_AGENTS = [
   {
     id: 'product_architect',
     number: '01',
@@ -123,17 +128,25 @@ const AGENTS = [
 ];
 
 export function AgentsSquadView({ onCopyPrompt, onShowToast }) {
+  const [selectedSquad, setSelectedSquad] = useState('executive'); // 'executive' | 'coding'
   const [activeTab, setActiveTab] = useState('squad'); // 'squad' | 'vault'
   const [copiedId, setCopiedId] = useState(null);
-  const [activeAgent, setActiveAgent] = useState(AGENTS[0]);
+
+  const currentSquadList = selectedSquad === 'executive' ? EXECUTIVE_AGENTS : CODING_AGENTS;
+  const [activeAgent, setActiveAgent] = useState(EXECUTIVE_AGENTS[0]);
 
   // Modals state
   const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
+  const [isDelegatorModalOpen, setIsDelegatorModalOpen] = useState(false);
   const [isLiveChatModalOpen, setIsLiveChatModalOpen] = useState(false);
   const [chatInitialAgentId, setChatInitialAgentId] = useState('product_architect');
 
   // Vault count
   const [vaultCount, setVaultCount] = useState(INITIAL_VAULT_ITEMS.length);
+
+  useEffect(() => {
+    setActiveAgent(selectedSquad === 'executive' ? EXECUTIVE_AGENTS[0] : CODING_AGENTS[0]);
+  }, [selectedSquad]);
 
   useEffect(() => {
     try {
@@ -187,26 +200,39 @@ export function AgentsSquadView({ onCopyPrompt, onShowToast }) {
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                 <Sparkles className="h-4 w-4" />
               </span>
-              <h2 className="text-lg font-bold text-white">5 AI Executive Squad for Digital Products</h2>
-              <Badge variant="cyan" text="SaaS & Web Systems" />
+              <h2 className="text-lg font-bold text-white">AI Agents Business & Engineering Command Hub</h2>
+              <Badge variant="cyan" text="10 Native AI Agents" />
             </div>
             <p className="text-sm text-slate-400 max-w-3xl">
-              ชุด AI Agents ผู้บริหาร 5 สายงาน พร้อมระบบขับเคลื่อนแบบอัตโนมัติ: พัฒนาสเปกผลิตภัณฑ์, จัดทำเอกสารและนโยบายทางกฎหมาย, วางกลยุทธ์เติบโต, ปิดการขาย, และรักษาฐานลูกค้า
+              ระบบรวม 10 ผู้บริหาร AI และวิศวกรซอฟต์แวร์: วางกลยุทธ์ธุรกิจและสเปกผลิตภัณฑ์, จัดการข้อกฎหมาย, ทำการตลาด, และกระจายงานเขียนโค้ดตามบริบทของทีม
             </p>
           </div>
 
           {/* Quick Action Trigger Buttons */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              onClick={() => {
-                playClickSound();
-                setIsPipelineModalOpen(true);
-              }}
-              className="flex items-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-600/90 px-4 py-2.5 text-xs font-bold text-white hover:bg-cyan-500 transition-all shadow-lg shadow-cyan-950/50"
-            >
-              <Play className="h-3.5 w-3.5 fill-current" />
-              <span>รัน Pipeline 5 Agents อัตโนมัติ</span>
-            </button>
+            {selectedSquad === 'executive' ? (
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setIsPipelineModalOpen(true);
+                }}
+                className="flex items-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-600/90 px-4 py-2.5 text-xs font-bold text-white hover:bg-cyan-500 transition-all shadow-lg shadow-cyan-950/50"
+              >
+                <Play className="h-3.5 w-3.5 fill-current" />
+                <span>รัน Pipeline 5 Agents อัตโนมัติ</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setIsDelegatorModalOpen(true);
+                }}
+                className="flex items-center gap-2 rounded-xl border border-violet-500/40 bg-violet-600/90 px-4 py-2.5 text-xs font-bold text-white hover:bg-violet-500 transition-all shadow-lg shadow-violet-950/50"
+              >
+                <Workflow className="h-3.5 w-3.5" />
+                <span>กระจายงานเขียนโค้ดตามบริบททีม</span>
+              </button>
+            )}
 
             <button
               onClick={() => handleOpenChatForAgent(activeAgent.id)}
@@ -218,49 +244,106 @@ export function AgentsSquadView({ onCopyPrompt, onShowToast }) {
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="mt-6 pt-5 border-t border-slate-800/80 flex items-center gap-2 text-xs">
-          <button
-            onClick={() => {
-              playClickSound();
-              setActiveTab('squad');
-            }}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 font-semibold transition-all border ${
-              activeTab === 'squad'
-                ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400 shadow-sm'
-                : 'border-transparent text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-            }`}
-          >
-            <Layers className="h-4 w-4" />
-            <span>ภาพรวม & คำสั่งหลัก (Overview & Prompts)</span>
-          </button>
+        {/* Squad Selection Switcher Bar */}
+        <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-2 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => {
+                playClickSound();
+                setSelectedSquad('executive');
+              }}
+              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${
+                selectedSquad === 'executive'
+                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>🏢 ทีมบริหารธุรกิจ (Executive Squad - 5 AI)</span>
+            </button>
 
-          <button
-            onClick={() => {
-              playClickSound();
-              setActiveTab('vault');
-            }}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 font-semibold transition-all border ${
-              activeTab === 'vault'
-                ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400 shadow-sm'
-                : 'border-transparent text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-            }`}
-          >
-            <FolderLock className="h-4 w-4" />
-            <span>คลังเอกสาร & สเปก (Knowledge Vault)</span>
-            <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-mono text-cyan-300 border border-slate-700">
-              {vaultCount}
-            </span>
-          </button>
+            <button
+              onClick={() => {
+                playClickSound();
+                setSelectedSquad('coding');
+              }}
+              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${
+                selectedSquad === 'coding'
+                  ? 'bg-violet-500/20 text-violet-400 border border-violet-500/40 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Code className="h-3.5 w-3.5" />
+              <span>💻 ทีมวิศวกรเขียนโค้ด (Coding Squad - 5 AI)</span>
+            </button>
+          </div>
+
+          {/* Navigation Tabs */}
+          <div className="flex items-center gap-2 text-xs">
+            <button
+              onClick={() => {
+                playClickSound();
+                setActiveTab('squad');
+              }}
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 font-semibold transition-all border ${
+                activeTab === 'squad'
+                  ? 'border-slate-700 bg-slate-800 text-white shadow-sm'
+                  : 'border-transparent text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+              }`}
+            >
+              <Cpu className="h-3.5 w-3.5" />
+              <span>ภาพรวมทีม ({currentSquadList.length} Agents)</span>
+            </button>
+
+            <button
+              onClick={() => {
+                playClickSound();
+                setActiveTab('vault');
+              }}
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 font-semibold transition-all border ${
+                activeTab === 'vault'
+                  ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400 shadow-sm'
+                  : 'border-transparent text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+              }`}
+            >
+              <FolderLock className="h-3.5 w-3.5" />
+              <span>Knowledge Vault</span>
+              <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-mono text-cyan-300 border border-slate-700">
+                {vaultCount}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Tab: Squad Overview */}
       {activeTab === 'squad' && (
         <div className="space-y-6">
+          {/* Squad Specific Banner Notice */}
+          {selectedSquad === 'coding' && (
+            <div className="rounded-2xl border border-violet-500/30 bg-violet-950/20 p-4 text-xs text-slate-300 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Workflow className="h-4 w-4 text-violet-400 shrink-0" />
+                <span>
+                  <strong>Coding Squad Mode:</strong> ทีมเขียนโค้ดแบ่งงานกันตามบริบท (Tech Lead ออกแบบ ➔ Frontend ทำ UI ➔ Backend ทำ API ➔ DevOps ทำ CI/CD ➔ QA ทดสอบ E2E)
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  playClickSound();
+                  setIsDelegatorModalOpen(true);
+                }}
+                className="hidden sm:inline-flex items-center gap-1 font-bold text-violet-300 hover:text-white"
+              >
+                <span>เปิดระบบกระจายงาน</span>
+                <ArrowRight className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+
           {/* Agents Grid */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-            {AGENTS.map((agent) => {
+            {currentSquadList.map((agent) => {
               const IconComponent = agent.icon;
               const isSelected = activeAgent.id === agent.id;
               return (
@@ -392,7 +475,7 @@ export function AgentsSquadView({ onCopyPrompt, onShowToast }) {
         <KnowledgeVaultView onShowToast={onShowToast} />
       )}
 
-      {/* Feature 1: Agent Pipeline Modal */}
+      {/* Feature 1: Agent Pipeline Modal (Business) */}
       <AgentPipelineModal
         isOpen={isPipelineModalOpen}
         onClose={() => setIsPipelineModalOpen(false)}
@@ -400,7 +483,15 @@ export function AgentsSquadView({ onCopyPrompt, onShowToast }) {
         onSaveToVault={handleSaveToVault}
       />
 
-      {/* Feature 3: Agent Live Chat Modal */}
+      {/* Feature 2: Coding Task Delegator Modal (Engineering Context) */}
+      <CodingTaskDelegatorModal
+        isOpen={isDelegatorModalOpen}
+        onClose={() => setIsDelegatorModalOpen(false)}
+        onShowToast={onShowToast}
+        onSaveToVault={handleSaveToVault}
+      />
+
+      {/* Feature 3: Agent Live Chat Modal (All 10 Agents) */}
       <AgentLiveChatModal
         isOpen={isLiveChatModalOpen}
         onClose={() => setIsLiveChatModalOpen(false)}

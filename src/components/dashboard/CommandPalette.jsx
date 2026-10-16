@@ -100,7 +100,7 @@ export function CommandPalette({
     },
     {
       id: 'view-agents',
-      title: 'สลับไปยังหน้าจอ 5 AI Executive Squad (SaaS & Digital Products)',
+      title: 'สลับไปยังหน้าจอ AI Squads (10 Agents: บริหารธุรกิจ & ทีมเขียนโค้ด)',
       category: 'มุมมองหน้าจอ',
       icon: <Bot className="h-4 w-4 text-emerald-400" />,
       action: () => { onSelectView('agents'); onClose(); }

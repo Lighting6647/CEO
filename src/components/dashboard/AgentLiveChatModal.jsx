@@ -13,13 +13,21 @@ import {
   Bot,
   User,
   Trash2,
+  Code,
+  Layout,
+  Database,
+  CloudCog,
+  ShieldAlert,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { playClickSound, playSuccessSound } from '../../utils/soundEffects';
 
-const AGENT_PERSONAS = [
+const ALL_AGENT_PERSONAS = [
+  // Executive Squad
   {
     id: 'product_architect',
+    squad: 'executive',
+    squadLabel: 'Executive',
     name: 'Product Architect & UX Strategist',
     thaiTitle: 'สถาปัตยกรรมผลิตภัณฑ์ & UX',
     icon: Layers,
@@ -35,6 +43,8 @@ const AGENT_PERSONAS = [
   },
   {
     id: 'doc_operations_manager',
+    squad: 'executive',
+    squadLabel: 'Executive',
     name: 'Operations & Document Architect',
     thaiTitle: 'เอกสารสัญญา & ปฏิบัติการภายใน',
     icon: FileText,
@@ -50,6 +60,8 @@ const AGENT_PERSONAS = [
   },
   {
     id: 'brand_growth_hacker',
+    squad: 'executive',
+    squadLabel: 'Executive',
     name: 'Brand Awareness & Growth Hacker',
     thaiTitle: 'สร้างการรับรู้แบรนด์ & ไวรัลคอนเทนต์',
     icon: Megaphone,
@@ -65,6 +77,8 @@ const AGENT_PERSONAS = [
   },
   {
     id: 'sales_conversion_copywriter',
+    squad: 'executive',
+    squadLabel: 'Executive',
     name: 'Sales Funnel & Conversion Copywriter',
     thaiTitle: 'เร่งยอดขาย & ปิดการขายหน้าเว็บ',
     icon: TrendingUp,
@@ -80,6 +94,8 @@ const AGENT_PERSONAS = [
   },
   {
     id: 'customer_retention_specialist',
+    squad: 'executive',
+    squadLabel: 'Executive',
     name: 'Customer Experience & Retention Specialist',
     thaiTitle: 'ดูแลลูกค้าหลังซื้อ & ผลักดันการซื้อซ้ำ',
     icon: HeartHandshake,
@@ -93,20 +109,108 @@ const AGENT_PERSONAS = [
       'ออกแบบระบบ Referral ชวนเพื่อนสมัครเพื่อรับสิทธิ์ Pro ฟรี',
     ],
   },
+
+  // Coding Squad
+  {
+    id: 'tech_lead_architect',
+    squad: 'coding',
+    squadLabel: 'Engineering',
+    name: 'Tech Lead & System Architect',
+    thaiTitle: 'หัวหน้าสถาปัตยกรรม & ออกแบบระบบ',
+    icon: Code,
+    color: 'text-violet-400 bg-violet-950/40 border-violet-500/40',
+    accentColor: 'violet',
+    welcomeMessage:
+      'สวัสดีครับ ผมคือ Tech Lead & System Architect ประจำทีมเขียนโค้ด พร้อมช่วยวิเคราะห์สเปก ออกแบบ Database Schema, กำหนด API Contracts และแตกงานแจกจ่ายให้ทีม Frontend, Backend, DevOps, QA ตามบริบทครับ',
+    suggestedPrompts: [
+      'ช่วยแตกงานฟีเจอร์เป็น 4 Tickets กระจายให้ทีมเขียนโค้ด',
+      'ช่วยออกแบบ PostgreSQL DDL Schema พร้อม Index และ FK',
+      'ออกแบบ REST API Contract Specification รูปแบบ JSON',
+    ],
+  },
+  {
+    id: 'frontend_engineer',
+    squad: 'coding',
+    squadLabel: 'Engineering',
+    name: 'Senior Frontend & UI Engineer',
+    thaiTitle: 'วิศวกรส่วนต่อประสาน & UI/UX Specialist',
+    icon: Layout,
+    color: 'text-cyan-400 bg-cyan-950/40 border-cyan-500/40',
+    accentColor: 'cyan',
+    welcomeMessage:
+      'สวัสดีครับ ผมคือ Senior Frontend Engineer พร้อมเขียนโค้ด React 19, TypeScript และ Tailwind CSS ตามมาตรฐาน Zero AI Slop มี State Management, Loading Skeletons และ Responsive ครบ 3 Breakpoints ครับ',
+    suggestedPrompts: [
+      'ช่วยเขียน React 19 Component พร้อม Tailwind CSS',
+      'เขียน Loading Skeleton State และ Toast Feedback',
+      'ตรวจสอบและปรับแต่ง Responsive ให้รองรับ Mobile (375px)',
+    ],
+  },
+  {
+    id: 'backend_engineer',
+    squad: 'coding',
+    squadLabel: 'Engineering',
+    name: 'Senior Backend & Database Engineer',
+    thaiTitle: 'วิศวกรระบบแบ็กเอนด์ & ฐานข้อมูล',
+    icon: Database,
+    color: 'text-emerald-400 bg-emerald-950/40 border-emerald-500/40',
+    accentColor: 'emerald',
+    welcomeMessage:
+      'สวัสดีครับ ผมคือ Senior Backend Engineer พร้อมพัฒนา Serverless APIs (Netlify Functions), จัดการ Database Queries, การตรวจสอบข้อมูลด้วย Zod, ระบบ Auth (JWT/OAuth) และ Rate Limiting ครับ',
+    suggestedPrompts: [
+      'ช่วยเขียน Netlify Serverless API พร้อม Zod Validation',
+      'เขียนคำสั่ง SQL Migration และ Indexing เพิ่มความเร็ว',
+      'เขียน Middleware ตรวจสอบสิทธิ์ JWT และ Rate Limiting',
+    ],
+  },
+  {
+    id: 'devops_infra_engineer',
+    squad: 'coding',
+    squadLabel: 'Engineering',
+    name: 'Lead DevOps & Cloud Engineer',
+    thaiTitle: 'วิศวกรโครงสร้างพื้นฐาน & ระบบส่งมอบ',
+    icon: CloudCog,
+    color: 'text-amber-400 bg-amber-950/40 border-amber-500/40',
+    accentColor: 'amber',
+    welcomeMessage:
+      'สวัสดีครับ ผมคือ Lead DevOps Engineer พร้อมเขียนสคริปต์ GitHub Actions CI/CD Pipeline, จัดการ Docker Multi-stage, ติดตั้ง Git Quality Hooks และตั้งค่า Environment Secrets ให้ปลอดภัย 100% ครับ',
+    suggestedPrompts: [
+      'ช่วยเขียน GitHub Actions Workflow (.github/workflows/ci.yml)',
+      'สร้าง Dockerfile Multi-stage ขนาดกะทัดรัดและปลอดภัย',
+      'เขียน Git Pre-push Hook ตรวจสอบ Lint และ Build ก่อน Push',
+    ],
+  },
+  {
+    id: 'qa_security_engineer',
+    squad: 'coding',
+    squadLabel: 'Engineering',
+    name: 'QA Automation & Security Auditor',
+    thaiTitle: 'วิศวกรทดสอบอัตโนมัติ & ความปลอดภัย',
+    icon: ShieldAlert,
+    color: 'text-rose-400 bg-rose-950/40 border-rose-500/40',
+    accentColor: 'rose',
+    welcomeMessage:
+      'สวัสดีครับ ผมคือ QA & Security Engineer ทำหน้าที่ตรวจสอบช่องโหว่ OWASP Top 10, ป้องกันข้อผิดพลาดก่อนขึ้น Production และเขียน Automated Test Suites ด้วย Playwright E2E และ Vitest ครับ',
+    suggestedPrompts: [
+      'ช่วยเขียน Playwright E2E Test Suite สำหรับทดสอบ User Flow',
+      'ตรวจสอบช่องโหว่ความปลอดภัย OWASP Top 10 ในโค้ด',
+      'ออกแบบ Test Scenarios ทดสอบ Edge Cases และ Network Drops',
+    ],
+  },
 ];
 
 export function AgentLiveChatModal({ isOpen, onClose, initialAgentId, onShowToast, onSaveToVault }) {
   const [selectedAgentId, setSelectedAgentId] = useState(initialAgentId || 'product_architect');
+  const [squadFilter, setSquadFilter] = useState('ALL'); // 'ALL' | 'executive' | 'coding'
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
 
-  const activeAgent = AGENT_PERSONAS.find((a) => a.id === selectedAgentId) || AGENT_PERSONAS[0];
+  const activeAgent = ALL_AGENT_PERSONAS.find((a) => a.id === selectedAgentId) || ALL_AGENT_PERSONAS[0];
 
   // Chat history per agent
   const [chatHistories, setChatHistories] = useState(() => {
     const initial = {};
-    AGENT_PERSONAS.forEach((ag) => {
+    ALL_AGENT_PERSONAS.forEach((ag) => {
       initial[ag.id] = [
         {
           sender: 'agent',
@@ -130,6 +234,11 @@ export function AgentLiveChatModal({ isOpen, onClose, initialAgentId, onShowToas
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistories, selectedAgentId, isTyping]);
 
+  const filteredPersonas = ALL_AGENT_PERSONAS.filter((p) => {
+    if (squadFilter === 'ALL') return true;
+    return p.squad === squadFilter;
+  });
+
   const currentMessages = chatHistories[selectedAgentId] || [];
 
   const handleSendMessage = (textToSend) => {
@@ -151,22 +260,31 @@ export function AgentLiveChatModal({ isOpen, onClose, initialAgentId, onShowToas
     setInputMessage('');
     setIsTyping(true);
 
-    // Simulate Agent intelligent response
     setTimeout(() => {
       setIsTyping(false);
       playSuccessSound();
 
       let reply = '';
-      if (selectedAgentId === 'product_architect') {
-        reply = `### แผนสเปกโครงสร้างผลิตภัณฑ์ (Product Architecture Spec)\n\nจากคำขอของคุณ: **"${text}"** ผมได้สังเคราะห์ข้อกำหนดระบบออกมาดังนี้:\n\n1. **Core Architecture Blueprint:**\n   - ใช้ระบบ Modularity แยก API Gateway, Authentication และ State Management\n   - เน้น Time-to-First-Action น้อยกว่า 60 วินาทีหลังเข้าใช้งาน\n\n2. **MoSCoW Prioritization:**\n   - **Must Have:** Workflow Builder, Input Sanitizer, Single-Click Run\n   - **Should Have:** Preset Library, Real-time Validation, Team Sync\n   - **Could Have:** Webhook Integration, Custom CSS Branding\n\n3. **UX Journey Recommendation:**\n   - ลดขั้นตอนการกรอกข้อมูลเหลือ 1 หน้าฟอร์มแบบ Progressive Disclosure`;
+      if (selectedAgentId === 'tech_lead_architect') {
+        reply = `### บทวิเคราะห์สถาปัตยกรรม & แผนกระจายงาน (Tech Lead Delegation)\n\nเกี่ยวกับ: **"${text}"** ผมวางโครงสร้างระบบและแจกจ่ายงานให้ทีมวิศวกรดังนี้ครับ:\n\n1. **System Architecture Overview:**\n   - ใช้ Client-Serverless Architecture โดยแยก Frontend SPA ออกจาก API Endpoints\n   - Database ใช้ PostgreSQL เก็บ Entity หลัก พร้อม UUID v4 Primary Keys\n\n2. **Task Delegation Breakdown (4 Tickets):**\n   - **Frontend:** รับผิดชอบหน้า UI Component, State Management และ Error Boundary\n   - **Backend:** สร้าง Netlify Serverless API Route พร้อมตรวจสอบข้อมูลผ่าน Zod Schema\n   - **DevOps:** ผูก GitHub Actions ตรวจสอบ Linter และ Build ก่อน Deploy\n   - **QA & Security:** เขียน Playwright E2E Test ครอบคลุมทั้งกรณีสำเร็จและล้มเหลว`;
+      } else if (selectedAgentId === 'frontend_engineer') {
+        reply = `### ข้อเสนอโค้ดและส่วนต่อประสาน UI (Frontend Component)\n\nสำหรับโจทย์: **"${text}"** นี่คือแนวทางการเขียนโค้ดตามมาตรฐาน Anti-AI Slop:\n\n\`\`\`jsx\nimport { useState } from 'react';\n\nexport function FeatureComponent({ onSubmit }) {\n  const [loading, setLoading] = useState(false);\n  // ใช้ Slate-900 โทนสี neutral ห้ามใช้ gradient ม่วงฟ้าสำเร็จรูป\n  return (\n    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">\n      <h3 className="text-base font-bold text-white mb-2">หน้าจอใช้งานจริง</h3>\n      <p className="text-xs text-slate-400 mb-4">รองรับ Responsive 375px - 1280px</p>\n      <button\n        disabled={loading}\n        className="rounded-xl bg-cyan-600 px-4 py-2 text-xs font-semibold text-white hover:bg-cyan-500 transition-all"\n      >\n        {loading ? 'กำลังประมวลผล...' : 'ยืนยันการทำงาน'}\n      </button>\n    </div>\n  );\n}\n\`\`\``;
+      } else if (selectedAgentId === 'backend_engineer') {
+        reply = `### โค้ดระบบ API & Database Logic (Backend Serverless)\n\nสำหรับ: **"${text}"** นี่คือโค้ด Serverless Function พร้อมระบบ Validation รัดกุม:\n\n\`\`\`javascript\nimport { z } from 'zod';\n\nconst InputSchema = z.object({\n  title: z.string().min(1, 'ต้องระบุชื่อรายการ'),\n  amount: z.number().positive(),\n});\n\nexport async function handler(event) {\n  if (event.httpMethod !== 'POST') {\n    return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };\n  }\n  try {\n    const payload = InputSchema.parse(JSON.parse(event.body || '{}'));\n    // ประมวลผลและบันทึกลง Database\n    return {\n      statusCode: 200,\n      body: JSON.stringify({ success: true, data: payload }),\n    };\n  } catch (err) {\n    return { statusCode: 400, body: JSON.stringify({ error: err.message }) };\n  }\n}\n\`\`\``;
+      } else if (selectedAgentId === 'devops_infra_engineer') {
+        reply = `### โค้ด CI/CD Pipeline & Cloud Deployment (DevOps Automation)\n\nสำหรับ: **"${text}"** นี่คือไฟล์ GitHub Actions Workflow ที่จะช่วยเป็น Gatekeeper:\n\n\`\`\`yaml\nname: Quality CI Pipeline\non: [push, pull_request]\njobs:\n  audit-and-deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 20 }\n      - run: npm ci\n      - run: npm run lint\n      - run: npm run build\n\`\`\``;
+      } else if (selectedAgentId === 'qa_security_engineer') {
+        reply = `### ชุดทดสอบอัตโนมัติ & ตรวจสอบความปลอดภัย (QA & OWASP Audit)\n\nสำหรับ: **"${text}"** นี่คือ Playwright E2E Test Suite สำหรับดักจับบั๊ก:\n\n\`\`\`javascript\nimport { test, expect } from '@playwright/test';\n\ntest('E2E Flow: ตรวจสอบความสมบูรณ์ของฟังก์ชันและระบบ Error Handling', async ({ page }) => {\n  await page.goto('/');\n  await expect(page.locator('#root')).toBeVisible();\n  // ตรวจสอบว่าไม่มี Console Error หลุดรอด\n  page.on('console', msg => {\n    if (msg.type() === 'error') throw new Error('Console error leak: ' + msg.text());\n  });\n});\n\`\`\``;
+      } else if (selectedAgentId === 'product_architect') {
+        reply = `### แผนสเปกโครงสร้างผลิตภัณฑ์ (Product Architecture Spec)\n\nจากคำขอของคุณ: **"${text}"** ผมได้สังเคราะห์ข้อกำหนดระบบออกมาดังนี้:\n\n1. **Core Architecture Blueprint:**\n   - ใช้ระบบ Modularity แยก API Gateway, Authentication และ State Management\n   - เน้น Time-to-First-Action น้อยกว่า 60 วินาทีหลังเข้าใช้งาน\n\n2. **MoSCoW Prioritization:**\n   - **Must Have:** Workflow Builder, Input Sanitizer, Single-Click Run\n   - **Should Have:** Preset Library, Real-time Validation, Team Sync`;
       } else if (selectedAgentId === 'doc_operations_manager') {
-        reply = `### แนวทางเอกสารข้อกำหนด & นโยบายความปลอดภัย (Legal & Operations Protocol)\n\nเกี่ยวกับ: **"${text}"** ขอแนะนำข้อกำหนดที่ต้องระบุให้ชัดเจน:\n\n1. **PDPA Data Classification:**\n   - จัดหมวดหมู่ข้อมูลทั่วไป (ชื่อ, อีเมล) และข้อมูลธุรกรรม (Transaction ID) ให้แยกจากกัน\n   - บันทึก Data Audit Log ทุกครั้งที่มีการประมวลผล\n\n2. **ข้อกำหนดการจำกัดความรับผิด (Limitation of Liability):**\n   - ระบุขอบเขตการรับประกันความพร้อมใช้งาน (99.5% Uptime SLA)\n   - กำหนดขั้นตอนการแจ้งปัญหา (Incident Escalation Matrix) ภายใน 4 ชั่วโมง`;
+        reply = `### แนวทางเอกสารข้อกำหนด & นโยบายความปลอดภัย (Legal & Operations Protocol)\n\nเกี่ยวกับ: **"${text}"** ขอแนะนำข้อกำหนดที่ต้องระบุให้ชัดเจน:\n\n1. **PDPA Data Classification:**\n   - จัดหมวดหมู่ข้อมูลทั่วไป และข้อมูลธุรกรรมให้แยกจากกัน\n2. **SLA & Uptime Policy:**\n   - ระบุขอบเขตการรับประกันความพร้อมใช้งาน (99.5% Uptime SLA)`;
       } else if (selectedAgentId === 'brand_growth_hacker') {
-        reply = `### แผนกลยุทธ์สร้างการรับรู้แบรนด์ (Growth & Content Strategy)\n\nสำหรับหัวข้อ: **"${text}"** นี่คือกลยุทธ์ 3 เสาหลักที่ใช้เปิดตัวได้ทันที:\n\n1. **High-Impact UVP:**\n   - "ย่นระยะเวลาทำงานซ้ำซ้อนจาก 3 วัน ให้เสร็จสมบูรณ์ใน 15 นาที ด้วยระบบผู้บริหาร AI ส่วนตัว"\n\n2. **Lead Magnet Strategy:**\n   - ทำไฟล์ Checklist 1 หน้าแจกฟรี ดึงดูดผู้สนใจกรอกอีเมลก่อนเปิดตัวสินค้า\n\n3. **Content Angle:**\n   - เน้นทำคลิปแสดง Pain Point ก่อนใช้ และผลลัพธ์ว้าวหลังใช้งาน (Before / After Transformation)`;
+        reply = `### แผนกลยุทธ์สร้างการรับรู้แบรนด์ (Growth & Content Strategy)\n\nสำหรับหัวข้อ: **"${text}"** นี่คือกลยุทธ์ 3 เสาหลัก:\n\n1. **High-Impact UVP:** ดึงคุณค่าที่แท้จริงออกมาใน 1 ประโยค\n2. **Lead Magnet Strategy:** ทำไฟล์ Checklist 1 หน้าแจกฟรี\n3. **30-Day Content Pillars:** เน้นแก้ปัญหาลูกค้าในสัปดาห์แรก`;
       } else if (selectedAgentId === 'sales_conversion_copywriter') {
-        reply = `### โครงสร้างคำขายหน้า Sale Page (Direct-Response Blueprint)\n\nสำหรับ: **"${text}"** ผมร่างโครงสร้างปิดการขายให้ดังนี้ครับ:\n\n1. **Headline หยุดนิ้ว:**\n   - *"หยุดทิ้งโอกาสและเวลาไปกับงานหลังบ้าน! พลิกไอเดียให้กลายเป็นระบบสร้างรายได้ที่ทำงานแทนคุณ 24 ชม."*\n\n2. **ตารางราคา 3 ระดับ (Value Stacking):**\n   - **Starter Tier (฿990):** เหมาะกับผู้เริ่มต้น ฟังก์ชันพื้นฐานครบถ้วน\n   - **Pro Tier (฿2,490 - แนะนำ):** คุ้มค่าที่สุด ปลดล็อกทุกฟังก์ชัน + โบนัสพิเศษ\n   - **Lifetime Access (฿5,900):** ซื้อขาดตลอดชีพ จำนวนจำกัด 50 ท่านแรก\n\n3. **Zero-Risk Guarantee:**\n   - รับประกันคืนเงิน 100% ใน 14 วันหากไม่เห็นผลลัพธ์ชัดเจน`;
+        reply = `### โครงสร้างคำขายหน้า Sale Page (Direct-Response Blueprint)\n\nสำหรับ: **"${text}"** ผมร่างโครงสร้างปิดการขายให้ดังนี้ครับ:\n\n1. **Headline หยุดนิ้ว:** เน้นผลลัพธ์ที่ลูกค้าต้องการทันที\n2. **ตารางราคา 3 ระดับ:** Starter / Pro (แนะนำ) / Lifetime\n3. **Zero-Risk Guarantee:** รับประกันคืนเงิน 100% ใน 14 วัน`;
       } else {
-        reply = `### แผน Onboarding & การดูแลลูกค้า (Customer Retention Playbook)\n\nสำหรับโจทย์: **"${text}"** คำแนะนำเพื่อสร้างความประทับใจทันที:\n\n1. **Fast Aha! Moment (ภายใน 3 นาที):**\n   - ทันทีที่ชำระเงิน นำผู้ใช้เข้าสู่หน้า Dashboard พร้อมพรีโหลดเทมเพลตตัวอย่างให้กดทดสอบได้ทันที 1 คลิก\n\n2. **ซีรีส์อีเมลต้อนรับ 5 วัน:**\n   - Day 1: เคล็ดลับทางลัดสร้างผลงานแรก\n   - Day 2: แนะนำ 3 ฟังก์ชันลับที่ผู้ใช้ 90% ชอบมากที่สุด\n   - Day 4: Case Study ความสำเร็จของสมาชิกในคอมมูนิตี้\n\n3. **Referral Reward:**\n   - ให้ส่วนลดหรือเพิ่มโควตา Pro ฟรีเมื่อชวนเพื่อนร่วมงานมาใช้งาน`;
+        reply = `### แผน Onboarding & การดูแลลูกค้า (Customer Retention Playbook)\n\nสำหรับโจทย์: **"${text}"** คำแนะนำเพื่อสร้างความประทับใจ:\n\n1. **Fast Aha! Moment:** ให้ผู้ใช้ได้ผลลัพธ์แรกภายใน 3 นาที\n2. **ซีรีส์อีเมลต้อนรับ 5 วัน:** แนะนำฟังก์ชันทีละสเต็ป\n3. **Referral Reward:** แนะนำเพื่อนรับสิทธิ์ใช้งานเพิ่ม`;
       }
 
       const agentMsg = {
@@ -200,7 +318,7 @@ export function AgentLiveChatModal({ isOpen, onClose, initialAgentId, onShowToas
           agentName: activeAgent.name,
           title: `คำปรึกษาจาก ${activeAgent.thaiTitle}`,
           thaiTitle: `บทสรุปกลยุทธ์: ${activeAgent.thaiTitle}`,
-          category: activeAgent.name.split('&')[0].trim(),
+          category: activeAgent.squad === 'coding' ? 'Engineering Code' : 'Executive Docs',
           version: '1.0.0',
           status: 'From Live Chat',
           createdAt: new Date().toLocaleDateString('th-TH', {
@@ -210,7 +328,7 @@ export function AgentLiveChatModal({ isOpen, onClose, initialAgentId, onShowToas
             hour: '2-digit',
             minute: '2-digit',
           }),
-          tags: ['LiveChat', activeAgent.accentColor],
+          tags: ['LiveChat', activeAgent.squad],
           summary: text.slice(0, 160) + '...',
           content: text,
         },
@@ -236,11 +354,46 @@ export function AgentLiveChatModal({ isOpen, onClose, initialAgentId, onShowToas
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Live Chat with AI Executive Squad" maxWidth="max-w-4xl">
-      <div className="flex flex-col h-[70vh]">
+    <Modal isOpen={isOpen} onClose={onClose} title="Live Chat with AI Squads (10 Agents)" maxWidth="max-w-4xl">
+      <div className="flex flex-col h-[72vh]">
+        {/* Squad Category Filter Pills */}
+        <div className="flex items-center gap-1.5 pb-2 text-xs shrink-0">
+          <span className="text-[11px] font-semibold text-slate-400 mr-1">ทีม:</span>
+          <button
+            onClick={() => { playClickSound(); setSquadFilter('ALL'); }}
+            className={`rounded-lg px-2.5 py-1 font-semibold transition-all ${
+              squadFilter === 'ALL'
+                ? 'bg-slate-700 text-white border border-slate-600'
+                : 'text-slate-400 hover:bg-slate-800'
+            }`}
+          >
+            ทั้งหมด (10 Agents)
+          </button>
+          <button
+            onClick={() => { playClickSound(); setSquadFilter('executive'); }}
+            className={`rounded-lg px-2.5 py-1 font-semibold transition-all ${
+              squadFilter === 'executive'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                : 'text-slate-400 hover:bg-slate-800'
+            }`}
+          >
+            🏢 ทีมบริหารธุรกิจ (5 ตัว)
+          </button>
+          <button
+            onClick={() => { playClickSound(); setSquadFilter('coding'); }}
+            className={`rounded-lg px-2.5 py-1 font-semibold transition-all ${
+              squadFilter === 'coding'
+                ? 'bg-violet-500/20 text-violet-300 border border-violet-500/40'
+                : 'text-slate-400 hover:bg-slate-800'
+            }`}
+          >
+            💻 ทีมเขียนโค้ด (5 ตัว)
+          </button>
+        </div>
+
         {/* Agent Switcher Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-3 border-b border-slate-800 text-xs shrink-0">
-          {AGENT_PERSONAS.map((agent) => {
+          {filteredPersonas.map((agent) => {
             const isSelected = agent.id === selectedAgentId;
             const IconComp = agent.icon;
             return (
@@ -268,7 +421,7 @@ export function AgentLiveChatModal({ isOpen, onClose, initialAgentId, onShowToas
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-bold text-white">{activeAgent.name}</span>
-            <span className="text-slate-400">· พร้อมให้คำปรึกษาและลงมือเขียน</span>
+            <span className="text-slate-400">· พร้อมให้คำปรึกษาและลงมือทำ</span>
           </div>
           <button
             onClick={handleClearChat}

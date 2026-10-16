@@ -1,0 +1,105 @@
+import {
+  Code,
+  Layout,
+  Database,
+  CloudCog,
+  ShieldAlert,
+} from 'lucide-react';
+
+export const CODING_AGENTS = [
+  {
+    id: 'tech_lead_architect',
+    number: '01',
+    name: 'Tech Lead & System Architect',
+    thaiTitle: 'หัวหน้าสถาปัตยกรรม & ออกแบบระบบ',
+    role: 'Chief Technology Officer / Principal Architect',
+    color: 'border-violet-500/40 bg-violet-950/20 text-violet-400',
+    badgeColor: 'border-violet-500/30 bg-violet-500/10 text-violet-300',
+    icon: Code,
+    description: 'แปลง PRD เป็นสถาปัตยกรรมระบบ ออกแบบ DB Schema, API Contracts และกระจายงาน (Task Breakdown) ให้ทีมเขียนโค้ดตามบริบท',
+    kpi: 'Clean Architecture · Zero Tech Debt · 100% Modularity',
+    promptTemplate:
+      'มีฟังก์ชันใหม่: [ระบุชื่อฟังก์ชัน] กรุณาวิเคราะห์สถาปัตยกรรมระบบ และแตกงานเป็น 4 Tickets กระจายงานให้ทีมเขียนโค้ดตามบริบท: Frontend, Backend, DevOps, และ QA พร้อม Acceptance Criteria ที่ชัดเจน',
+    quickActions: [
+      { label: 'แตกงานกระจายให้ทีม (Breakdown)', prompt: 'ช่วยวิเคราะห์ฟีเจอร์และแตกงานเป็น 4 Tickets ให้ Frontend, Backend, DevOps, QA' },
+      { label: 'ออกแบบ Database Schema', prompt: 'ช่วยออกแบบ PostgreSQL DDL Schema พร้อม Foreign Keys และ Indexes ที่เหมาะสม' },
+      { label: 'กำหนด API Contract สเปก', prompt: 'ช่วยเขียน API Contract Specification ในรูปแบบ JSON สำหรับฟังก์ชันนี้' },
+    ],
+  },
+  {
+    id: 'frontend_engineer',
+    number: '02',
+    name: 'Senior Frontend & UI Engineer',
+    thaiTitle: 'วิศวกรส่วนต่อประสาน & UI/UX Specialist',
+    role: 'Senior Frontend Engineer (React 19 / TS)',
+    color: 'border-cyan-500/40 bg-cyan-950/20 text-cyan-400',
+    badgeColor: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300',
+    icon: Layout,
+    description: 'เขียนโค้ด UI Components (React 19, TypeScript, Tailwind CSS), ระบบ State, Micro-interactions ตามมาตรฐาน Anti-AI Slop',
+    kpi: 'Responsive 375-1280px · Zero Layout Shift (CLS < 0.1)',
+    promptTemplate:
+      'ช่วยเขียน React 19 Component ด้วย TypeScript และ Tailwind CSS สำหรับ [ระบุชื่อส่วนประกอบ] พร้อม State Management, Loading Skeleton, Toast Notification และรองรับ Responsive ทุกขนาดหน้าจอ',
+    quickActions: [
+      { label: 'เขียน React UI Component', prompt: 'ช่วยเขียน React Component พร้อม State และ Tailwind CSS ตามมาตรฐาน Anti-AI Slop' },
+      { label: 'ทำ Loading Skeleton & Toast', prompt: 'ช่วยเขียน Loading Skeleton State และ Toast Feedback เมื่อบันทึกข้อมูลสำเร็จ' },
+      { label: 'ตรวจสอบ Responsive 3 ขนาด', prompt: 'ช่วยปรับแต่ง Layout ให้รองรับ Mobile (375px), Tablet (768px), และ Desktop (1280px)' },
+    ],
+  },
+  {
+    id: 'backend_engineer',
+    number: '03',
+    name: 'Senior Backend & Database Engineer',
+    thaiTitle: 'วิศวกรระบบแบ็กเอนด์ & ฐานข้อมูล',
+    role: 'Lead Backend Engineer / Database Architect',
+    color: 'border-emerald-500/40 bg-emerald-950/20 text-emerald-400',
+    badgeColor: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+    icon: Database,
+    description: 'พัฒนา Serverless APIs (Netlify/Node.js), จัดการ Database Models, Migrations, Auth (OAuth/JWT), Rate Limiting และ Data Validation',
+    kpi: 'API Latency < 100ms · 100% Data Integrity',
+    promptTemplate:
+      'ช่วยเขียน Serverless / Netlify Function API สำหรับ [ระบุ Endpoint] พร้อม Data Validation ด้วย Zod, ตรวจสอบ JWT Auth, Rate Limiting และ Error Handling ที่ส่ง HTTP Status Code ถูกต้องเสมอ',
+    quickActions: [
+      { label: 'เขียน Serverless REST API', prompt: 'ช่วยเขียน Netlify Function พร้อม Validation Zod และ Error Handling' },
+      { label: 'เขียน Migration & SQL Query', prompt: 'ช่วยเขียน SQL Migration Script และคำสั่ง Indexing เพื่อเพิ่มประสิทธิภาพ' },
+      { label: 'วางระบบ Auth & Rate Limiter', prompt: 'ช่วยเขียน Middleware ตรวจสอบสิทธิ์ JWT Token และจำกัด Rate Limit' },
+    ],
+  },
+  {
+    id: 'devops_infra_engineer',
+    number: '04',
+    name: 'Lead DevOps & Cloud Engineer',
+    thaiTitle: 'วิศวกรโครงสร้างพื้นฐาน & ระบบส่งมอบ',
+    role: 'Lead DevOps / Cloud Infrastructure Architect',
+    color: 'border-amber-500/40 bg-amber-950/20 text-amber-400',
+    badgeColor: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+    icon: CloudCog,
+    description: 'จัดการ GitHub Actions CI/CD, Docker, Git Quality Hooks, Secret Vaults, SSL, Uptime Monitoring และ Disaster Recovery',
+    kpi: 'Zero Downtime Deployments · 100% Automated CI/CD',
+    promptTemplate:
+      'ช่วยเขียน GitHub Actions Workflow (.github/workflows/ci.yml) สำหรับรัน Lint, TypeScript Check, Automated Test Suites และ Deploy ไปยัง Netlify/Cloud อัตโนมัติเมื่อ Merge เข้า Main',
+    quickActions: [
+      { label: 'เขียน GitHub Actions CI/CD', prompt: 'ช่วยเขียน Workflow GitHub Actions สำหรับรัน oxlint, build และ auto-deploy' },
+      { label: 'สร้าง Dockerfile Multi-stage', prompt: 'ช่วยเขียน Dockerfile Multi-stage ขนาดกะทัดรัด พร้อม docker-compose.yml' },
+      { label: 'ติดตั้ง Git Pre-push Hook', prompt: 'ช่วยเขียนสคริปต์ Git Hook สำหรับตรวจสอบ build และ test ก่อนอนุญาตให้ push' },
+    ],
+  },
+  {
+    id: 'qa_security_engineer',
+    number: '05',
+    name: 'QA Automation & Security Auditor',
+    thaiTitle: 'วิศวกรทดสอบอัตโนมัติ & ความปลอดภัย',
+    role: 'QA Lead / Cybersecurity Auditor',
+    color: 'border-rose-500/40 bg-rose-950/20 text-rose-400',
+    badgeColor: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
+    icon: ShieldAlert,
+    description: 'เขียน Automated Test Suites (Vitest / Playwright E2E), ทดสอบ Edge Cases, ตรวจสอบความปลอดภัย OWASP Top 10 และทำหน้าที่เป็น Gatekeeper',
+    kpi: 'Zero Critical Vulnerabilities · 100% Test Pass Rate',
+    promptTemplate:
+      'ช่วยเขียน Playwright E2E Test Suite และ Unit Tests สำหรับ [ระบุฟีเจอร์] ครอบคลุม Happy Path, Invalid Input, Network Error และทำการตรวจสอบช่องโหว่ความปลอดภัย OWASP Top 10',
+    quickActions: [
+      { label: 'เขียน Playwright E2E Test', prompt: 'ช่วยเขียน Playwright E2E Test ครอบคลุมการกรอกฟอร์มและการยืนยันผลลัพธ์' },
+      { label: 'ตรวจความปลอดภัย OWASP Top 10', prompt: 'ช่วยตรวจสอบช่องโหว่ความปลอดภัย XSS, CSRF, Injection และการรั่วไหลของ Secret' },
+      { label: 'จำลอง Edge Cases & Fallback', prompt: 'ช่วยออกแบบ Test Scenarios สำหรับทดสอบกรณีเน็ตหลุดและเซิร์ฟเวอร์ตอบ 500' },
+    ],
+  },
+];

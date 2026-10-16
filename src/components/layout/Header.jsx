@@ -118,7 +118,7 @@ export function Header({
               }`}
             >
               <Bot className="h-3.5 w-3.5 text-emerald-400" />
-              5 AI Squad
+              10 AI Squads
             </button>
           </div>
 

@@ -77,7 +77,10 @@ export function KnowledgeVaultView({ onShowToast }) {
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
-      const matchAgent = selectedAgentFilter === 'ALL' || item.agentId === selectedAgentFilter;
+      const matchAgent =
+        selectedAgentFilter === 'ALL' ||
+        item.agentId === selectedAgentFilter ||
+        (selectedAgentFilter === 'Engineering Code' && (item.category === 'Engineering Code' || item.tags?.includes('Code')));
       const q = searchQuery.toLowerCase();
       const matchQuery =
         item.title.toLowerCase().includes(q) ||
@@ -282,6 +285,16 @@ export function KnowledgeVaultView({ onShowToast }) {
             }`}
           >
             Retention
+          </button>
+          <button
+            onClick={() => { playClickSound(); setSelectedAgentFilter('Engineering Code'); }}
+            className={`rounded-xl px-3 py-1.5 font-semibold transition-all ${
+              selectedAgentFilter === 'Engineering Code'
+                ? 'bg-violet-500/20 text-violet-400 border border-violet-500/40'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            💻 Engineering Code
           </button>
         </div>
 
