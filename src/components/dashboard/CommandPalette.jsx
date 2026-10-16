@@ -51,7 +51,7 @@ export function CommandPalette({
   const systemActions = [
     {
       id: 'audit',
-      title: 'รัน Full QA Audit 12 โปรเจกต์',
+      title: 'รัน Full QA Audit 13 โปรเจกต์',
       category: 'การสั่งการด่วน',
       icon: <ShieldCheck className="h-4 w-4 text-emerald-400" />,
       action: () => { onRunAudit(); onClose(); }

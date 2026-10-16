@@ -82,7 +82,7 @@ export function Header({
                 activeView === 'dashboard' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
             >
-              12 โปรเจกต์
+              13 โปรเจกต์
             </button>
             <button
               onClick={() => setActiveView('environments')}

@@ -112,7 +112,7 @@ export default function App() {
   const handleRunFullAudit = () => {
     setIsAuditing(true);
     playClickSound();
-    showToast('info', 'เริ่มกระบวนการตรวจสอบคุณภาพ', 'กำลังทดสอบ 4 Quality Gates across 12 โปรเจกต์...');
+    showToast('info', 'เริ่มกระบวนการตรวจสอบคุณภาพ', 'กำลังทดสอบ 4 Quality Gates across 13 โปรเจกต์...');
 
     setTimeout(() => {
       setIsAuditing(false);
@@ -126,10 +126,10 @@ export default function App() {
           minute: '2-digit',
         }),
         type: 'Automated QA Audit',
-        title: 'รัน Full QA Audit 12 โปรเจกต์ ผ่านเกณฑ์ 100%',
+        title: 'รัน Full QA Audit 13 โปรเจกต์ ผ่านเกณฑ์ 100%',
         auditor: 'Antigravity CEO Master Agent',
         status: 'success',
-        badge: 'Passed 48/48 Gates',
+        badge: 'Passed 52/52 Gates',
         details: 'ตรวจสอบ Curated Design Tokens, รัน Test Suites ทั้งหมด, ตรวจสอบ Build Pass และความพร้อมส่งมอบ',
       };
 

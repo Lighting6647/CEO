@@ -14,7 +14,8 @@ const targetProjects = [
   'Blueprint\\บัญชี\\accounting-app',
   'Remote',
   'Fitness',
-  'เทรด\\trading-app'
+  'เทรด\\trading-app',
+  'บัตรคอน'
 ];
 
 console.log('🚀 Deploying Antigravity Pre-Commit & Pre-Push Hooks across all subprojects...');

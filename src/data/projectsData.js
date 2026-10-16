@@ -250,10 +250,41 @@ export const INITIAL_PROJECTS = [
       gate4: { status: 'passed', label: 'Recommender', detail: 'Automated weekly PDF reports, Git push pre-validation' }
     },
     metrics: { tests: 'Self-Audited 100%', coverage: '99.0%', responsive: 'Mobile/Tablet/Desktop 100%', linter: '0 errors' }
+  },
+  {
+    id: 'concert-ticket',
+    name: 'ThaiTicket Concert Hub',
+    thName: 'ระบบจองบัตรคอนเสิร์ต & สแกนเนอร์หน้างาน',
+    repo: 'Lighting6647/concert-ticket',
+    path: 'D:\\All Ai\\บัตรคอน',
+    category: 'Operations',
+    score: 'A+',
+    health: 100,
+    syncStatus: 'synced',
+    commit: 'c3a4893',
+    lastAudited: '16 ต.ค. 2569 23:32',
+    summary: 'ระบบจองบัตร PromptPay QR Dynamic, ตรวจสอบสลิปซ้ำด้วย SHA-256, ระบบแอดมิน PIN, LINE OA Webhook, Anti-passback QR Check-in',
+    gates: {
+      gate1: { status: 'passed', label: 'UI/UX Tokens', detail: 'ThaiTicketMajor design tokens (#B40000, #333333, Noto Sans Thai), interactive seat map' },
+      gate2: { status: 'passed', label: 'Autonomous Tests', detail: 'PromptPay CRC-16 Unit Tests & Playwright E2E full journey assertions 100% pass' },
+      gate3: { status: 'passed', label: 'Deployment Gate', detail: 'Node.js 22+ native SQLite DatabaseSync, zero external DB dependencies, GitHub Synced' },
+      gate4: { status: 'passed', label: 'Recommender', detail: 'Real-time seat lock timer, Dynamic ticket pricing, LINE Flex notification' }
+    },
+    metrics: { tests: 'Unit & E2E Passed', coverage: '96.2%', responsive: 'Mobile/Tablet/Desktop', linter: '0 errors' }
   }
 ];
 
 export const INITIAL_AUDIT_LOGS = [
+  {
+    id: 'audit-005',
+    timestamp: '16 ต.ค. 2569 23:32',
+    type: 'Full Sync & Production Gate',
+    title: 'ซิงค์และกำกับคุณภาพโปรเจกต์ บัตรคอน ขึ้น GitHub (Lighting6647/concert-ticket)',
+    auditor: 'Antigravity CEO Director',
+    status: 'success',
+    badge: 'Passed 4 Quality Gates',
+    details: 'รัน PromptPay CRC-16 Unit Tests 5/5 ข้อ และ Playwright E2E Full Journey ผ่าน 100%, ติดตั้ง Pre-Commit/Pre-Push Hooks และ Push ขึ้น main'
+  },
   {
     id: 'audit-004',
     timestamp: '16 ต.ค. 2569 20:45',
