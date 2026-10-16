@@ -13,7 +13,8 @@ import {
   Activity,
   Folder,
   ArrowRight,
-  Database
+  Database,
+  Bot
 } from 'lucide-react';
 
 export function CommandPalette({
@@ -96,6 +97,13 @@ export function CommandPalette({
       category: 'มุมมองหน้าจอ',
       icon: <Terminal className="h-4 w-4 text-indigo-400" />,
       action: () => { onSelectView('logs'); onClose(); }
+    },
+    {
+      id: 'view-agents',
+      title: 'สลับไปยังหน้าจอ 5 AI Executive Squad (SaaS & Digital Products)',
+      category: 'มุมมองหน้าจอ',
+      icon: <Bot className="h-4 w-4 text-emerald-400" />,
+      action: () => { onSelectView('agents'); onClose(); }
     },
     {
       id: 'open-hooks',

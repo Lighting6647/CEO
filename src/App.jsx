@@ -291,6 +291,7 @@ export default function App() {
         {activeView === 'agents' && (
           <div className="mt-8">
             <AgentsSquadView
+              onShowToast={showToast}
               onCopyPrompt={() => {
                 if (isSoundActive) playClickSound();
                 showToast('success', 'คัดลอก Prompt แล้ว', 'นำไปสั่งการ AI Agent เพื่อพัฒนาธุรกิจได้ทันที');
