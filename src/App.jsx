@@ -6,6 +6,8 @@ import { StatCards } from './components/layout/StatCards';
 import { ProjectCard } from './components/dashboard/ProjectCard';
 import { ProjectDetailModal } from './components/dashboard/ProjectDetailModal';
 import { HooksManagerModal } from './components/dashboard/HooksManagerModal';
+import { NotificationModal } from './components/dashboard/NotificationModal';
+import { UptimeMonitorView } from './components/dashboard/UptimeMonitorView';
 import { AuditLogsView } from './components/dashboard/AuditLogsView';
 import { Toast } from './components/ui/Toast';
 import { downloadMarkdownReport, printExecutivePdfReport } from './utils/exportReport';
@@ -13,9 +15,10 @@ import { downloadMarkdownReport, printExecutivePdfReport } from './utils/exportR
 export default function App() {
   const [projects] = useState(INITIAL_PROJECTS);
   const [auditLogs, setAuditLogs] = useState(INITIAL_AUDIT_LOGS);
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'logs'
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'uptime' | 'logs'
   const [selectedProject, setSelectedProject] = useState(null);
   const [isHooksModalOpen, setIsHooksModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -59,14 +62,14 @@ export default function App() {
           month: 'short',
           day: 'numeric',
           hour: '2-digit',
-          minute: '2-digit'
+          minute: '2-digit',
         }),
         type: 'Automated QA Audit',
         title: 'รัน Full QA Audit 12 โปรเจกต์ ผ่านเกณฑ์ 100%',
         auditor: 'Antigravity CEO Master Agent',
         status: 'success',
         badge: 'Passed 48/48 Gates',
-        details: 'ตรวจสอบ Curated Design Tokens, รัน Test Suites ทั้งหมด, ตรวจสอบ Build Pass และความพร้อมส่งมอบ'
+        details: 'ตรวจสอบ Curated Design Tokens, รัน Test Suites ทั้งหมด, ตรวจสอบ Build Pass และความพร้อมส่งมอบ',
       };
 
       setAuditLogs((prev) => [newLog, ...prev]);
@@ -107,6 +110,7 @@ export default function App() {
         onExportMarkdown={handleExportMarkdown}
         onExportPdf={handleExportPdf}
         onOpenHooksModal={() => setIsHooksModalOpen(true)}
+        onOpenNotificationModal={() => setIsNotificationModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -115,7 +119,7 @@ export default function App() {
         <StatCards projects={projects} />
 
         {/* Content Views */}
-        {activeView === 'dashboard' ? (
+        {activeView === 'dashboard' && (
           <div className="mt-8 space-y-6">
             {/* Filter and Search Bar */}
             <div className="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -167,7 +171,15 @@ export default function App() {
               </div>
             )}
           </div>
-        ) : (
+        )}
+
+        {activeView === 'uptime' && (
+          <div className="mt-8">
+            <UptimeMonitorView onShowToast={showToast} />
+          </div>
+        )}
+
+        {activeView === 'logs' && (
           <div className="mt-8">
             <AuditLogsView logs={auditLogs} />
           </div>
@@ -192,6 +204,12 @@ export default function App() {
         isOpen={isHooksModalOpen}
         onClose={() => setIsHooksModalOpen(false)}
         onCopyCommand={() => showToast('success', 'คัดลอกคำสั่งแล้ว', 'นำไปวางและรันใน Terminal เพื่อ Deploy Hooks')}
+      />
+
+      <NotificationModal
+        isOpen={isNotificationModalOpen}
+        onClose={() => setIsNotificationModalOpen(false)}
+        onShowToast={showToast}
       />
 
       <Toast toast={toast} onClose={() => setToast(null)} />

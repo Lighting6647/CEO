@@ -1,0 +1,53 @@
+name: 🛡️ Antigravity Quality Gate CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gate-matrix:
+    name: 4-Pillar Quality Gate & Production Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: 📥 Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --include=dev
+
+      - name: 🔍 Gate 1 & 2: Linter & Static Analysis (Oxlint)
+        run: npm run lint
+
+      - name: 🛡️ Gate 1: Check Anti-AI Slop Banned Patterns
+        run: |
+          echo "Scanning for unapproved sensitive / large binary commits..."
+          ! git diff --name-only origin/main | grep -Eqi "(\.env$|\.mp3$|\.mp4$|\.db$|credentials)"
+
+      - name: 🧪 Gate 2: Automated Tests
+        run: |
+          if npm run | grep -q "test"; then
+            npm test
+          else
+            echo "No test script found; skipping automated unit runner."
+          fi
+
+      - name: 🏗️ Gate 3: Production Build (npm run build)
+        run: npm run build
+
+      - name: 🚀 Gate 3: Smoke Test Web Artifact
+        run: |
+          test -f dist/index.html && echo "✅ Dist bundle mounted with valid root index.html"
