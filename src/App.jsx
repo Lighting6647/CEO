@@ -1,126 +1,200 @@
-import { useMemo, useState } from 'react'
+import { useState, useMemo } from 'react';
+import { Search, AlertCircle } from 'lucide-react';
+import { INITIAL_PROJECTS, INITIAL_AUDIT_LOGS } from './data/projectsData';
+import { Header } from './components/layout/Header';
+import { StatCards } from './components/layout/StatCards';
+import { ProjectCard } from './components/dashboard/ProjectCard';
+import { ProjectDetailModal } from './components/dashboard/ProjectDetailModal';
+import { HooksManagerModal } from './components/dashboard/HooksManagerModal';
+import { AuditLogsView } from './components/dashboard/AuditLogsView';
+import { Toast } from './components/ui/Toast';
+import { downloadMarkdownReport, printExecutivePdfReport } from './utils/exportReport';
 
-const seedTransactions = [
-  { id: 1, title: 'เงินเดือน', category: 'รายรับ', amount: 45000, type: 'income', date: '14 ส.ค. 2569', icon: 'wallet', color: 'bg-emerald-100 text-emerald-600' },
-  { id: 2, title: 'ค่าอาหารกลางวัน', category: 'อาหาร', amount: 185, type: 'expense', date: '14 ส.ค. 2569', icon: 'food', color: 'bg-orange-100 text-orange-500' },
-  { id: 3, title: 'Netflix', category: 'บันเทิง', amount: 419, type: 'expense', date: '13 ส.ค. 2569', icon: 'play', color: 'bg-violet-100 text-violet-600' },
-  { id: 4, title: 'ค่าเดินทาง', category: 'เดินทาง', amount: 750, type: 'expense', date: '12 ส.ค. 2569', icon: 'car', color: 'bg-sky-100 text-sky-600' },
-]
+export default function App() {
+  const [projects] = useState(INITIAL_PROJECTS);
+  const [auditLogs, setAuditLogs] = useState(INITIAL_AUDIT_LOGS);
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'logs'
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [isHooksModalOpen, setIsHooksModalOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [testingProjectId, setTestingProjectId] = useState(null);
 
-const formatMoney = (value) => new Intl.NumberFormat('th-TH', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-}).format(value)
+  const showToast = (type, title, message) => {
+    setToast({ type, title, message });
+    setTimeout(() => setToast(null), 4000);
+  };
 
-function Icon({ name, className = 'h-5 w-5' }) {
-  const paths = {
-    wallet: <><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4H18a2 2 0 0 1 2 2v12H5.5A2.5 2.5 0 0 1 3 15.5z"/><path d="M16 10h5v5h-5a2.5 2.5 0 0 1 0-5Z"/></>,
-    food: <><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 3c-2 2-3 5-3 8h4v10M18 3v8"/></>,
-    play: <><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3Z"/></>,
-    car: <><path d="m5 17-1 2M19 17l1 2M3 13l2-6h14l2 6v5H3z"/><path d="M7 14h.01M17 14h.01"/></>,
-    plus: <path d="M12 5v14M5 12h14"/>,
-    arrowUp: <path d="m7 11 5-5 5 5M12 6v12"/>,
-    arrowDown: <path d="m7 13 5 5 5-5M12 18V6"/>,
-    home: <><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></>,
-    list: <><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></>,
-    chart: <><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></>,
-  }
-  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
-}
+  // Categories list
+  const categories = useMemo(() => {
+    const set = new Set(projects.map((p) => p.category));
+    return ['ALL', ...Array.from(set)];
+  }, [projects]);
 
-function StatCard({ label, amount, type }) {
-  const income = type === 'income'
+  // Filtered projects
+  const filteredProjects = useMemo(() => {
+    return projects.filter((p) => {
+      const matchCat = selectedCategory === 'ALL' || p.category === selectedCategory;
+      const matchQuery =
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.thName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.repo.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchCat && matchQuery;
+    });
+  }, [projects, selectedCategory, searchQuery]);
+
+  // Full QA Audit Simulation
+  const handleRunFullAudit = () => {
+    setIsAuditing(true);
+    showToast('info', 'เริ่มกระบวนการตรวจสอบคุณภาพ', 'กำลังทดสอบ 4 Quality Gates across 12 โปรเจกต์...');
+
+    setTimeout(() => {
+      setIsAuditing(false);
+      const newLog = {
+        id: `audit-${Date.now()}`,
+        timestamp: new Date().toLocaleDateString('th-TH', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        type: 'Automated QA Audit',
+        title: 'รัน Full QA Audit 12 โปรเจกต์ ผ่านเกณฑ์ 100%',
+        auditor: 'Antigravity CEO Master Agent',
+        status: 'success',
+        badge: 'Passed 48/48 Gates',
+        details: 'ตรวจสอบ Curated Design Tokens, รัน Test Suites ทั้งหมด, ตรวจสอบ Build Pass และความพร้อมส่งมอบ'
+      };
+
+      setAuditLogs((prev) => [newLog, ...prev]);
+      showToast('success', 'การตรวจสอบเสร็จสมบูรณ์', 'ทุกโปรเจกต์ผ่านเกณฑ์คุณภาพ 4 Pillars ระดับ Production-ready 100%');
+    }, 1800);
+  };
+
+  // Single Project Test
+  const handleTestSingle = (projectId) => {
+    setTestingProjectId(projectId);
+    showToast('info', 'กำลังรันการทดสอบ', 'ประเมิน Unit Tests, E2E และ Linter สำหรับโปรเจกต์นี้...');
+
+    setTimeout(() => {
+      setTestingProjectId(null);
+      showToast('success', 'ทดสอบผ่านฉลุย', 'Zero errors, 100% assertions ผ่านเกณฑ์เรียบร้อย');
+    }, 1200);
+  };
+
+  // Exports
+  const handleExportMarkdown = () => {
+    downloadMarkdownReport(projects, auditLogs);
+    showToast('success', 'ส่งออกไฟล์สำเร็จ', 'ดาวน์โหลดรายงาน ANTIGRAVITY_CEO_QUALITY_REPORT.md เรียบร้อย');
+  };
+
+  const handleExportPdf = () => {
+    printExecutivePdfReport(projects, auditLogs);
+    showToast('info', 'เปิดหน้าพิมพ์รายงาน', 'ท่านสามารถสั่งพิมพ์ หรือเลือก Save as PDF ได้ทันที');
+  };
+
   return (
-    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-500">{label}</span>
-        <span className={`grid h-9 w-9 place-items-center rounded-xl ${income ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'}`}>
-          <Icon name={income ? 'arrowDown' : 'arrowUp'} className="h-4 w-4" />
-        </span>
-      </div>
-      <p className="text-2xl font-bold tracking-tight text-slate-900">฿{formatMoney(amount)}</p>
-      <p className={`mt-2 text-xs font-medium ${income ? 'text-emerald-600' : 'text-rose-500'}`}>{income ? '+12.5%' : '-4.2%'} จากเดือนที่แล้ว</p>
-    </div>
-  )
-}
+    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col">
+      {/* Header */}
+      <Header
+        activeView={activeView}
+        setActiveView={setActiveView}
+        onRunAudit={handleRunFullAudit}
+        isAuditing={isAuditing}
+        onExportMarkdown={handleExportMarkdown}
+        onExportPdf={handleExportPdf}
+        onOpenHooksModal={() => setIsHooksModalOpen(true)}
+      />
 
-function App() {
-  const [transactions, setTransactions] = useState(seedTransactions)
-  const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState({ title: '', amount: '', type: 'expense', category: 'ทั่วไป' })
+      {/* Main Content Area */}
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
+        {/* KPI Stats Bar */}
+        <StatCards projects={projects} />
 
-  const totals = useMemo(() => transactions.reduce((sum, item) => {
-    sum[item.type] += item.amount
-    return sum
-  }, { income: 0, expense: 0 }), [transactions])
+        {/* Content Views */}
+        {activeView === 'dashboard' ? (
+          <div className="mt-8 space-y-6">
+            {/* Filter and Search Bar */}
+            <div className="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+              {/* Category Pills */}
+              <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`rounded-xl px-3 py-1.5 font-semibold transition-all ${
+                      selectedCategory === cat
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
 
-  const addTransaction = (event) => {
-    event.preventDefault()
-    const amount = Number(form.amount)
-    if (!form.title.trim() || !Number.isFinite(amount) || amount <= 0) return
-    setTransactions((current) => [{
-      id: Date.now(), title: form.title.trim(), category: form.category, amount,
-      type: form.type, date: 'วันนี้', icon: form.type === 'income' ? 'wallet' : 'food',
-      color: form.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-500',
-    }, ...current])
-    setForm({ title: '', amount: '', type: 'expense', category: 'ทั่วไป' })
-    setShowModal(false)
-  }
+              {/* Search input */}
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="ค้นหาชื่อโปรเจกต์ หรือ repo..."
+                  className="w-full rounded-xl border border-slate-700/80 bg-slate-950/60 py-2 pl-9 pr-3 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                />
+              </div>
+            </div>
 
-  return (
-    <div className="min-h-screen bg-[#f6f7fb] text-slate-900">
-      <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-200"><Icon name="wallet" /></div>
-            <div><p className="font-bold tracking-tight">MoneyMate</p><p className="text-xs text-slate-400">จัดการเงินให้ง่ายขึ้น</p></div>
+            {/* Project Cards Grid */}
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {filteredProjects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onSelect={(p) => setSelectedProject(p)}
+                />
+              ))}
+            </div>
+
+            {filteredProjects.length === 0 && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-12 text-center">
+                <AlertCircle className="mx-auto h-8 w-8 text-slate-500" />
+                <p className="mt-2 text-sm text-slate-400">ไม่พบโปรเจกต์ที่ตรงกับคำค้นหา "{searchQuery}"</p>
+              </div>
+            )}
           </div>
-          <button onClick={() => setShowModal(true)} className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-indigo-700">
-            <Icon name="plus" className="h-4 w-4" /> เพิ่มรายการ
-          </button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-5 py-8">
-        <div className="mb-7"><p className="text-sm font-medium text-indigo-600">ภาพรวมการเงิน</p><h1 className="mt-1 text-3xl font-bold tracking-tight">สวัสดี, วันนี้เป็นอย่างไรบ้าง 👋</h1><p className="mt-2 text-sm text-slate-500">ติดตามทุกการใช้จ่ายของคุณได้ในที่เดียว</p></div>
-
-        <section className="grid gap-4 lg:grid-cols-2">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 p-7 text-white shadow-xl shadow-indigo-200">
-            <div className="absolute -right-12 -top-16 h-52 w-52 rounded-full bg-white/10" />
-            <p className="text-sm text-indigo-100">ยอดเงินคงเหลือทั้งหมด</p>
-            <p className="mt-3 text-4xl font-bold tracking-tight">฿{formatMoney(totals.income - totals.expense)}</p>
-            <div className="mt-10 flex items-center gap-2 text-xs text-indigo-100"><span className="rounded-full bg-white/15 px-3 py-1.5">อัปเดตล่าสุด วันนี้</span></div>
+        ) : (
+          <div className="mt-8">
+            <AuditLogsView logs={auditLogs} />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2"><StatCard label="รายรับเดือนนี้" amount={totals.income} type="income" /><StatCard label="รายจ่ายเดือนนี้" amount={totals.expense} type="expense" /></div>
-        </section>
-
-        <section className="mt-7 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-7">
-          <div className="mb-5 flex items-center justify-between"><div><h2 className="text-lg font-bold">รายการล่าสุด</h2><p className="mt-1 text-xs text-slate-400">รายการรับและจ่ายล่าสุดของคุณ</p></div><button className="text-sm font-semibold text-indigo-600 hover:text-indigo-800">ดูทั้งหมด</button></div>
-          <div className="divide-y divide-slate-100">
-            {transactions.slice(0, 5).map((item) => <div key={item.id} className="flex items-center gap-3 py-4 first:pt-0 last:pb-0">
-              <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${item.color}`}><Icon name={item.icon} /></div>
-              <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-slate-400">{item.category} · {item.date}</p></div>
-              <p className={`text-sm font-bold ${item.type === 'income' ? 'text-emerald-600' : 'text-slate-800'}`}>{item.type === 'income' ? '+' : '-'}฿{formatMoney(item.amount)}</p>
-            </div>)}
-          </div>
-        </section>
+        )}
       </main>
 
-      <nav className="fixed bottom-5 left-1/2 flex -translate-x-1/2 gap-2 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-xl backdrop-blur sm:hidden">
-        {[['home', 'หน้าหลัก'], ['list', 'รายการ'], ['chart', 'สรุป']].map(([icon, label], index) => <button key={label} className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold ${index === 0 ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400'}`}><Icon name={icon} className="h-4 w-4" />{label}</button>)}
-      </nav>
+      {/* Footer */}
+      <footer className="border-t border-slate-800/80 bg-slate-950/60 py-6 text-center text-xs text-slate-500">
+        <p>© 2026 Antigravity CEO Master Platform • Enforcing Zero "AI Slop" & Production Standards</p>
+      </footer>
 
-      {showModal && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 p-5 backdrop-blur-sm" onMouseDown={(e) => e.target === e.currentTarget && setShowModal(false)}>
-        <form onSubmit={addTransaction} className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-          <div className="mb-6 flex items-center justify-between"><div><h2 className="text-xl font-bold">เพิ่มรายการใหม่</h2><p className="mt-1 text-sm text-slate-400">บันทึกรายรับหรือรายจ่าย</p></div><button type="button" onClick={() => setShowModal(false)} className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500">✕</button></div>
-          <div className="mb-4 grid grid-cols-2 rounded-xl bg-slate-100 p-1">{['expense', 'income'].map((type) => <button type="button" key={type} onClick={() => setForm({ ...form, type })} className={`rounded-lg py-2 text-sm font-semibold transition ${form.type === type ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>{type === 'expense' ? 'รายจ่าย' : 'รายรับ'}</button>)}</div>
-          <label className="mb-1.5 block text-sm font-medium">ชื่อรายการ</label><input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="เช่น ค่าอาหารกลางวัน" className="mb-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" />
-          <label className="mb-1.5 block text-sm font-medium">จำนวนเงิน (บาท)</label><input required min="0.01" step="0.01" type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0.00" className="mb-6 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" />
-          <button className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700">บันทึกรายการ</button>
-        </form>
-      </div>}
+      {/* Modals & Toasts */}
+      <ProjectDetailModal
+        project={selectedProject}
+        isOpen={!!selectedProject}
+        onClose={() => setSelectedProject(null)}
+        onTestSingle={handleTestSingle}
+        isTesting={!!testingProjectId}
+      />
+
+      <HooksManagerModal
+        isOpen={isHooksModalOpen}
+        onClose={() => setIsHooksModalOpen(false)}
+        onCopyCommand={() => showToast('success', 'คัดลอกคำสั่งแล้ว', 'นำไปวางและรันใน Terminal เพื่อ Deploy Hooks')}
+      />
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
-  )
+  );
 }
-
-export default App

@@ -7,12 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "setup:hooks": "node scripts/setup-quality-hooks.js",
+    "deploy:all-hooks": "node scripts/install-all-hooks.js"
   },
   "dependencies": {
     "@netlify/database": "^1.1.0",
     "@netlify/functions": "^5.3.0",
     "@tailwindcss/vite": "^4.3.3",
+    "lucide-react": "^1.58.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwindcss": "^4.3.3"
