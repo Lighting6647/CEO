@@ -14,6 +14,9 @@ import {
   Search,
   ShieldAlert,
   Database,
+  Volume2,
+  VolumeX,
+  Globe2,
 } from 'lucide-react';
 
 export function Header({
@@ -33,6 +36,8 @@ export function Header({
   onOpenCommandPalette,
   theme,
   onToggleTheme,
+  isSoundActive,
+  onToggleSound,
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md">
@@ -46,7 +51,7 @@ export function Header({
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-extrabold tracking-tight text-white">CEO Master Quality Platform</h1>
               <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-cyan-300 border border-cyan-500/30">
-                v2.7 Pro
+                v2.8 Master
               </span>
             </div>
             <p className="text-xs text-slate-400">Antigravity 4-Pillar Zero AI Slop & Production-Ready Standard</p>
@@ -72,15 +77,24 @@ export function Header({
           <div className="flex rounded-xl bg-slate-800/80 p-1 border border-slate-700/60 text-xs">
             <button
               onClick={() => setActiveView('dashboard')}
-              className={`rounded-lg px-3 py-1.5 font-medium transition-all ${
+              className={`rounded-lg px-2.5 py-1.5 font-medium transition-all ${
                 activeView === 'dashboard' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
             >
               12 โปรเจกต์
             </button>
             <button
+              onClick={() => setActiveView('environments')}
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-medium transition-all ${
+                activeView === 'environments' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Globe2 className="h-3.5 w-3.5 text-cyan-400" />
+              Multi-Env
+            </button>
+            <button
               onClick={() => setActiveView('uptime')}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all ${
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-medium transition-all ${
                 activeView === 'uptime' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -89,7 +103,7 @@ export function Header({
             </button>
             <button
               onClick={() => setActiveView('logs')}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all ${
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-medium transition-all ${
                 activeView === 'logs' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -97,6 +111,19 @@ export function Header({
               Logs
             </button>
           </div>
+
+          {/* Sound Toggle Button */}
+          <button
+            onClick={onToggleSound}
+            className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-all active:scale-95 ${
+              isSoundActive
+                ? 'border-emerald-500/40 bg-emerald-950/40 text-emerald-400'
+                : 'border-slate-700 bg-slate-800 text-slate-500'
+            }`}
+            title={isSoundActive ? 'ปิดเสียงเอฟเฟกต์ (Mute Sound)' : 'เปิดเสียงเอฟเฟกต์ (Enable Audio Feedback)'}
+          >
+            {isSoundActive ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+          </button>
 
           {/* Theme Toggle Button */}
           <button

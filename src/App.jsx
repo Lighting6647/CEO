@@ -11,16 +11,18 @@ import { EnvVaultModal } from './components/dashboard/EnvVaultModal';
 import { VulnerabilityModal } from './components/dashboard/VulnerabilityModal';
 import { BackupManagerModal } from './components/dashboard/BackupManagerModal';
 import { CommandPalette } from './components/dashboard/CommandPalette';
+import { EnvironmentMatrixView } from './components/dashboard/EnvironmentMatrixView';
 import { UptimeMonitorView } from './components/dashboard/UptimeMonitorView';
 import { AuditLogsView } from './components/dashboard/AuditLogsView';
 import { Toast } from './components/ui/Toast';
 import { downloadMarkdownReport, printExecutivePdfReport } from './utils/exportReport';
 import { exportProjectsToCsv, exportProjectsToJson } from './utils/csvExport';
+import { isSoundEnabled, setSoundEnabled, playSuccessSound, playClickSound, playAlertSound } from './utils/soundEffects';
 
 export default function App() {
   const [projects] = useState(INITIAL_PROJECTS);
   const [auditLogs, setAuditLogs] = useState(INITIAL_AUDIT_LOGS);
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'uptime' | 'logs'
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'environments' | 'uptime' | 'logs'
   const [selectedProject, setSelectedProject] = useState(null);
   const [isHooksModalOpen, setIsHooksModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
@@ -33,6 +35,18 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [isAuditing, setIsAuditing] = useState(false);
   const [testingProjectId, setTestingProjectId] = useState(null);
+
+  // Sound state
+  const [isSoundActive, setIsSoundActive] = useState(() => isSoundEnabled());
+
+  const handleToggleSound = () => {
+    setIsSoundActive((prev) => {
+      const next = !prev;
+      setSoundEnabled(next);
+      if (next) playClickSound();
+      return next;
+    });
+  };
 
   // Theme state: 'dark' | 'light'
   const [theme, setTheme] = useState(() => {
@@ -50,6 +64,7 @@ export default function App() {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
+        playClickSound();
         setIsCommandPaletteOpen((prev) => !prev);
       }
     };
@@ -58,11 +73,19 @@ export default function App() {
   }, []);
 
   const toggleTheme = () => {
+    playClickSound();
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   const showToast = (type, title, message) => {
     setToast({ type, title, message });
+    if (type === 'success') {
+      playSuccessSound();
+    } else if (type === 'error') {
+      playAlertSound();
+    } else {
+      playClickSound();
+    }
     setTimeout(() => setToast(null), 4000);
   };
 
@@ -87,6 +110,7 @@ export default function App() {
   // Full QA Audit Simulation
   const handleRunFullAudit = () => {
     setIsAuditing(true);
+    playClickSound();
     showToast('info', 'เริ่มกระบวนการตรวจสอบคุณภาพ', 'กำลังทดสอบ 4 Quality Gates across 12 โปรเจกต์...');
 
     setTimeout(() => {
@@ -116,6 +140,7 @@ export default function App() {
   // Single Project Test
   const handleTestSingle = (projectId) => {
     setTestingProjectId(projectId);
+    playClickSound();
     showToast('info', 'กำลังรันการทดสอบ', 'ประเมิน Unit Tests, E2E และ Linter สำหรับโปรเจกต์นี้...');
 
     setTimeout(() => {
@@ -152,21 +177,23 @@ export default function App() {
       {/* Header */}
       <Header
         activeView={activeView}
-        setActiveView={setActiveView}
+        setActiveView={(v) => { playClickSound(); setActiveView(v); }}
         onRunAudit={handleRunFullAudit}
         isAuditing={isAuditing}
         onExportMarkdown={handleExportMarkdown}
         onExportPdf={handleExportPdf}
         onExportCsv={handleExportCsv}
         onExportJson={handleExportJson}
-        onOpenHooksModal={() => setIsHooksModalOpen(true)}
-        onOpenNotificationModal={() => setIsNotificationModalOpen(true)}
-        onOpenEnvVaultModal={() => setIsEnvVaultModalOpen(true)}
-        onOpenVulnModal={() => setIsVulnModalOpen(true)}
-        onOpenBackupModal={() => setIsBackupModalOpen(true)}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenHooksModal={() => { playClickSound(); setIsHooksModalOpen(true); }}
+        onOpenNotificationModal={() => { playClickSound(); setIsNotificationModalOpen(true); }}
+        onOpenEnvVaultModal={() => { playClickSound(); setIsEnvVaultModalOpen(true); }}
+        onOpenVulnModal={() => { playClickSound(); setIsVulnModalOpen(true); }}
+        onOpenBackupModal={() => { playClickSound(); setIsBackupModalOpen(true); }}
+        onOpenCommandPalette={() => { playClickSound(); setIsCommandPaletteOpen(true); }}
         theme={theme}
         onToggleTheme={toggleTheme}
+        isSoundActive={isSoundActive}
+        onToggleSound={handleToggleSound}
       />
 
       {/* Main Content Area */}
@@ -184,7 +211,7 @@ export default function App() {
                 {categories.map((cat) => (
                   <button
                     key={cat}
-                    onClick={() => setSelectedCategory(cat)}
+                    onClick={() => { playClickSound(); setSelectedCategory(cat); }}
                     className={`rounded-xl px-3 py-1.5 font-semibold transition-all ${
                       selectedCategory === cat
                         ? 'bg-cyan-500/20 text-cyan-500 border border-cyan-500/40 shadow-sm'
@@ -214,7 +241,7 @@ export default function App() {
                 />
                 <button
                   type="button"
-                  onClick={() => setIsCommandPaletteOpen(true)}
+                  onClick={() => { playClickSound(); setIsCommandPaletteOpen(true); }}
                   className="absolute right-2 rounded-md bg-slate-800/80 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 border border-slate-700/60 hover:text-white"
                 >
                   ⌘K
@@ -228,7 +255,7 @@ export default function App() {
                 <ProjectCard
                   key={project.id}
                   project={project}
-                  onSelect={(p) => setSelectedProject(p)}
+                  onSelect={(p) => { playClickSound(); setSelectedProject(p); }}
                 />
               ))}
             </div>
@@ -239,6 +266,12 @@ export default function App() {
                 <p className={`mt-2 text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>ไม่พบโปรเจกต์ที่ตรงกับคำค้นหา "{searchQuery}"</p>
               </div>
             )}
+          </div>
+        )}
+
+        {activeView === 'environments' && (
+          <div className="mt-8">
+            <EnvironmentMatrixView projects={projects} />
           </div>
         )}
 
@@ -317,7 +350,7 @@ export default function App() {
         onOpenEnvVault={() => setIsEnvVaultModalOpen(true)}
         onOpenVuln={() => setIsVulnModalOpen(true)}
         onOpenBackup={() => setIsBackupModalOpen(true)}
-        onSelectView={(v) => setActiveView(v)}
+        onSelectView={(v) => { playClickSound(); setActiveView(v); }}
       />
 
       <Toast toast={toast} onClose={() => setToast(null)} />
