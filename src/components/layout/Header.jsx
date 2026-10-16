@@ -1,4 +1,17 @@
-import { ShieldCheck, FileDown, Printer, History, RefreshCw, Terminal, Bell, Activity } from 'lucide-react';
+import {
+  ShieldCheck,
+  FileDown,
+  Printer,
+  History,
+  RefreshCw,
+  Terminal,
+  Bell,
+  Activity,
+  KeyRound,
+  FileSpreadsheet,
+  Sun,
+  Moon,
+} from 'lucide-react';
 
 export function Header({
   activeView,
@@ -7,8 +20,13 @@ export function Header({
   isAuditing,
   onExportMarkdown,
   onExportPdf,
+  onExportCsv,
+  onExportJson,
   onOpenHooksModal,
   onOpenNotificationModal,
+  onOpenEnvVaultModal,
+  theme,
+  onToggleTheme,
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md">
@@ -21,7 +39,9 @@ export function Header({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-extrabold tracking-tight text-white">CEO Master Quality Platform</h1>
-              <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-cyan-300 border border-cyan-500/30">v2.5 Live</span>
+              <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-cyan-300 border border-cyan-500/30">
+                v2.6 Executive
+              </span>
             </div>
             <p className="text-xs text-slate-400">Antigravity 4-Pillar Zero AI Slop & Production-Ready Standard</p>
           </div>
@@ -59,6 +79,25 @@ export function Header({
             </button>
           </div>
 
+          {/* Theme Toggle Button */}
+          <button
+            onClick={onToggleTheme}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-all active:scale-95"
+            title={theme === 'dark' ? 'เปลี่ยนเป็นธีมสว่าง (Light Executive)' : 'เปลี่ยนเป็นธีมมืด (Dark Slate)'}
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-cyan-400" />}
+          </button>
+
+          {/* Env Vault Modal Button */}
+          <button
+            onClick={onOpenEnvVaultModal}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
+            title="ตรวจสอบความปลอดภัย Environment Variable & Secrets"
+          >
+            <KeyRound className="h-3.5 w-3.5 text-cyan-400" />
+            Env Vault
+          </button>
+
           {/* Alert Bot Button */}
           <button
             onClick={onOpenNotificationModal}
@@ -76,16 +115,35 @@ export function Header({
             title="จัดการและติดตั้ง Git Pre-Commit/Push Hooks"
           >
             <Terminal className="h-3.5 w-3.5 text-emerald-400" />
-            Git Hooks (11 คลัง)
+            Git Hooks
           </button>
 
-          {/* Export Group */}
+          {/* Export CSV / Sheets Button */}
+          <button
+            onClick={onExportCsv}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
+            title="ส่งออก CSV สำหรับ Excel / Google Sheets"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-400" />
+            CSV
+          </button>
+
+          {/* Export JSON / Backup Button */}
+          <button
+            onClick={onExportJson}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
+            title="ส่งออก JSON Full Backup"
+          >
+            <FileDown className="h-3.5 w-3.5 text-cyan-400" />
+            JSON
+          </button>
+
+          {/* Export Markdown / PDF */}
           <button
             onClick={onExportMarkdown}
             className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
             title="ดาวน์โหลดรายงานสรุป Markdown"
           >
-            <FileDown className="h-3.5 w-3.5 text-cyan-400" />
             MD
           </button>
 

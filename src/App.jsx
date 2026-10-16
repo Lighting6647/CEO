@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, AlertCircle } from 'lucide-react';
 import { INITIAL_PROJECTS, INITIAL_AUDIT_LOGS } from './data/projectsData';
 import { Header } from './components/layout/Header';
@@ -7,10 +7,12 @@ import { ProjectCard } from './components/dashboard/ProjectCard';
 import { ProjectDetailModal } from './components/dashboard/ProjectDetailModal';
 import { HooksManagerModal } from './components/dashboard/HooksManagerModal';
 import { NotificationModal } from './components/dashboard/NotificationModal';
+import { EnvVaultModal } from './components/dashboard/EnvVaultModal';
 import { UptimeMonitorView } from './components/dashboard/UptimeMonitorView';
 import { AuditLogsView } from './components/dashboard/AuditLogsView';
 import { Toast } from './components/ui/Toast';
 import { downloadMarkdownReport, printExecutivePdfReport } from './utils/exportReport';
+import { exportProjectsToCsv, exportProjectsToJson } from './utils/csvExport';
 
 export default function App() {
   const [projects] = useState(INITIAL_PROJECTS);
@@ -19,11 +21,27 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [isHooksModalOpen, setIsHooksModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isEnvVaultModalOpen, setIsEnvVaultModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [isAuditing, setIsAuditing] = useState(false);
   const [testingProjectId, setTestingProjectId] = useState(null);
+
+  // Theme state: 'dark' | 'light'
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('antigravity_theme') || 'dark';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('antigravity_theme', theme);
+    document.body.classList.remove('theme-dark', 'theme-light');
+    document.body.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light');
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   const showToast = (type, title, message) => {
     setToast({ type, title, message });
@@ -99,8 +117,20 @@ export default function App() {
     showToast('info', 'เปิดหน้าพิมพ์รายงาน', 'ท่านสามารถสั่งพิมพ์ หรือเลือก Save as PDF ได้ทันที');
   };
 
+  const handleExportCsv = () => {
+    exportProjectsToCsv(projects);
+    showToast('success', 'ส่งออก CSV สำเร็จ', 'ไฟล์ UTF-8 CSV รองรับ Excel และ Google Sheets พร้อมใช้งาน');
+  };
+
+  const handleExportJson = () => {
+    exportProjectsToJson(projects, auditLogs);
+    showToast('success', 'ส่งออก JSON สำเร็จ', 'สำรองข้อมูลภาพรวมโปรเจกต์และ Audit Logs ครบถ้วน');
+  };
+
+  const isDark = theme === 'dark';
+
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col">
+    <div className={`min-h-screen flex flex-col transition-colors duration-200 ${isDark ? 'bg-[#0b0f19] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
       {/* Header */}
       <Header
         activeView={activeView}
@@ -109,8 +139,13 @@ export default function App() {
         isAuditing={isAuditing}
         onExportMarkdown={handleExportMarkdown}
         onExportPdf={handleExportPdf}
+        onExportCsv={handleExportCsv}
+        onExportJson={handleExportJson}
         onOpenHooksModal={() => setIsHooksModalOpen(true)}
         onOpenNotificationModal={() => setIsNotificationModalOpen(true)}
+        onOpenEnvVaultModal={() => setIsEnvVaultModalOpen(true)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Content Area */}
@@ -122,7 +157,7 @@ export default function App() {
         {activeView === 'dashboard' && (
           <div className="mt-8 space-y-6">
             {/* Filter and Search Bar */}
-            <div className="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className={`flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between transition-colors ${isDark ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-white shadow-sm'}`}>
               {/* Category Pills */}
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
                 {categories.map((cat) => (
@@ -131,8 +166,10 @@ export default function App() {
                     onClick={() => setSelectedCategory(cat)}
                     className={`rounded-xl px-3 py-1.5 font-semibold transition-all ${
                       selectedCategory === cat
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                        ? 'bg-cyan-500/20 text-cyan-500 border border-cyan-500/40 shadow-sm'
+                        : isDark
+                        ? 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     {cat}
@@ -142,13 +179,17 @@ export default function App() {
 
               {/* Search input */}
               <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                <Search className={`absolute left-3 top-2.5 h-4 w-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="ค้นหาชื่อโปรเจกต์ หรือ repo..."
-                  className="w-full rounded-xl border border-slate-700/80 bg-slate-950/60 py-2 pl-9 pr-3 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  className={`w-full rounded-xl border py-2 pl-9 pr-3 text-xs focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 ${
+                    isDark
+                      ? 'border-slate-700/80 bg-slate-950/60 text-slate-100 placeholder-slate-500'
+                      : 'border-slate-300 bg-slate-50 text-slate-900 placeholder-slate-400'
+                  }`}
                 />
               </div>
             </div>
@@ -165,9 +206,9 @@ export default function App() {
             </div>
 
             {filteredProjects.length === 0 && (
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-12 text-center">
+              <div className={`rounded-2xl border p-12 text-center ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-white'}`}>
                 <AlertCircle className="mx-auto h-8 w-8 text-slate-500" />
-                <p className="mt-2 text-sm text-slate-400">ไม่พบโปรเจกต์ที่ตรงกับคำค้นหา "{searchQuery}"</p>
+                <p className={`mt-2 text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>ไม่พบโปรเจกต์ที่ตรงกับคำค้นหา "{searchQuery}"</p>
               </div>
             )}
           </div>
@@ -187,7 +228,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-950/60 py-6 text-center text-xs text-slate-500">
+      <footer className={`border-t py-6 text-center text-xs transition-colors ${isDark ? 'border-slate-800/80 bg-slate-950/60 text-slate-500' : 'border-slate-200 bg-slate-100 text-slate-600'}`}>
         <p>© 2026 Antigravity CEO Master Platform • Enforcing Zero "AI Slop" & Production Standards</p>
       </footer>
 
@@ -209,6 +250,12 @@ export default function App() {
       <NotificationModal
         isOpen={isNotificationModalOpen}
         onClose={() => setIsNotificationModalOpen(false)}
+        onShowToast={showToast}
+      />
+
+      <EnvVaultModal
+        isOpen={isEnvVaultModalOpen}
+        onClose={() => setIsEnvVaultModalOpen(false)}
         onShowToast={showToast}
       />
 
