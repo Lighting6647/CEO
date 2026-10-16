@@ -17,12 +17,18 @@ import {
   Code,
   Cpu,
   Workflow,
+  Eye,
+  Shield,
+  GitPullRequest,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { KnowledgeVaultView } from './KnowledgeVaultView';
 import { AgentPipelineModal } from './AgentPipelineModal';
 import { AgentLiveChatModal } from './AgentLiveChatModal';
 import { CodingTaskDelegatorModal } from './CodingTaskDelegatorModal';
+import { ComponentSandboxModal } from './ComponentSandboxModal';
+import { CodeSecurityScannerModal } from './CodeSecurityScannerModal';
+import { GitPrCreatorModal } from './GitPrCreatorModal';
 import { CODING_AGENTS } from '../../data/codingSquadData';
 import { INITIAL_VAULT_ITEMS } from '../../data/agentInitialVault';
 import { playClickSound, playSuccessSound } from '../../utils/soundEffects';
@@ -139,6 +145,9 @@ export function AgentsSquadView({ onCopyPrompt, onShowToast }) {
   const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
   const [isDelegatorModalOpen, setIsDelegatorModalOpen] = useState(false);
   const [isLiveChatModalOpen, setIsLiveChatModalOpen] = useState(false);
+  const [isSandboxModalOpen, setIsSandboxModalOpen] = useState(false);
+  const [isScannerModalOpen, setIsScannerModalOpen] = useState(false);
+  const [isGitPrModalOpen, setIsGitPrModalOpen] = useState(false);
   const [chatInitialAgentId, setChatInitialAgentId] = useState('product_architect');
 
   // Vault count
@@ -222,16 +231,51 @@ export function AgentsSquadView({ onCopyPrompt, onShowToast }) {
                 <span>รัน Pipeline 5 Agents อัตโนมัติ</span>
               </button>
             ) : (
-              <button
-                onClick={() => {
-                  playClickSound();
-                  setIsDelegatorModalOpen(true);
-                }}
-                className="flex items-center gap-2 rounded-xl border border-violet-500/40 bg-violet-600/90 px-4 py-2.5 text-xs font-bold text-white hover:bg-violet-500 transition-all shadow-lg shadow-violet-950/50"
-              >
-                <Workflow className="h-3.5 w-3.5" />
-                <span>กระจายงานเขียนโค้ดตามบริบททีม</span>
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    setIsDelegatorModalOpen(true);
+                  }}
+                  className="flex items-center gap-2 rounded-xl border border-violet-500/40 bg-violet-600/90 px-4 py-2.5 text-xs font-bold text-white hover:bg-violet-500 transition-all shadow-lg shadow-violet-950/50"
+                >
+                  <Workflow className="h-3.5 w-3.5" />
+                  <span>กระจายงานเขียนโค้ดตามบริบททีม</span>
+                </button>
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    setIsSandboxModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-950/40 px-3 py-2 text-xs font-semibold text-cyan-300 hover:bg-cyan-900/60 transition-all"
+                  title="พรีวิว Component สดแบบ Sandbox"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Sandbox</span>
+                </button>
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    setIsScannerModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-950/40 px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-900/60 transition-all"
+                  title="สแกนความปลอดภัยซอร์สโค้ด"
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Security Scan</span>
+                </button>
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    setIsGitPrModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 rounded-xl border border-violet-500/30 bg-violet-950/40 px-3 py-2 text-xs font-semibold text-violet-300 hover:bg-violet-900/60 transition-all"
+                  title="เปิด Pull Request อัตโนมัติ"
+                >
+                  <GitPullRequest className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Git PR</span>
+                </button>
+              </>
             )}
 
             <button
@@ -489,9 +533,42 @@ export function AgentsSquadView({ onCopyPrompt, onShowToast }) {
         onClose={() => setIsDelegatorModalOpen(false)}
         onShowToast={onShowToast}
         onSaveToVault={handleSaveToVault}
+        onOpenSandbox={() => {
+          setIsDelegatorModalOpen(false);
+          setIsSandboxModalOpen(true);
+        }}
+        onOpenScanner={() => {
+          setIsDelegatorModalOpen(false);
+          setIsScannerModalOpen(true);
+        }}
+        onOpenGitPr={() => {
+          setIsDelegatorModalOpen(false);
+          setIsGitPrModalOpen(true);
+        }}
       />
 
-      {/* Feature 3: Agent Live Chat Modal (All 10 Agents) */}
+      {/* Feature 3: Live Component Sandbox Preview */}
+      <ComponentSandboxModal
+        isOpen={isSandboxModalOpen}
+        onClose={() => setIsSandboxModalOpen(false)}
+        onShowToast={onShowToast}
+      />
+
+      {/* Feature 4: Automated Code Lint & Security Scanner */}
+      <CodeSecurityScannerModal
+        isOpen={isScannerModalOpen}
+        onClose={() => setIsScannerModalOpen(false)}
+        onShowToast={onShowToast}
+      />
+
+      {/* Feature 5: Git Branch & Pull Request Automator */}
+      <GitPrCreatorModal
+        isOpen={isGitPrModalOpen}
+        onClose={() => setIsGitPrModalOpen(false)}
+        onShowToast={onShowToast}
+      />
+
+      {/* Feature 6: Agent Live Chat Modal (All 10 Agents) */}
       <AgentLiveChatModal
         isOpen={isLiveChatModalOpen}
         onClose={() => setIsLiveChatModalOpen(false)}

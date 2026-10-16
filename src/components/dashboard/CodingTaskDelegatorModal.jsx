@@ -8,10 +8,12 @@ import {
   Layout,
   Database,
   CloudCog,
-  ShieldAlert,
   Sparkles,
   ChevronDown,
   ChevronUp,
+  Eye,
+  Shield,
+  GitPullRequest,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { playClickSound, playSuccessSound } from '../../utils/soundEffects';
@@ -59,7 +61,15 @@ const TEAM_ROLES = [
   },
 ];
 
-export function CodingTaskDelegatorModal({ isOpen, onClose, onShowToast, onSaveToVault }) {
+export function CodingTaskDelegatorModal({
+  isOpen,
+  onClose,
+  onShowToast,
+  onSaveToVault,
+  onOpenSandbox,
+  onOpenScanner,
+  onOpenGitPr,
+}) {
   const [featureName, setFeatureName] = useState('ระบบชำระเงิน Subscription ผ่าน Stripe พร้อม Webhook & User Dashboard');
   const [techStack, setTechStack] = useState('React 19 + Tailwind CSS, Netlify Functions, PostgreSQL, Zod');
   const [specialRequirements, setSpecialRequirements] = useState('รองรับ 3-Tier Pricing, เข้ารหัส Webhook Signature, Zero AI Slop UI, และมี Playwright E2E Test');
@@ -482,6 +492,33 @@ test.describe('Subscription Checkout Flow & Security Gates', () => {
               </button>
             ) : (
               <>
+                {onOpenSandbox && (
+                  <button
+                    onClick={onOpenSandbox}
+                    className="flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-cyan-950/40 px-3 py-2 text-xs font-semibold text-cyan-300 hover:bg-cyan-900/60 transition-all"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    <span>พรีวิว Sandbox</span>
+                  </button>
+                )}
+                {onOpenScanner && (
+                  <button
+                    onClick={onOpenScanner}
+                    className="flex items-center gap-1.5 rounded-xl border border-rose-500/40 bg-rose-950/40 px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-900/60 transition-all"
+                  >
+                    <Shield className="h-3.5 w-3.5" />
+                    <span>สแกนโค้ด</span>
+                  </button>
+                )}
+                {onOpenGitPr && (
+                  <button
+                    onClick={onOpenGitPr}
+                    className="flex items-center gap-1.5 rounded-xl border border-violet-500/40 bg-violet-950/40 px-3 py-2 text-xs font-semibold text-violet-300 hover:bg-violet-900/60 transition-all"
+                  >
+                    <GitPullRequest className="h-3.5 w-3.5" />
+                    <span>เปิด Pull Request</span>
+                  </button>
+                )}
                 <button
                   onClick={handleSaveToVault}
                   className="flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 px-3.5 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-900/60 transition-all"
@@ -494,7 +531,7 @@ test.describe('Subscription Checkout Flow & Security Gates', () => {
                   className="flex items-center gap-1.5 rounded-xl border border-violet-500/50 bg-violet-600 px-4 py-2 text-xs font-bold text-white hover:bg-violet-500 transition-all shadow-md shadow-violet-950/50"
                 >
                   <Download className="h-3.5 w-3.5" />
-                  <span>ดาวน์โหลดไฟล์โค้ดทั้งหมด (.txt)</span>
+                  <span>ดาวน์โหลดโค้ด (.txt)</span>
                 </button>
               </>
             )}
