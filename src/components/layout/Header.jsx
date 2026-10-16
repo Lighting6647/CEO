@@ -17,6 +17,7 @@ import {
   Volume2,
   VolumeX,
   Globe2,
+  Bot,
 } from 'lucide-react';
 
 export function Header({
@@ -109,6 +110,15 @@ export function Header({
             >
               <History className="h-3.5 w-3.5" />
               Logs
+            </button>
+            <button
+              onClick={() => setActiveView('agents')}
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-medium transition-all ${
+                activeView === 'agents' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Bot className="h-3.5 w-3.5 text-emerald-400" />
+              5 AI Squad
             </button>
           </div>
 

@@ -1,0 +1,262 @@
+import { useState } from 'react';
+import {
+  Sparkles,
+  Layers,
+  FileText,
+  Megaphone,
+  TrendingUp,
+  HeartHandshake,
+  Copy,
+  Check,
+  Terminal,
+  Zap,
+} from 'lucide-react';
+import { Badge } from '../ui/Badge';
+
+const AGENTS = [
+  {
+    id: 'product_architect',
+    number: '01',
+    name: 'Product Architect & UX Strategist',
+    thaiTitle: 'สถาปัตยกรรมผลิตภัณฑ์ & ประสบการณ์ผู้ใช้',
+    role: 'Chief Product Officer / UX Architect',
+    color: 'border-cyan-500/40 bg-cyan-950/20 text-cyan-400',
+    badgeColor: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300',
+    icon: Layers,
+    description: 'ออกแบบโครงสร้างสเปกผลิตภัณฑ์ดิจิทัล วาง Feature Roadmap และคุมมาตรฐานคุณภาพ UX ระดับวิศวกรรม',
+    kpi: 'MVP Time-to-Market · Zero UX Debt',
+    promptTemplate:
+      'ช่วยร่าง PRD (Product Requirement Document) สำหรับผลิตภัณฑ์ดิจิทัลซอฟต์แวร์ โดยแบ่ง Phase: MVP, Core Features และ Value Enhancers พร้อมระบุ User Personas, Acceptance Criteria และ Tech Architecture ที่เหมาะสม',
+    quickActions: [
+      { label: 'ร่าง PRD สินค้าใหม่', prompt: 'ช่วยเขียน PRD เต็มรูปแบบสำหรับซอฟต์แวร์เครื่องมือสำเร็จรูป' },
+      { label: 'จัดลำดับ MVP MoSCoW', prompt: 'ช่วยคัดกรองฟังก์ชันซอฟต์แวร์ตามหลัก MoSCoW ให้เหลือเฉพาะสิ่งที่จำเป็นที่สุดในการเปิดตัว' },
+      { label: 'ตรวจสอบ UX Journey', prompt: 'ช่วยตรวจสอบ User Flow การสมัครและเริ่มต้นใช้งานให้กระชับเหลือคลิกน้อยที่สุด' },
+    ],
+  },
+  {
+    id: 'doc_operations_manager',
+    number: '02',
+    name: 'Operations & Document Architect',
+    thaiTitle: 'ระบบเอกสารสัญญา & ปฏิบัติการภายใน',
+    role: 'Head of Operations & Legal Compliance',
+    color: 'border-blue-500/40 bg-blue-950/20 text-blue-400',
+    badgeColor: 'border-blue-500/30 bg-blue-500/10 text-blue-300',
+    icon: FileText,
+    description: 'ร่างเอกสารสัญญา นโยบายความเป็นส่วนตัว (PDPA), Terms of Service, SOP และสร้างระบบ Knowledge Base ภายในองค์กร',
+    kpi: '100% Legal Compliance · Standardized SOPs',
+    promptTemplate:
+      'ช่วยร่างเอกสารข้อกำหนดการให้บริการ (Terms of Service) และนโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA/Privacy Policy) สำหรับระบบเว็บและซอฟต์แวร์ที่รัดกุมตามกฎหมาย พร้อมแบบฟอร์มขอความยินยอม (Consent Form)',
+    quickActions: [
+      { label: 'ร่าง Terms & Privacy', prompt: 'ร่าง Terms of Service และ Privacy Policy ภาษาไทยสำหรับซอฟต์แวร์ SaaS' },
+      { label: 'เขียน SOP การทำงาน', prompt: 'เขียน SOP สำหรับขั้นตอนการส่งมอบบัญชีซอฟต์แวร์และการแก้ปัญหาเมื่อระบบขัดข้อง' },
+      { label: 'โครงสร้าง User Guide', prompt: 'วางโครงสร้างสารบัญและคู่มือการใช้งานระบบสำหรับผู้ใช้ใหม่ (Quick Start Manual)' },
+    ],
+  },
+  {
+    id: 'brand_growth_hacker',
+    number: '03',
+    name: 'Brand Awareness & Growth Hacker',
+    thaiTitle: 'สร้างการรับรู้แบรนด์ & ไวรัลคอนเทนต์',
+    role: 'Head of Growth & Brand Strategy',
+    color: 'border-amber-500/40 bg-amber-950/20 text-amber-400',
+    badgeColor: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+    icon: Megaphone,
+    description: 'วางกลยุทธ์ Positioning, คอนเทนต์ Pain Point Demos รายสัปดาห์ และการสร้าง Growth Loops ดึงดูดผู้ใช้งานใหม่',
+    kpi: 'Viral Reach · Organic Lead Acquisition',
+    promptTemplate:
+      'ช่วยวิเคราะห์ Unique Value Proposition (UVP) และวางแผน Content Calendar 30 วัน สำหรับโปรโมทซอฟต์แวร์เครื่องมือสำเร็จรูป โดยเน้นตีแผ่ Pain Point ของลูกค้าและแสดงผลลัพธ์ก่อน-หลังใช้งาน',
+    quickActions: [
+      { label: 'วาง Content 30 วัน', prompt: 'วางตาราง Content Pillars 30 วัน สำหรับโปรโมทซอฟต์แวร์เครื่องมือดิจิทัล' },
+      { label: 'คิดไอเดีย Lead Magnet', prompt: 'ออกแบบเครื่องมือฟรีหรือเทมเพลตแจกฟรี (Free Lead Magnet) เพื่อดึงดูดอีเมลลูกค้า' },
+      { label: 'ร่าง UVP 1 ประโยค', prompt: 'เขียนสโลแกน Brand Positioning สั้นๆ 1 ประโยคที่อธิบายคุณค่าของซอฟต์แวร์ได้ชัดเจนทันที' },
+    ],
+  },
+  {
+    id: 'sales_conversion_copywriter',
+    number: '04',
+    name: 'Sales Funnel & Conversion Copywriter',
+    thaiTitle: 'เร่งยอดขาย & ปิดการขายหน้าเว็บ',
+    role: 'Chief Revenue Copywriter / Funnel Architect',
+    color: 'border-emerald-500/40 bg-emerald-950/20 text-emerald-400',
+    badgeColor: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+    icon: TrendingUp,
+    description: 'เขียน Sale Page สไตล์ Direct-Response, ออกแบบ Pricing Tiers, วิดีโอ VSL และข้อความปิดการขายที่ชี้จุดคุ้มทุนชัดเจน',
+    kpi: 'Conversion Rate > 4.5% · Average Order Value',
+    promptTemplate:
+      'ช่วยเขียนคำโฆษณาหน้า Sale Page แบบ Direct-Response ตั้งแต่ Headline หยุดนิ้ว, ชี้ปัญหา, เฉลยโซลูชัน, ตารางเทียบฟีเจอร์, ตารางราคา 3 ระดับ (Basic, Pro, Business) และเงื่อนไขการรับประกันความพอใจ',
+    quickActions: [
+      { label: 'เขียน Sale Page ครบชุด', prompt: 'เขียนโครงสร้าง Sale Page โน้มน้าวใจฉบับเต็มสำหรับซอฟต์แวร์/ระบบเว็บ' },
+      { label: 'วาง Pricing 3 ระดับ', prompt: 'ออกแบบตารางแพ็กเกจราคา 3 ระดับ (Starter / Pro / Lifetime Deal) พร้อม Value Stacking' },
+      { label: 'สคริปต์ VSL 2 นาที', prompt: 'เขียนสคริปต์วิดีโอปิดการขายความยาว 2 นาที สำหรับเปิดตัวเครื่องมือสำเร็จรูป' },
+    ],
+  },
+  {
+    id: 'customer_retention_specialist',
+    number: '05',
+    name: 'Customer Experience & Retention Specialist',
+    thaiTitle: 'ดูแลลูกค้าหลังซื้อ & ผลักดันการซื้อซ้ำ',
+    role: 'Head of Customer Success & Retention',
+    color: 'border-purple-500/40 bg-purple-950/20 text-purple-400',
+    badgeColor: 'border-purple-500/30 bg-purple-500/10 text-purple-300',
+    icon: HeartHandshake,
+    description: 'ออกแบบระบบ Onboarding ให้เกิด Aha! Moment ไวที่สุด, ร่างซีรีส์อีเมลต้อนรับ, และสร้างระบบ Referral ชวนเพื่อน',
+    kpi: 'Churn Rate < 2% · High LTV & Referral Rate',
+    promptTemplate:
+      'ช่วยออกแบบ Customer Onboarding Journey 5 ขั้นตอนหลังลูกค้าชำระเงิน พร้อมร่างซีรีส์อีเมลต้อนรับ 5 วัน (Welcome Email Sequence) และคู่มือคำถามที่พบบ่อย (FAQ Playbook) เพื่อลดอัตราการยกเลิกการใช้งาน',
+    quickActions: [
+      { label: 'วาง Onboarding 5 นาที', prompt: 'ออกแบบขั้นตอน Onboarding ทันทีหลังซื้อ ให้ลูกค้าเริ่มใช้ซอฟต์แวร์ได้ใน 5 นาที' },
+      { label: 'ซีรีส์อีเมลต้อนรับ 5 วัน', prompt: 'เขียนอีเมลต้อนรับ 5 ฉบับ ส่งวันละฉบับหลังการซื้อเพื่อสอนฟีเจอร์และสร้างความคุ้มค่า' },
+      { label: 'ระบบ Referral ชวนเพื่อน', prompt: 'คิดโปรแกรมแนะนำเพื่อน (Referral Program) ที่ให้สิทธิประโยชน์ทั้งผู้ชวนและผู้สมัคร' },
+    ],
+  },
+];
+
+export function AgentsSquadView({ onCopyPrompt }) {
+  const [copiedId, setCopiedId] = useState(null);
+  const [activeAgent, setActiveAgent] = useState(AGENTS[0]);
+
+  const handleCopy = (id, text) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    if (onCopyPrompt) onCopyPrompt(text);
+    setTimeout(() => setCopiedId(null), 2500);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Overview Banner */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-md">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <h2 className="text-lg font-bold text-white">5 AI Executive Squad for Digital Products</h2>
+              <Badge variant="cyan" text="SaaS & Web Tools" />
+            </div>
+            <p className="text-sm text-slate-400">
+              ชุด AI Agents ผู้บริหาร 5 สายงาน พร้อมขับเคลื่อนธุรกิจดิจิทัล: พัฒนาผลิตภัณฑ์ให้สมบูรณ์, วางระบบเอกสารภายใน, สร้างแบรนด์, ปิดการขาย, และรักษาฐานลูกค้า
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-xl border border-slate-700/60 bg-slate-800/80 px-3 py-1.5 text-xs text-slate-300">
+              สถานะ: <strong className="text-emerald-400">ติดตั้งสำเร็จ 5 ตัว</strong>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Agents Grid */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        {AGENTS.map((agent) => {
+          const IconComponent = agent.icon;
+          const isSelected = activeAgent.id === agent.id;
+          return (
+            <button
+              key={agent.id}
+              onClick={() => setActiveAgent(agent)}
+              className={`flex flex-col text-left rounded-2xl border p-5 transition-all ${
+                isSelected
+                  ? `${agent.color} shadow-lg shadow-cyan-950/40 scale-[1.02]`
+                  : 'border-slate-800 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-800/50'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3 w-full">
+                <span className="text-xs font-mono font-bold text-slate-500">#{agent.number}</span>
+                <span className={`rounded-lg px-2 py-0.5 text-[10px] font-semibold border ${agent.badgeColor}`}>
+                  {agent.role.split('/')[0].trim()}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <IconComponent className="h-5 w-5 shrink-0" />
+                <h3 className="text-sm font-bold text-white leading-tight">{agent.thaiTitle}</h3>
+              </div>
+              <p className="text-xs text-slate-400 line-clamp-2 mt-1">{agent.description}</p>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Selected Agent Workspace Card */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 backdrop-blur-md">
+        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-3 max-w-2xl">
+            <div className="flex items-center gap-3">
+              <span className={`p-2 rounded-xl border ${activeAgent.color}`}>
+                <activeAgent.icon className="h-6 w-6" />
+              </span>
+              <div>
+                <h3 className="text-lg font-extrabold text-white">{activeAgent.name}</h3>
+                <p className="text-xs text-slate-400">{activeAgent.role} · {activeAgent.thaiTitle}</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-300 leading-relaxed">{activeAgent.description}</p>
+
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-xs text-slate-500">เป้าหมายหลัก:</span>
+              <span className="rounded-md bg-slate-800 px-2 py-1 text-xs font-mono text-cyan-300 border border-slate-700">
+                {activeAgent.kpi}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Actions List */}
+          <div className="w-full md:w-80 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-400">คำสั่งด่วน (Quick Commands)</span>
+              <Zap className="h-3.5 w-3.5 text-amber-400" />
+            </div>
+            <div className="space-y-1.5">
+              {activeAgent.quickActions.map((action, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleCopy(`qa-${activeAgent.id}-${idx}`, action.prompt)}
+                  className="flex w-full items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-xs text-slate-300 hover:border-cyan-500/40 hover:bg-slate-800 transition-all text-left group"
+                >
+                  <span className="font-medium group-hover:text-cyan-300">{action.label}</span>
+                  {copiedId === `qa-${activeAgent.id}-${idx}` ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5 text-slate-500 group-hover:text-cyan-400 shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Master Prompt Box */}
+        <div className="mt-6 pt-5 border-t border-slate-800/80">
+          <div className="flex items-center justify-between mb-2">
+            <span className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
+              <Terminal className="h-3.5 w-3.5 text-cyan-400" />
+              Master Prompt พร้อมสั่งงาน
+            </span>
+            <button
+              onClick={() => handleCopy(`master-${activeAgent.id}`, activeAgent.promptTemplate)}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-300 hover:border-cyan-500 hover:text-white transition-all shadow-sm"
+            >
+              {copiedId === `master-${activeAgent.id}` ? (
+                <>
+                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="text-emerald-300 font-semibold">คัดลอกคำสั่งแล้ว!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3.5 w-3.5 text-slate-400" />
+                  <span>คัดลอก Prompt</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-4 font-mono text-xs text-slate-300 leading-relaxed select-all">
+            {activeAgent.promptTemplate}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

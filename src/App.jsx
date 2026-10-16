@@ -12,6 +12,7 @@ import { VulnerabilityModal } from './components/dashboard/VulnerabilityModal';
 import { BackupManagerModal } from './components/dashboard/BackupManagerModal';
 import { CommandPalette } from './components/dashboard/CommandPalette';
 import { EnvironmentMatrixView } from './components/dashboard/EnvironmentMatrixView';
+import { AgentsSquadView } from './components/dashboard/AgentsSquadView';
 import { UptimeMonitorView } from './components/dashboard/UptimeMonitorView';
 import { AuditLogsView } from './components/dashboard/AuditLogsView';
 import { Toast } from './components/ui/Toast';
@@ -284,6 +285,17 @@ export default function App() {
         {activeView === 'logs' && (
           <div className="mt-8">
             <AuditLogsView logs={auditLogs} />
+          </div>
+        )}
+
+        {activeView === 'agents' && (
+          <div className="mt-8">
+            <AgentsSquadView
+              onCopyPrompt={() => {
+                if (isSoundActive) playClickSound();
+                showToast('success', 'คัดลอก Prompt แล้ว', 'นำไปสั่งการ AI Agent เพื่อพัฒนาธุรกิจได้ทันที');
+              }}
+            />
           </div>
         )}
       </main>
