@@ -8,6 +8,9 @@ import { ProjectDetailModal } from './components/dashboard/ProjectDetailModal';
 import { HooksManagerModal } from './components/dashboard/HooksManagerModal';
 import { NotificationModal } from './components/dashboard/NotificationModal';
 import { EnvVaultModal } from './components/dashboard/EnvVaultModal';
+import { VulnerabilityModal } from './components/dashboard/VulnerabilityModal';
+import { BackupManagerModal } from './components/dashboard/BackupManagerModal';
+import { CommandPalette } from './components/dashboard/CommandPalette';
 import { UptimeMonitorView } from './components/dashboard/UptimeMonitorView';
 import { AuditLogsView } from './components/dashboard/AuditLogsView';
 import { Toast } from './components/ui/Toast';
@@ -22,6 +25,9 @@ export default function App() {
   const [isHooksModalOpen, setIsHooksModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isEnvVaultModalOpen, setIsEnvVaultModalOpen] = useState(false);
+  const [isVulnModalOpen, setIsVulnModalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -38,6 +44,18 @@ export default function App() {
     document.body.classList.remove('theme-dark', 'theme-light');
     document.body.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light');
   }, [theme]);
+
+  // Global Keyboard Shortcuts (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -144,6 +162,9 @@ export default function App() {
         onOpenHooksModal={() => setIsHooksModalOpen(true)}
         onOpenNotificationModal={() => setIsNotificationModalOpen(true)}
         onOpenEnvVaultModal={() => setIsEnvVaultModalOpen(true)}
+        onOpenVulnModal={() => setIsVulnModalOpen(true)}
+        onOpenBackupModal={() => setIsBackupModalOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -177,20 +198,27 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Search input */}
-              <div className="relative w-full sm:w-72">
+              {/* Search input with Cmd+K hint */}
+              <div className="relative w-full sm:w-80 flex items-center">
                 <Search className={`absolute left-3 top-2.5 h-4 w-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="ค้นหาชื่อโปรเจกต์ หรือ repo..."
-                  className={`w-full rounded-xl border py-2 pl-9 pr-3 text-xs focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 ${
+                  placeholder="ค้นหาโปรเจกต์ หรือ repo..."
+                  className={`w-full rounded-xl border py-2 pl-9 pr-14 text-xs focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 ${
                     isDark
                       ? 'border-slate-700/80 bg-slate-950/60 text-slate-100 placeholder-slate-500'
                       : 'border-slate-300 bg-slate-50 text-slate-900 placeholder-slate-400'
                   }`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setIsCommandPaletteOpen(true)}
+                  className="absolute right-2 rounded-md bg-slate-800/80 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 border border-slate-700/60 hover:text-white"
+                >
+                  ⌘K
+                </button>
               </div>
             </div>
 
@@ -232,7 +260,7 @@ export default function App() {
         <p>© 2026 Antigravity CEO Master Platform • Enforcing Zero "AI Slop" & Production Standards</p>
       </footer>
 
-      {/* Modals & Toasts */}
+      {/* Modals & Command Palette */}
       <ProjectDetailModal
         project={selectedProject}
         isOpen={!!selectedProject}
@@ -257,6 +285,39 @@ export default function App() {
         isOpen={isEnvVaultModalOpen}
         onClose={() => setIsEnvVaultModalOpen(false)}
         onShowToast={showToast}
+      />
+
+      <VulnerabilityModal
+        isOpen={isVulnModalOpen}
+        onClose={() => setIsVulnModalOpen(false)}
+        onShowToast={showToast}
+      />
+
+      <BackupManagerModal
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+        projects={projects}
+        auditLogs={auditLogs}
+        onShowToast={showToast}
+      />
+
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        projects={projects}
+        onSelectProject={(p) => setSelectedProject(p)}
+        onRunAudit={handleRunFullAudit}
+        onExportCsv={handleExportCsv}
+        onExportPdf={handleExportPdf}
+        onExportMarkdown={handleExportMarkdown}
+        onToggleTheme={toggleTheme}
+        theme={theme}
+        onOpenHooks={() => setIsHooksModalOpen(true)}
+        onOpenNotify={() => setIsNotificationModalOpen(true)}
+        onOpenEnvVault={() => setIsEnvVaultModalOpen(true)}
+        onOpenVuln={() => setIsVulnModalOpen(true)}
+        onOpenBackup={() => setIsBackupModalOpen(true)}
+        onSelectView={(v) => setActiveView(v)}
       />
 
       <Toast toast={toast} onClose={() => setToast(null)} />

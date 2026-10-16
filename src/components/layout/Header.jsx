@@ -11,6 +11,9 @@ import {
   FileSpreadsheet,
   Sun,
   Moon,
+  Search,
+  ShieldAlert,
+  Database,
 } from 'lucide-react';
 
 export function Header({
@@ -25,6 +28,9 @@ export function Header({
   onOpenHooksModal,
   onOpenNotificationModal,
   onOpenEnvVaultModal,
+  onOpenVulnModal,
+  onOpenBackupModal,
+  onOpenCommandPalette,
   theme,
   onToggleTheme,
 }) {
@@ -40,7 +46,7 @@ export function Header({
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-extrabold tracking-tight text-white">CEO Master Quality Platform</h1>
               <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-cyan-300 border border-cyan-500/30">
-                v2.6 Executive
+                v2.7 Pro
               </span>
             </div>
             <p className="text-xs text-slate-400">Antigravity 4-Pillar Zero AI Slop & Production-Ready Standard</p>
@@ -49,6 +55,19 @@ export function Header({
 
         {/* Global Action Bar */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Command Palette Button */}
+          <button
+            onClick={onOpenCommandPalette}
+            className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-1.5 text-xs text-slate-300 hover:border-cyan-500/50 hover:bg-slate-800 transition-all shadow-sm"
+            title="เปิด Command Palette (กด Cmd+K หรือ Ctrl+K)"
+          >
+            <Search className="h-3.5 w-3.5 text-slate-400" />
+            <span className="hidden md:inline">คำสั่งด่วน</span>
+            <kbd className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 border border-slate-700">
+              ⌘K
+            </kbd>
+          </button>
+
           {/* View Toggles */}
           <div className="flex rounded-xl bg-slate-800/80 p-1 border border-slate-700/60 text-xs">
             <button
@@ -66,7 +85,7 @@ export function Header({
               }`}
             >
               <Activity className="h-3.5 w-3.5" />
-              Uptime Live
+              Uptime
             </button>
             <button
               onClick={() => setActiveView('logs')}
@@ -75,7 +94,7 @@ export function Header({
               }`}
             >
               <History className="h-3.5 w-3.5" />
-              Audit Logs
+              Logs
             </button>
           </div>
 
@@ -83,9 +102,29 @@ export function Header({
           <button
             onClick={onToggleTheme}
             className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-all active:scale-95"
-            title={theme === 'dark' ? 'เปลี่ยนเป็นธีมสว่าง (Light Executive)' : 'เปลี่ยนเป็นธีมมืด (Dark Slate)'}
+            title={theme === 'dark' ? 'เปลี่ยนเป็นธีมสว่าง' : 'เปลี่ยนเป็นธีมมืด'}
           >
             {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-cyan-400" />}
+          </button>
+
+          {/* Vuln Scanner Button */}
+          <button
+            onClick={onOpenVulnModal}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
+            title="ตรวจเช็คช่องโหว่ความปลอดภัย Dependency Vulnerability Scanner"
+          >
+            <ShieldAlert className="h-3.5 w-3.5 text-rose-400" />
+            <span className="hidden lg:inline">Vuln Scan</span>
+          </button>
+
+          {/* Auto Backup Button */}
+          <button
+            onClick={onOpenBackupModal}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
+            title="จัดการระบบ Auto-Backup & Snapshots"
+          >
+            <Database className="h-3.5 w-3.5 text-teal-400" />
+            <span className="hidden lg:inline">Backup</span>
           </button>
 
           {/* Env Vault Modal Button */}
@@ -105,7 +144,6 @@ export function Header({
             title="ตั้งค่าแจ้งเตือน Telegram / Webhook"
           >
             <Bell className="h-3.5 w-3.5 text-amber-400" />
-            Alert Bot
           </button>
 
           {/* Hooks Manager Button */}
@@ -115,41 +153,42 @@ export function Header({
             title="จัดการและติดตั้ง Git Pre-Commit/Push Hooks"
           >
             <Terminal className="h-3.5 w-3.5 text-emerald-400" />
-            Git Hooks
+            Hooks
           </button>
 
-          {/* Export CSV / Sheets Button */}
+          {/* Export CSV Button */}
           <button
             onClick={onExportCsv}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
+            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-2.5 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
             title="ส่งออก CSV สำหรับ Excel / Google Sheets"
           >
             <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-400" />
             CSV
           </button>
 
-          {/* Export JSON / Backup Button */}
+          {/* Export JSON Button */}
           <button
             onClick={onExportJson}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
+            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-2.5 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
             title="ส่งออก JSON Full Backup"
           >
             <FileDown className="h-3.5 w-3.5 text-cyan-400" />
             JSON
           </button>
 
-          {/* Export Markdown / PDF */}
+          {/* Export MD Button */}
           <button
             onClick={onExportMarkdown}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
+            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-2.5 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
             title="ดาวน์โหลดรายงานสรุป Markdown"
           >
             MD
           </button>
 
+          {/* Print / PDF Button */}
           <button
             onClick={onExportPdf}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
+            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-2.5 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
             title="เปิดหน้าต่างพิมพ์รายงานหรือบันทึกเป็น PDF"
           >
             <Printer className="h-3.5 w-3.5 text-purple-400" />
@@ -160,10 +199,10 @@ export function Header({
           <button
             onClick={onRunAudit}
             disabled={isAuditing}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-900/30 hover:from-emerald-500 hover:to-teal-500 transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-900/30 hover:from-emerald-500 hover:to-teal-500 transition-all active:scale-95 disabled:opacity-50"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isAuditing ? 'animate-spin' : ''}`} />
-            {isAuditing ? 'กำลังตรวจ...' : 'Full QA Audit'}
+            {isAuditing ? 'ตรวจ...' : 'QA Audit'}
           </button>
         </div>
       </div>
