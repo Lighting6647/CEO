@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
+    "lint:imports": "node scripts/check-imports.cjs",
+    "sync:cloud": "node scripts/sync-cloud.cjs",
     "test": "node --test tests/company-hub.test.js",
     "preview": "vite preview",
     "setup:hooks": "node scripts/setup-quality-hooks.js",

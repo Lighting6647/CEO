@@ -20,6 +20,7 @@ import { AiCompanyHubView } from './components/dashboard/AiCompanyHubView';
 import { UptimeMonitorView } from './components/dashboard/UptimeMonitorView';
 import { AuditLogsView } from './components/dashboard/AuditLogsView';
 import { Toast } from './components/ui/Toast';
+import { PwaInstallPrompt } from './components/ui/PwaInstallPrompt';
 import { downloadMarkdownReport, printExecutivePdfReport } from './utils/exportReport';
 import { exportProjectsToCsv, exportProjectsToJson } from './utils/csvExport';
 import { isSoundEnabled, setSoundEnabled, playSuccessSound, playClickSound, playAlertSound } from './utils/soundEffects';
@@ -453,6 +454,7 @@ export default function App() {
       />
 
       <Toast toast={toast} onClose={() => setToast(null)} />
+      <PwaInstallPrompt onShowToast={showToast} />
     </div>
   );
 }

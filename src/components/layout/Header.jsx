@@ -22,6 +22,7 @@ import {
   Stethoscope,
   Palette,
   Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 import { ALL_PROJECT_DESIGN_TOKENS } from '../../data/designTokensData';
 
@@ -63,6 +64,20 @@ export function Header({
               <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-cyan-300 border border-cyan-500/30">
                 D:\Light v3.0
               </span>
+              <a
+                href="https://ceo-flame.vercel.app/"
+                target="_blank"
+                rel="noreferrer"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-950/40 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-900/50 hover:border-emerald-400 transition-all shadow-sm"
+                title="คลิกเพื่อเปิดหน้าเว็บ Vercel Production จริง"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>Vercel Live</span>
+                <ExternalLink className="h-3 w-3 opacity-70" />
+              </a>
             </div>
             <p className="text-xs text-slate-400">6 แผนก AI อัตโนมัติ • 8 สินค้า SaaS เปิดขาย • 17 โฟลเดอร์ใน D:\Light</p>
           </div>
