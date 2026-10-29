@@ -1,21 +1,24 @@
 import fs from 'fs';
 import path from 'path';
 
-const parentDir = 'D:\\All Ai';
+const parentDir = 'D:\\Light';
 
 const targetProjects = [
   'CEO',
-  'แดชบอร์ด',
-  'Sale page',
-  'Pass App',
-  'IOS,Asset',
-  'Tracking',
-  'Inventoty AI',
-  'Blueprint\\บัญชี\\accounting-app',
-  'Remote',
+  'แดชบอร์ด Light',
+  'Sale page Light',
+  'Pass App Light',
+  'IOS,Asset Light',
+  'Tracking Light',
+  'Inventoty AI Light',
+  'บัญชี Light\\accounting-app',
+  'Remote Light',
   'Fitness',
-  'เทรด\\trading-app',
-  'บัตรคอน'
+  'เทรด Light\\trading-app',
+  'บัตรคอน Light',
+  'All Chat Light\\omnichannel-chat-app',
+  'Javis',
+  'Ad Manager Light'
 ];
 
 console.log('🚀 Deploying Antigravity Pre-Commit & Pre-Push Hooks across all subprojects...');

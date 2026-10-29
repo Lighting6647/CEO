@@ -7,17 +7,18 @@ export function HooksManagerModal({ isOpen, onClose, onCopyCommand }) {
   const [copied, setCopied] = useState(false);
 
   const repos = [
-    { name: 'CEO Portal', path: 'D:\\All Ai\\CEO', status: 'Protected' },
-    { name: 'แดชบอร์ด IT Operations', path: 'D:\\All Ai\\แดชบอร์ด', status: 'Protected' },
-    { name: 'Sale Page Platform', path: 'd:\\All Ai\\Sale page', status: 'Protected' },
-    { name: 'Pass App', path: 'D:\\All Ai\\Pass App', status: 'Protected' },
-    { name: 'IOS,Asset Manager', path: 'D:\\All Ai\\IOS,Asset', status: 'Protected' },
-    { name: 'Team Task Tracking', path: 'D:\\All Ai\\Tracking', status: 'Protected' },
-    { name: 'Smart Inventory AI', path: 'D:\\All Ai\\Inventoty AI', status: 'Protected' },
-    { name: 'Thai Accounting App', path: 'D:\\All Ai\\Blueprint\\บัญชี\\accounting-app', status: 'Protected' },
-    { name: 'Remote Access Manager', path: 'D:\\All Ai\\Remote', status: 'Protected' },
-    { name: 'FitPulse Gym OS', path: 'D:\\All Ai\\Fitness', status: 'Protected' },
-    { name: 'Trading Bot Pro', path: 'D:\\All Ai\\เทรด\\trading-app', status: 'Protected' },
+    { name: 'CEO Portal', path: 'D:\\Light\\CEO', status: 'Protected' },
+    { name: 'แดชบอร์ด IT Operations', path: 'D:\\Light\\แดชบอร์ด Light', status: 'Protected' },
+    { name: 'Sale Page Platform', path: 'D:\\Light\\Sale page Light', status: 'Protected' },
+    { name: 'Pass App', path: 'D:\\Light\\Pass App Light', status: 'Protected' },
+    { name: 'IOS,Asset Manager', path: 'D:\\Light\\IOS,Asset Light', status: 'Protected' },
+    { name: 'Team Task Tracking', path: 'D:\\Light\\Tracking Light', status: 'Protected' },
+    { name: 'Smart Inventory AI', path: 'D:\\Light\\Inventoty AI Light', status: 'Protected' },
+    { name: 'Thai Accounting App', path: 'D:\\Light\\บัญชี Light\\accounting-app', status: 'Protected' },
+    { name: 'Remote Access Manager', path: 'D:\\Light\\Remote Light', status: 'Protected' },
+    { name: 'FitPulse Gym OS', path: 'D:\\Light\\Fitness', status: 'Protected' },
+    { name: 'Trading Bot Pro', path: 'D:\\Light\\เทรด Light\\trading-app', status: 'Protected' },
+    { name: 'ThaiTicket Concert Hub', path: 'D:\\Light\\บัตรคอน Light', status: 'Protected' },
   ];
 
   const handleCopy = () => {

@@ -6,8 +6,8 @@ import imageio_ffmpeg
 from PIL import Image, ImageDraw, ImageFont
 
 FFMPEG_EXE = imageio_ffmpeg.get_ffmpeg_exe()
-OUTPUT_DIR = r"D:\All Ai\CEO\video_assets"
-FINAL_VIDEO = r"D:\All Ai\CEO\enterprise_presentation.mp4"
+OUTPUT_DIR = r"D:\Light\CEO\video_assets"
+FINAL_VIDEO = r"D:\Light\CEO\enterprise_presentation.mp4"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 

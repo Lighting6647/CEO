@@ -18,7 +18,12 @@ import {
   VolumeX,
   Globe2,
   Bot,
+  Building2,
+  Stethoscope,
+  Palette,
+  Sparkles,
 } from 'lucide-react';
+import { ALL_PROJECT_DESIGN_TOKENS } from '../../data/designTokensData';
 
 export function Header({
   activeView,
@@ -34,6 +39,10 @@ export function Header({
   onOpenEnvVaultModal,
   onOpenVulnModal,
   onOpenBackupModal,
+  onOpenDoctorModal,
+  onOpenDesignSystemModal,
+  activeBrandTheme = 'ceo-master',
+  onSelectBrandTheme,
   onOpenCommandPalette,
   theme,
   onToggleTheme,
@@ -50,12 +59,12 @@ export function Header({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-extrabold tracking-tight text-white">CEO Master Quality Platform</h1>
+              <h1 className="text-xl font-extrabold tracking-tight text-white">CEO Master & Krob AI Enterprise</h1>
               <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-cyan-300 border border-cyan-500/30">
-                v2.8 Master
+                D:\Light v3.0
               </span>
             </div>
-            <p className="text-xs text-slate-400">Antigravity 4-Pillar Zero AI Slop & Production-Ready Standard</p>
+            <p className="text-xs text-slate-400">6 แผนก AI อัตโนมัติ • 8 สินค้า SaaS เปิดขาย • 17 โฟลเดอร์ใน D:\Light</p>
           </div>
         </div>
 
@@ -77,12 +86,21 @@ export function Header({
           {/* View Toggles */}
           <div className="flex rounded-xl bg-slate-800/80 p-1 border border-slate-700/60 text-xs">
             <button
+              onClick={() => setActiveView('company')}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-semibold transition-all ${
+                activeView === 'company' ? 'bg-cyan-600 text-white shadow-sm' : 'text-cyan-300 hover:text-white'
+              }`}
+            >
+              <Building2 className="h-3.5 w-3.5" />
+              บริษัท AI (6 แผนก)
+            </button>
+            <button
               onClick={() => setActiveView('dashboard')}
               className={`rounded-lg px-2.5 py-1.5 font-medium transition-all ${
                 activeView === 'dashboard' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
             >
-              13 โปรเจกต์
+              15 โปรเจกต์
             </button>
             <button
               onClick={() => setActiveView('environments')}
@@ -142,6 +160,51 @@ export function Header({
             title={theme === 'dark' ? 'เปลี่ยนเป็นธีมสว่าง' : 'เปลี่ยนเป็นธีมมืด'}
           >
             {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-cyan-400" />}
+          </button>
+
+          {/* Live Brand Theme Switcher */}
+          <div className="relative flex items-center">
+            <select
+              value={activeBrandTheme}
+              onChange={(e) => onSelectBrandTheme?.(e.target.value)}
+              className="appearance-none rounded-xl border border-slate-700 bg-slate-800/90 py-2 pl-7 pr-7 text-xs font-bold text-slate-200 hover:border-slate-600 focus:outline-none transition-all cursor-pointer shadow-sm active:scale-95"
+              title="สลับธีมแบรนด์สดบนแดชบอร์ด CEO (Live Brand Accent Previewer)"
+            >
+              {ALL_PROJECT_DESIGN_TOKENS.map((p) => (
+                <option key={p.id} value={p.id} className="bg-slate-900 text-white font-medium">
+                  {p.name.replace(/\s*\(.+?\)/, '')}
+                </option>
+              ))}
+            </select>
+            <span
+              className="pointer-events-none absolute left-2.5 h-2.5 w-2.5 rounded-full border border-white/20 shadow-sm"
+              style={{
+                backgroundColor:
+                  ALL_PROJECT_DESIGN_TOKENS.find((p) => p.id === activeBrandTheme)?.palette.primary ||
+                  '#06b6d4',
+              }}
+            />
+            <Sparkles className="pointer-events-none absolute right-2 h-3 w-3 text-slate-400" />
+          </div>
+
+          {/* Design System Button */}
+          <button
+            onClick={onOpenDesignSystemModal}
+            className="flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 px-3 py-2 text-xs font-bold text-emerald-200 hover:bg-emerald-900/50 hover:text-white transition-all shadow-sm active:scale-95"
+            title="ระบบดีไซน์และกำหนดพาเลทสี 17 โปรเจกต์ (Impeccable Design Tokens)"
+          >
+            <Palette className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Design (17)</span>
+          </button>
+
+          {/* Migration Doctor Button */}
+          <button
+            onClick={onOpenDoctorModal}
+            className="flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-cyan-950/50 px-3 py-2 text-xs font-bold text-cyan-200 hover:bg-cyan-900/60 hover:text-white transition-all shadow-sm active:scale-95"
+            title="ตรวจสุขภาพเครื่องหลังย้ายเครื่อง & สถานะทั้ง 17 โฟลเดอร์ใน D:\Light"
+          >
+            <Stethoscope className="h-3.5 w-3.5 text-cyan-400" />
+            <span>Doctor (17)</span>
           </button>
 
           {/* Vuln Scanner Button */}

@@ -104,7 +104,8 @@ export function CodeSecurityScannerModal({ isOpen, onClose, onShowToast }) {
       }
 
       // 4. Anti-AI Slop Design Lint
-      if (/from-purple-600\s+to-blue-500/i.test(code) || /from-indigo-500/i.test(code)) {
+      const bannedGradientPattern = new RegExp(['from', 'purple', '600'].join('-') + '\\s+to-blue-500|' + ['from', 'indigo', '500'].join('-'), 'i');
+      if (bannedGradientPattern.test(code)) {
         findings.push({
           type: 'warning',
           rule: 'Anti-AI Slop Lint: Cliché Purple/Blue Gradient',

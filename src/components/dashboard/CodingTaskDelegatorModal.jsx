@@ -13,6 +13,7 @@ import {
   ChevronUp,
   Eye,
   Shield,
+  ShieldAlert,
   GitPullRequest,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';

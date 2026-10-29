@@ -10,9 +10,13 @@ import { NotificationModal } from './components/dashboard/NotificationModal';
 import { EnvVaultModal } from './components/dashboard/EnvVaultModal';
 import { VulnerabilityModal } from './components/dashboard/VulnerabilityModal';
 import { BackupManagerModal } from './components/dashboard/BackupManagerModal';
+import { MigrationDoctorModal } from './components/dashboard/MigrationDoctorModal';
+import { DesignSystemModal } from './components/dashboard/DesignSystemModal';
 import { CommandPalette } from './components/dashboard/CommandPalette';
+import { ALL_PROJECT_DESIGN_TOKENS } from './data/designTokensData';
 import { EnvironmentMatrixView } from './components/dashboard/EnvironmentMatrixView';
 import { AgentsSquadView } from './components/dashboard/AgentsSquadView';
+import { AiCompanyHubView } from './components/dashboard/AiCompanyHubView';
 import { UptimeMonitorView } from './components/dashboard/UptimeMonitorView';
 import { AuditLogsView } from './components/dashboard/AuditLogsView';
 import { Toast } from './components/ui/Toast';
@@ -23,13 +27,15 @@ import { isSoundEnabled, setSoundEnabled, playSuccessSound, playClickSound, play
 export default function App() {
   const [projects] = useState(INITIAL_PROJECTS);
   const [auditLogs, setAuditLogs] = useState(INITIAL_AUDIT_LOGS);
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'environments' | 'uptime' | 'logs'
+  const [activeView, setActiveView] = useState('company'); // 'company' | 'dashboard' | 'environments' | 'uptime' | 'logs' | 'agents'
   const [selectedProject, setSelectedProject] = useState(null);
   const [isHooksModalOpen, setIsHooksModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isEnvVaultModalOpen, setIsEnvVaultModalOpen] = useState(false);
   const [isVulnModalOpen, setIsVulnModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
+  const [isDesignModalOpen, setIsDesignModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,13 +57,61 @@ export default function App() {
 
   // Theme state: 'dark' | 'light'
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('antigravity_theme') || 'dark';
+    try {
+      return localStorage.getItem('antigravity_theme') || 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+
+  // Active Brand Theme for Live Preview (17 Projects)
+  const [activeBrandTheme, setActiveBrandTheme] = useState(() => {
+    try {
+      return localStorage.getItem('ceo_brand_theme') || 'ceo-master';
+    } catch {
+      return 'ceo-master';
+    }
   });
 
   useEffect(() => {
-    localStorage.setItem('antigravity_theme', theme);
-    document.body.classList.remove('theme-dark', 'theme-light');
-    document.body.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light');
+    try {
+      localStorage.setItem('ceo_brand_theme', activeBrandTheme);
+    } catch {
+      // Storage unavailable
+    }
+    const defaultPalette = {
+      primary: '#06b6d4',
+      accent: '#10b981',
+      cardSurface: '#0f172a',
+      border: '#1e293b',
+      background: '#0b0f19',
+    };
+    const projToken =
+      (Array.isArray(ALL_PROJECT_DESIGN_TOKENS) &&
+        ALL_PROJECT_DESIGN_TOKENS.find((p) => p.id === activeBrandTheme)) ||
+      (ALL_PROJECT_DESIGN_TOKENS && ALL_PROJECT_DESIGN_TOKENS[0]) ||
+      { palette: defaultPalette };
+
+    const palette = projToken.palette || defaultPalette;
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.style.setProperty('--brand-primary', palette.primary || '#06b6d4');
+      document.documentElement.style.setProperty('--brand-accent', palette.accent || '#10b981');
+      document.documentElement.style.setProperty('--brand-surface', palette.cardSurface || '#0f172a');
+      document.documentElement.style.setProperty('--brand-border', palette.border || '#1e293b');
+      document.documentElement.style.setProperty('--brand-bg', palette.background || '#0b0f19');
+    }
+  }, [activeBrandTheme]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('antigravity_theme', theme);
+    } catch {
+      // Storage unavailable
+    }
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.classList.remove('theme-dark', 'theme-light');
+      document.body.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light');
+    }
   }, [theme]);
 
   // Global Keyboard Shortcuts (Cmd+K / Ctrl+K)
@@ -190,6 +244,17 @@ export default function App() {
         onOpenEnvVaultModal={() => { playClickSound(); setIsEnvVaultModalOpen(true); }}
         onOpenVulnModal={() => { playClickSound(); setIsVulnModalOpen(true); }}
         onOpenBackupModal={() => { playClickSound(); setIsBackupModalOpen(true); }}
+        onOpenDoctorModal={() => { playClickSound(); setIsDoctorModalOpen(true); }}
+        onOpenDesignSystemModal={() => { playClickSound(); setIsDesignModalOpen(true); }}
+        activeBrandTheme={activeBrandTheme}
+        onSelectBrandTheme={(brandId) => {
+          playClickSound();
+          setActiveBrandTheme(brandId);
+          const brand = ALL_PROJECT_DESIGN_TOKENS.find((p) => p.id === brandId);
+          if (brand) {
+            showToast('info', 'สลับธีมแบรนด์สด', `แสดงผลพาเลทสีของ "${brand.name}" บนแดชบอร์ด CEO`);
+          }
+        }}
         onOpenCommandPalette={() => { playClickSound(); setIsCommandPaletteOpen(true); }}
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -203,6 +268,10 @@ export default function App() {
         <StatCards projects={projects} />
 
         {/* Content Views */}
+        {activeView === 'company' && (
+          <AiCompanyHubView onShowToast={showToast} />
+        )}
+
         {activeView === 'dashboard' && (
           <div className="mt-8 space-y-6">
             {/* Filter and Search Bar */}
@@ -345,6 +414,23 @@ export default function App() {
         projects={projects}
         auditLogs={auditLogs}
         onShowToast={showToast}
+      />
+
+      <MigrationDoctorModal
+        isOpen={isDoctorModalOpen}
+        onClose={() => setIsDoctorModalOpen(false)}
+        onShowToast={showToast}
+      />
+
+      <DesignSystemModal
+        isOpen={isDesignModalOpen}
+        onClose={() => setIsDesignModalOpen(false)}
+        onShowToast={showToast}
+        activeBrandTheme={activeBrandTheme}
+        onSelectBrandTheme={(brandId) => {
+          playClickSound();
+          setActiveBrandTheme(brandId);
+        }}
       />
 
       <CommandPalette

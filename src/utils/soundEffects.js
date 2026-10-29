@@ -22,12 +22,20 @@ function getAudioContext() {
 }
 
 export function isSoundEnabled() {
-  const val = localStorage.getItem(SOUND_STORAGE_KEY);
-  return val === null ? true : val === 'true';
+  try {
+    const val = localStorage.getItem(SOUND_STORAGE_KEY);
+    return val === null ? true : val === 'true';
+  } catch {
+    return false;
+  }
 }
 
 export function setSoundEnabled(enabled) {
-  localStorage.setItem(SOUND_STORAGE_KEY, String(enabled));
+  try {
+    localStorage.setItem(SOUND_STORAGE_KEY, String(enabled));
+  } catch {
+    // Storage unavailable
+  }
 }
 
 /**
