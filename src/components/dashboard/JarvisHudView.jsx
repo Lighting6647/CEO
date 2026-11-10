@@ -73,6 +73,11 @@ import {
   parseMediaVoiceCommand,
   isAutoSummaryCommand,
   generateAutoSummaryReader,
+  isWebTranslateCommand,
+  isWebSnapshotCommand,
+  recordWebSnapshotToMem0,
+  isSmartFormAutoFillCommand,
+  getExecutiveFormProfile,
 } from '../../services/externalWebService';
 
 export function JarvisHudView({
@@ -1133,6 +1138,9 @@ export function JarvisHudView({
         const webNavCmd = parseWebNavigationVoiceCommand(clean);
         const isReaderCmd = isWebReaderModeCommand(clean);
         const isDualPaneCmd = isDualPaneWebCommand(clean);
+        const isTranslateCmd = isWebTranslateCommand(clean);
+        const isSnapshotCmd = isWebSnapshotCommand(clean);
+        const isAutoFillCmd = isSmartFormAutoFillCommand(clean);
         const isCloseSplitScreenCommand =
           /(?<!เ)ปิดเว็บในจอ/.test(cleanNoSpace) ||
           cleanNoSpace.includes('ปิดเว็บย่อย') ||
@@ -1152,6 +1160,75 @@ export function JarvisHudView({
 
         if (result) {
           // Handled by Shortcut Memory above
+        } else if (isTranslateCmd && isSplitScreenOpen) {
+          playSciFiBeep();
+          dispatchWebNavigation('translate');
+          result = {
+            action: 'WEB_TRANSLATE_TOGGLED',
+            squadId: 'ops',
+            delegatedTo: 'J.A.R.V.I.S. Neural Web Translator',
+            reply: `แปลหน้าเว็บ ${splitScreenTitle || ''} เป็นภาษาไทยให้ ${userTitle} เรียบร้อยครับ กำลังแสดงผลผ่าน Google Translate บนหน้าจอ HUD ครับ`,
+            speech: `แปลหน้าเว็บเป็นภาษาไทยให้ ${userTitle} เรียบร้อยแล้วครับ`,
+            hologram: {
+              title: 'NEURAL TRANSLATOR // THAI TRANSLATION ACTIVE',
+              category: 'LINGUISTIC SYNTHESIS',
+              badge: 'THAI TRANSLATED',
+              targetUrl: splitScreenUrl,
+              details: [
+                { label: 'Original Target', val: splitScreenTitle || 'Active Web' },
+                { label: 'Translation Engine', val: 'Google Neural Machine Translation' },
+                { label: 'Display Output', val: 'In-HUD Real-time View' },
+              ],
+            },
+          };
+        } else if (isSnapshotCmd && isSplitScreenOpen) {
+          playSuccessSound();
+          dispatchWebNavigation('snapshot');
+          const snap = recordWebSnapshotToMem0({ url: splitScreenUrl, title: splitScreenTitle });
+          if (onShowToast) {
+            onShowToast('info', '📸 แคปหน้าจอเว็บสำเร็จ', `บันทึกลง Mem0: ${snap.title}`);
+          }
+          result = {
+            action: 'WEB_SNAPSHOT_CAPTURED',
+            squadId: 'ops',
+            delegatedTo: 'Mem0 Visual Snapshot Engine',
+            reply: `แคปเจอร์ภาพหน้าเว็บ "${snap.title}" (${snap.url}) บันทึกลงในคลังความจำ Mem0 ของ ${userTitle} เรียบร้อยครับ!`,
+            speech: `แคปภาพหน้าเว็บและบันทึกลงหน่วยความจำเรียบร้อยแล้วครับ ${userTitle}`,
+            hologram: {
+              title: 'WEB SNAPSHOT // SAVED TO MEM0',
+              category: 'VISUAL INTELLIGENCE MEMORY',
+              badge: 'PINNED IN CLOUD',
+              targetUrl: snap.url,
+              details: [
+                { label: 'Snapshot ID', val: snap.id },
+                { label: 'Page Title', val: snap.title },
+                { label: 'Timestamp', val: snap.timestamp },
+                { label: 'Mem0 Category', val: snap.category },
+              ],
+            },
+          };
+        } else if (isAutoFillCmd && isSplitScreenOpen) {
+          playSciFiBeep();
+          dispatchWebNavigation('autofill');
+          const profile = getExecutiveFormProfile(userTitle);
+          result = {
+            action: 'SMART_FORM_AUTOFILL_OPENED',
+            squadId: 'ops',
+            delegatedTo: 'J.A.R.V.I.S. Smart Form Auto-Filler',
+            reply: `เปิดแถบข้อมูลกรอกฟอร์มอัจฉริยะ (Smart Form Auto-Filler) สำหรับ ${userTitle} บนหน้าต่างเว็บ HUD เรียบร้อยครับ!\n• ชื่อ: ${profile.fullName}\n• อีเมล: ${profile.email}\n• บริษัท: ${profile.company}\n• สามารถคลิกปุ่มเพื่อคัดลอกลงแบบฟอร์มได้ทันทีครับ`,
+            speech: `เปิดแถบกรอกฟอร์มอัจฉริยะให้ ${userTitle} เรียบร้อยแล้วครับ`,
+            hologram: {
+              title: 'SMART FORM // AUTO-FILLER ACTIVE',
+              category: 'EXECUTIVE CREDENTIAL INJECTOR',
+              badge: 'LEVEL 5 CLEARANCE',
+              details: [
+                { label: 'Identity', val: profile.fullName },
+                { label: 'Email', val: profile.email },
+                { label: 'Company', val: profile.company },
+                { label: 'Tax ID', val: profile.taxId },
+              ],
+            },
+          };
         } else if (webNavCmd && isSplitScreenOpen) {
           playClickSound();
           dispatchWebNavigation(webNavCmd.action);
@@ -2218,6 +2295,7 @@ export function JarvisHudView({
       handleSelectVoice,
       isSplitScreenOpen,
       splitScreenTitle,
+      splitScreenUrl,
     ]
   );
 

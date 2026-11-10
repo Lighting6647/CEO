@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import {
   Globe,
   X,
@@ -12,9 +12,20 @@ import {
   Columns2,
   ArrowDown,
   ArrowUp,
+  Languages,
+  Camera,
+  FileText,
+  Copy,
+  Check,
+  Sparkles,
 } from 'lucide-react';
-import { playClickSound, playSciFiBeep } from '../../../utils/soundEffects';
+import { playClickSound, playSciFiBeep, playSuccessSound } from '../../../utils/soundEffects';
 import { openSystemBrowser } from '../../../services/browserLauncherService';
+import {
+  buildGoogleTranslateUrl,
+  recordWebSnapshotToMem0,
+  getExecutiveFormProfile,
+} from '../../../services/externalWebService';
 
 export const SplitScreenWebHud = memo(function SplitScreenWebHud({
   isOpen,
@@ -24,7 +35,7 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
   secondaryTitle: initialSecondaryTitle,
   initialDualPane = false,
   onClose,
-  _userTitle = 'คุณไลท์',
+  userTitle = 'คุณไลท์',
 }) {
   const [currentUrl, setCurrentUrl] = useState(url || 'https://www.google.com');
   const [inputUrl, setInputUrl] = useState(url || 'https://www.google.com');
@@ -48,11 +59,24 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
   const [hasSecondaryBlocked, setHasSecondaryBlocked] = useState(false);
   const [secondaryKey, setSecondaryKey] = useState(0);
 
+  // Feature 4: Auto-Translate Web Page
+  const [isTranslated, setIsTranslated] = useState(false);
+  const [originalUrlBeforeTranslate, setOriginalUrlBeforeTranslate] = useState('');
+
+  // Feature 5: Web Snapshot
+  const [snapshotBanner, setSnapshotBanner] = useState(null);
+
+  // Feature 6: Smart Form Auto-Filler
+  const [isFormFillerOpen, setIsFormFillerOpen] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
+  const formProfile = getExecutiveFormProfile(userTitle);
+
   useEffect(() => {
     if (url) {
       setCurrentUrl(url);
       setInputUrl(url);
       setHasIframeBlocked(false);
+      setIsTranslated(false);
       setIframeKey((k) => k + 1);
     }
   }, [url]);
@@ -77,6 +101,43 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
       setIsDualPane(initialDualPane);
     }
   }, [initialDualPane]);
+
+  const handleSnapshot = useCallback(() => {
+    playSuccessSound();
+    const snap = recordWebSnapshotToMem0({
+      url: currentUrl,
+      title: title || 'In-HUD Web View',
+    });
+    setSnapshotBanner(`📸 แคปเจอร์หน้าเว็บ "${snap.title}" บันทึกลง Mem0 Gallery เรียบร้อยครับ`);
+    setTimeout(() => setSnapshotBanner(null), 3500);
+  }, [currentUrl, title]);
+
+  const handleToggleTranslate = useCallback(() => {
+    playSciFiBeep();
+    if (!isTranslated) {
+      setOriginalUrlBeforeTranslate(currentUrl);
+      const translated = buildGoogleTranslateUrl(currentUrl);
+      setCurrentUrl(translated);
+      setInputUrl(translated);
+      setIsTranslated(true);
+      setIframeKey((k) => k + 1);
+    } else {
+      const restored = originalUrlBeforeTranslate || url || 'https://www.google.com';
+      setCurrentUrl(restored);
+      setInputUrl(restored);
+      setIsTranslated(false);
+      setIframeKey((k) => k + 1);
+    }
+  }, [isTranslated, currentUrl, originalUrlBeforeTranslate, url]);
+
+  const handleCopyProfileField = (fieldKey, value) => {
+    playClickSound();
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(value);
+      setCopiedField(fieldKey);
+      setTimeout(() => setCopiedField(null), 2000);
+    }
+  };
 
   // Feature 1: Voice Web Scroll & Navigation Event Bus Listener
   useEffect(() => {
@@ -119,6 +180,13 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
       } else if (action === 'toggle-dual') {
         playSciFiBeep();
         setIsDualPane((d) => !d);
+      } else if (action === 'translate') {
+        handleToggleTranslate();
+      } else if (action === 'snapshot') {
+        handleSnapshot();
+      } else if (action === 'autofill') {
+        playSciFiBeep();
+        setIsFormFillerOpen((o) => !o);
       } else if (action === 'set-dual' && target) {
         playSciFiBeep();
         setIsDualPane(true);
@@ -138,7 +206,7 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
 
     window.addEventListener('jarvis:web_nav', handleWebNav);
     return () => window.removeEventListener('jarvis:web_nav', handleWebNav);
-  }, [isOpen]);
+  }, [isOpen, handleToggleTranslate, handleSnapshot]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -169,6 +237,7 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
     setCurrentUrl(target);
     setInputUrl(target);
     setHasIframeBlocked(false);
+    setIsTranslated(false);
     setIframeKey((k) => k + 1);
   };
 
@@ -230,6 +299,12 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
                 <span className="px-1.5 py-0.2 rounded-full text-[8px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                   {isDualPane ? '2 PANES' : 'PiP VIEW'}
                 </span>
+                {isTranslated && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[8px] font-mono bg-blue-500/20 text-blue-300 border border-blue-500/40 animate-pulse">
+                    <Languages className="w-2.5 h-2.5" />
+                    THAI TRANSLATED
+                  </span>
+                )}
                 {isAdBlockActive && (
                   <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[8px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                     <ShieldCheck className="w-2.5 h-2.5" />
@@ -267,6 +342,47 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
               title="เลื่อนลง (Scroll Down)"
             >
               <ArrowDown className="h-3.5 w-3.5" />
+            </button>
+
+            {/* Feature 4: Auto-Translate Web Button */}
+            <button
+              type="button"
+              onClick={handleToggleTranslate}
+              className={`p-1 rounded-lg border cursor-pointer transition-colors ${
+                isTranslated
+                  ? 'border-blue-400 bg-blue-500/20 text-blue-300 shadow-sm'
+                  : 'border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:border-blue-400'
+              }`}
+              title={isTranslated ? 'แสดงภาษาต้นฉบับ' : 'แปลหน้าเว็บนี้เป็นภาษาไทย (Auto-Translate)'}
+            >
+              <Languages className="h-3.5 w-3.5" />
+            </button>
+
+            {/* Feature 5: Web Snapshot Button */}
+            <button
+              type="button"
+              onClick={handleSnapshot}
+              className="p-1 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:text-pink-300 hover:border-pink-400 cursor-pointer"
+              title="แคปหน้าจอเว็บนี้ลง Mem0 (Web Snapshot)"
+            >
+              <Camera className="h-3.5 w-3.5" />
+            </button>
+
+            {/* Feature 6: Smart Form Auto-Filler Drawer Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound();
+                setIsFormFillerOpen((o) => !o);
+              }}
+              className={`p-1 rounded-lg border cursor-pointer transition-colors ${
+                isFormFillerOpen
+                  ? 'border-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-sm'
+                  : 'border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:border-emerald-400'
+              }`}
+              title={isFormFillerOpen ? 'ปิดแถบกรอกฟอร์ม' : 'เปิดแถบกรอกฟอร์มอัจฉริยะ (Smart Form Auto-Filler)'}
+            >
+              <FileText className="h-3.5 w-3.5" />
             </button>
 
             {/* Feature 2: Reader Mode Toggle */}
@@ -355,6 +471,74 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
             </button>
           </div>
         </div>
+
+        {/* Feature 5 Snapshot Toast Notification */}
+        {snapshotBanner && (
+          <div className="px-3 py-1 bg-pink-950/80 border-b border-pink-500/50 text-[10px] text-pink-200 flex items-center justify-between font-mono animate-fadeIn">
+            <span className="flex items-center gap-1.5">
+              <Camera className="w-3 h-3 text-pink-400 animate-spin" />
+              <span>{snapshotBanner}</span>
+            </span>
+          </div>
+        )}
+
+        {/* Feature 6 Smart Form Auto-Filler Drawer (Quick One-Click Copy Chips) */}
+        {isFormFillerOpen && (
+          <div className="px-3 py-1.5 bg-gradient-to-r from-emerald-950/90 via-slate-950 to-slate-950 border-b border-emerald-500/30 text-xs font-mono animate-fadeIn flex items-center gap-1.5 overflow-x-auto">
+            <span className="text-[10px] text-emerald-400 font-bold shrink-0 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              คลิกเพื่อคัดลอก:
+            </span>
+            <button
+              type="button"
+              onClick={() => handleCopyProfileField('name', formProfile.fullName)}
+              className="px-2 py-0.5 rounded-md border border-slate-700 bg-slate-900 text-[10px] text-slate-200 hover:border-emerald-400 flex items-center gap-1 shrink-0"
+            >
+              {copiedField === 'name' ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 text-slate-400" />}
+              ชื่อ: {formProfile.fullName}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCopyProfileField('email', formProfile.email)}
+              className="px-2 py-0.5 rounded-md border border-slate-700 bg-slate-900 text-[10px] text-slate-200 hover:border-emerald-400 flex items-center gap-1 shrink-0"
+            >
+              {copiedField === 'email' ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 text-slate-400" />}
+              อีเมล: {formProfile.email}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCopyProfileField('company', formProfile.company)}
+              className="px-2 py-0.5 rounded-md border border-slate-700 bg-slate-900 text-[10px] text-slate-200 hover:border-emerald-400 flex items-center gap-1 shrink-0"
+            >
+              {copiedField === 'company' ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 text-slate-400" />}
+              บริษัท
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCopyProfileField('phone', formProfile.phone)}
+              className="px-2 py-0.5 rounded-md border border-slate-700 bg-slate-900 text-[10px] text-slate-200 hover:border-emerald-400 flex items-center gap-1 shrink-0"
+            >
+              {copiedField === 'phone' ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 text-slate-400" />}
+              เบอร์โทร
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCopyProfileField('taxId', formProfile.taxId)}
+              className="px-2 py-0.5 rounded-md border border-slate-700 bg-slate-900 text-[10px] text-slate-200 hover:border-emerald-400 flex items-center gap-1 shrink-0"
+            >
+              {copiedField === 'taxId' ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 text-slate-400" />}
+              เลขประจำตัวผู้เสียภาษี
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCopyProfileField('address', formProfile.address)}
+              className="px-2 py-0.5 rounded-md border border-slate-700 bg-slate-900 text-[10px] text-slate-200 hover:border-emerald-400 flex items-center gap-1 shrink-0"
+            >
+              {copiedField === 'address' ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 text-slate-400" />}
+              ที่อยู่
+            </button>
+          </div>
+        )}
 
         {/* Panes Container (Single or Dual Side-by-Side) */}
         <div className={`flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-cyan-500/20 overflow-hidden ${

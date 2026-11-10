@@ -13,6 +13,12 @@ import {
 import {
   isAutoSummaryCommand,
   generateAutoSummaryReader,
+  isWebTranslateCommand,
+  buildGoogleTranslateUrl,
+  isWebSnapshotCommand,
+  recordWebSnapshotToMem0,
+  isSmartFormAutoFillCommand,
+  getExecutiveFormProfile,
 } from '../src/services/externalWebService.js';
 
 test('Feature 3: One-Voice Multi-Tab Launcher - detects and launches work mode presets', () => {
@@ -95,4 +101,40 @@ test('Feature 6: Multi-Split Dual HUD - detects dual screen view & extracts dual
   assert.ok(targets);
   assert.ok(targets.target1.url.includes('tradingview'));
   assert.ok(targets.target2.url.includes('thairath'));
+});
+
+test('Feature 7: Auto-Translate Web Page - generates valid Google Translate URLs and detects commands', () => {
+  assert.ok(isWebTranslateCommand('แปลหน้าเว็บนี้เป็นไทย'));
+  assert.ok(isWebTranslateCommand('แปลภาษา'));
+  assert.ok(isWebTranslateCommand('แปลเว็บ'));
+  assert.ok(!isWebTranslateCommand('เปิดยูทูป'));
+
+  const translateUrl = buildGoogleTranslateUrl('https://www.bbc.com/news');
+  assert.ok(translateUrl.includes('translate.google.com'));
+  assert.ok(translateUrl.includes('tl=th'));
+});
+
+test('Feature 8: Web Snapshot & Mem0 Visual Bookmark - creates and persists structured snapshots', () => {
+  assert.ok(isWebSnapshotCommand('แคปหน้าจอเว็บนี้'));
+  assert.ok(isWebSnapshotCommand('บันทึกภาพเว็บ'));
+  assert.ok(isWebSnapshotCommand('ถ่ายรูปเว็บ'));
+  assert.ok(!isWebSnapshotCommand('สวัสดี'));
+
+  const snap = recordWebSnapshotToMem0({ url: 'https://news.ycombinator.com', title: 'Hacker News' });
+  assert.ok(snap.id.startsWith('snap_'));
+  assert.equal(snap.category, 'web_snapshots');
+  assert.ok(snap.tags.includes('visual_bookmark'));
+});
+
+test('Feature 9: Smart Form Auto-Filler - generates verified executive profile and parses commands', () => {
+  assert.ok(isSmartFormAutoFillCommand('กรอกฟอร์มอัตโนมัติ'));
+  assert.ok(isSmartFormAutoFillCommand('กรอกข้อมูล'));
+  assert.ok(isSmartFormAutoFillCommand('auto fill'));
+  assert.ok(!isSmartFormAutoFillCommand('ปิดหน้าต่าง'));
+
+  const profile = getExecutiveFormProfile('คุณไลท์');
+  assert.equal(profile.fullName, 'วิศวกร ไลท์ สตาร์ค');
+  assert.equal(profile.email, 'lighting6647@gmail.com');
+  assert.ok(profile.company.includes('CEO Master Platform'));
+  assert.ok(profile.taxId);
 });

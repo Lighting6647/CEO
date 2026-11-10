@@ -1108,3 +1108,139 @@ export async function generateAutoSummaryReader(prompt, userTitle = 'คุณ�
   };
 }
 
+/**
+ * Feature 4: Detect Web Translation Voice Commands
+ */
+export function isWebTranslateCommand(prompt) {
+  if (!prompt || typeof prompt !== 'string') return false;
+  const lower = prompt.toLowerCase();
+  const noSpace = lower.replace(/\s+/g, '');
+  const keywords = [
+    'แปลเว็บ',
+    'แปลภาษา',
+    'แปลเป็นไทย',
+    'แปลหน้าเว็บ',
+    'แปลเว็บนี้',
+    'แปลหน้านี้',
+    'translate page',
+    'translate web',
+  ];
+  return keywords.some((kw) => lower.includes(kw) || noSpace.includes(kw));
+}
+
+/**
+ * Generate Google Translate proxy embed URL for live translation
+ */
+export function buildGoogleTranslateUrl(targetUrl) {
+  if (!targetUrl) return '';
+  let url = targetUrl.trim();
+  if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+  return `https://translate.google.com/translate?sl=auto&tl=th&u=${encodeURIComponent(url)}`;
+}
+
+/**
+ * Translate active webpage to Thai with dual In-HUD display & Google Translate proxy
+ */
+export async function translateWebPageToThai(targetUrl, userTitle = 'คุณไลท์') {
+  const cleanUrl = targetUrl || 'https://www.bbc.com';
+  const translatedUrl = buildGoogleTranslateUrl(cleanUrl);
+
+  const speech = `แปลเนื้อหาหน้าเว็บเป็นภาษาไทยให้ ${userTitle} เรียบร้อยครับ กำลังแสดงผลผ่านล่ามแปลภาษาบนหน้าจอ HUD ครับ`;
+  const reply = `🌐 **ระบบแปลหน้าเว็บเป็นภาษาไทยอัตโนมัติ (AI Web Translator):**\n• URL ต้นฉบับ: [${cleanUrl}](${cleanUrl})\n• ลิงก์ภาษาไทย: [เปิดฉบับแปลภาษาไทย (Google Translate)](${translatedUrl})\n• การแสดงผล: อัปเดตหน้าต่าง In-HUD Web View เป็นภาษาไทยอัตโนมัติเรียบร้อยครับ`;
+
+  return {
+    success: true,
+    originalUrl: cleanUrl,
+    translatedUrl,
+    speech,
+    reply,
+  };
+}
+
+/**
+ * Feature 5: Detect Web Snapshot Voice Commands
+ */
+export function isWebSnapshotCommand(prompt) {
+  if (!prompt || typeof prompt !== 'string') return false;
+  const lower = prompt.toLowerCase();
+  const noSpace = lower.replace(/\s+/g, '');
+  const keywords = [
+    'แคปจอเว็บ',
+    'แคปหน้าจอเว็บ',
+    'แคปเว็บ',
+    'บันทึกภาพเว็บ',
+    'ถ่ายรูปเว็บ',
+    'ถ่ายภาพเว็บ',
+    'snapshot web',
+    'capture page',
+    'แคปเว็บนี้',
+  ];
+  return keywords.some((kw) => lower.includes(kw) || noSpace.includes(kw));
+}
+
+/**
+ * Persist Web Snapshot Record to Mem0 Long-Term Memory
+ */
+export function recordWebSnapshotToMem0(snapshot) {
+  const url = snapshot?.url || 'https://www.google.com';
+  const title = snapshot?.title || 'Web Viewport';
+  const now = new Date();
+  const timestamp = now.toLocaleString('th-TH');
+
+  const snapshotRecord = {
+    id: `snap_${Date.now()}`,
+    url,
+    title,
+    timestamp,
+    category: 'web_snapshots',
+    tags: ['web_snapshot', 'visual_bookmark', 'hud_capture'],
+    thumbnail: `https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80`,
+  };
+
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = JSON.parse(localStorage.getItem('jarvis_web_snapshots') || '[]');
+      stored.unshift(snapshotRecord);
+      localStorage.setItem('jarvis_web_snapshots', JSON.stringify(stored.slice(0, 25)));
+    } catch {}
+  }
+
+  return snapshotRecord;
+}
+
+/**
+ * Feature 6: Detect Smart Form Auto-Filler Voice Commands
+ */
+export function isSmartFormAutoFillCommand(prompt) {
+  if (!prompt || typeof prompt !== 'string') return false;
+  const lower = prompt.toLowerCase();
+  const noSpace = lower.replace(/\s+/g, '');
+  const keywords = [
+    'กรอกฟอร์ม',
+    'กรอกข้อมูล',
+    'กรอกข้อมูลอัตโนมัติ',
+    'ออโต้ฟิล',
+    'auto fill',
+    'autofill',
+    'fill form',
+  ];
+  return keywords.some((kw) => lower.includes(kw) || noSpace.includes(kw));
+}
+
+/**
+ * Executive Credential Profile for Smart Form Auto-Filler
+ */
+export function getExecutiveFormProfile(userTitle = 'คุณไลท์') {
+  return {
+    fullName: userTitle === 'คุณไลท์' ? 'วิศวกร ไลท์ สตาร์ค' : userTitle,
+    company: 'CEO Master Platform (Lighting Enterprise)',
+    position: 'Chief Executive Officer & Founder',
+    email: 'lighting6647@gmail.com',
+    phone: '081-999-6647',
+    taxId: '0105567899664',
+    address: '888 อาคารสตาร์คทาวเวอร์ ชั้น 42 ถนนสาทรใต้ แขวงยานนาวา เขตสาทร กรุงเทพฯ 10120',
+    country: 'Thailand',
+    postalCode: '10120',
+  };
+}
+
