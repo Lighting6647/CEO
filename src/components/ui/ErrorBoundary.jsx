@@ -4,7 +4,8 @@ import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 export class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { hasError: false, error: null, errorInfo: null, autoRecovering: false };
+    this._recoverTimer = null;
   }
 
   static getDerivedStateFromError(error) {
@@ -14,16 +15,47 @@ export class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({ errorInfo });
+
+    // Crash Auto-Recovery Watchdog for stale PWA chunks and initialization errors
+    const errStr = String(error?.message || error || '');
+    const isChunkOrInitError =
+      errStr.includes('Loading chunk') ||
+      errStr.includes('Failed to fetch dynamically imported module') ||
+      errStr.includes('before initialization') ||
+      errStr.includes('ChunkLoadError');
+
+    const lastRecover = sessionStorage.getItem('jarvis_last_autorecover');
+    const now = Date.now();
+    // Allow auto-recovery if not attempted in the last 10 seconds
+    if (isChunkOrInitError && (!lastRecover || now - Number(lastRecover) > 10000)) {
+      sessionStorage.setItem('jarvis_last_autorecover', String(now));
+      this.setState({ autoRecovering: true });
+      this._recoverTimer = setTimeout(() => {
+        this.handleReset();
+      }, 1500);
+    }
   }
 
-  handleReset = () => {
+  componentWillUnmount() {
+    if (this._recoverTimer) clearTimeout(this._recoverTimer);
+  }
+
+  handleReset = async () => {
     try {
       localStorage.removeItem('ceo_brand_theme');
       localStorage.removeItem('antigravity_theme');
-    } catch {
-      // ignore
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((r) => r.unregister()));
+      }
+    } catch (err) {
+      console.warn('Cache purge skipped:', err);
     }
-    window.location.reload();
+    window.location.href = window.location.origin + '/?bust=' + Date.now();
   };
 
   render() {
@@ -44,6 +76,13 @@ export class ErrorBoundary extends React.Component {
                 </p>
               </div>
             </div>
+
+            {this.state.autoRecovering && (
+              <div className="mb-4 rounded-xl border border-cyan-500/40 bg-cyan-950/60 p-3 text-xs text-cyan-200 flex items-center gap-2 animate-pulse font-mono">
+                <RefreshCw className="h-4 w-4 animate-spin text-cyan-400" />
+                <span>กำลังล้างแคชเก่าและรีสตาร์ทระบบอัตโนมัติ (Auto-Recovery Watchdog)...</span>
+              </div>
+            )}
 
             <div className="my-5 rounded-xl border border-slate-800 bg-slate-950/80 p-4 font-mono text-xs text-red-300 overflow-x-auto">
               <p className="font-semibold">{this.state.error?.toString() || 'Unknown Runtime Error'}</p>

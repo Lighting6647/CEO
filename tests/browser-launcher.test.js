@@ -17,6 +17,12 @@ test('Browser Launcher: detects browser open intent accurately', () => {
   assert.equal(isBrowserOpenCommand('สั่ง ให้ เปิด แผนที่'), true);
   assert.equal(isBrowserOpenCommand('เปิด แผนที่'), true);
   assert.equal(isBrowserOpenCommand('เปิด แมพ'), true);
+  assert.equal(isBrowserOpenCommand('เปิด tiktok'), true);
+  assert.equal(isBrowserOpenCommand('เปิด shopee'), true);
+  assert.equal(isBrowserOpenCommand('เปิด facebook'), true);
+  assert.equal(isBrowserOpenCommand('เปิด chatgpt'), true);
+  assert.equal(isBrowserOpenCommand('เปิด ข่าวสด'), true);
+  assert.equal(isBrowserOpenCommand('เปิด รถไฟฟ้าสายสีส้ม'), true);
   assert.equal(isBrowserOpenCommand('สภาพจราจรวันนี้เป็นไง'), false);
   assert.equal(isBrowserOpenCommand('อากาศวันนี้'), false);
 });
@@ -57,4 +63,16 @@ test('Browser Launcher: extracts web target URLs and shortcuts accurately', () =
 
   const search = extractWebTarget('ค้นหา ข่าวเทคโนโลยี AI ล่าสุด');
   assert.ok(search.url.includes('google.com/search?q='));
+
+  const tiktok = extractWebTarget('เปิด ติ๊กต๊อก');
+  assert.equal(tiktok.url, 'https://www.tiktok.com');
+
+  const chatgpt = extractWebTarget('เปิด แชทจีพีที');
+  assert.equal(chatgpt.url, 'https://chatgpt.com');
+
+  const shopee = extractWebTarget('เปิด ช้อปปี้');
+  assert.equal(shopee.url, 'https://shopee.co.th');
+
+  const generalVoice = extractWebTarget('เปิด รถไฟฟ้าสายสีส้ม');
+  assert.ok(generalVoice.url.includes('google.com/search?q='));
 });

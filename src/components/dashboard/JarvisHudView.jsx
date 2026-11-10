@@ -1127,7 +1127,11 @@ export function JarvisHudView({
           cleanNoSpace.includes('ปิดเว็บย่อย') ||
           cleanNoSpace.includes('ย่อเว็บในจอ') ||
           cleanNoSpace.includes('ปิดหน้าต่างเว็บ') ||
-          cleanNoSpace.includes('ปิดจอแยก');
+          cleanNoSpace.includes('ปิดจอแยก') ||
+          cleanNoSpace.includes('ปิดเว็บ') ||
+          cleanNoSpace.includes('ปิดเบราว์เซอร์') ||
+          clean.toLowerCase().includes('close web') ||
+          clean.toLowerCase().includes('close browser');
 
         // Feature 2: Auto-Summary Web Reader Command
         const isAutoSummary = isAutoSummaryCommand(clean);
@@ -1152,6 +1156,11 @@ export function JarvisHudView({
           playClickSound();
           playSciFiBeep();
           const launched = launchWorkModePreset(matchedWorkMode);
+          if (matchedWorkMode.tabs.length > 0) {
+            setSplitScreenUrl(matchedWorkMode.tabs[0].url);
+            setSplitScreenTitle(matchedWorkMode.tabs[0].name.toUpperCase());
+            setIsSplitScreenOpen(true);
+          }
           if (onShowToast) {
             onShowToast('info', `🚀 ${matchedWorkMode.name}`, `เปิดพร้อมกัน ${launched.length} แท็บเรียบร้อยครับ`);
           }
@@ -1159,7 +1168,7 @@ export function JarvisHudView({
             action: 'WORK_MODE_LAUNCHED',
             squadId: 'ops',
             delegatedTo: 'J.A.R.V.I.S. Multi-Tab Workflow Dispatcher',
-            reply: `เปิด **${matchedWorkMode.name}** ให้ ${userTitle} เรียบร้อยครับ!\n• รายการแท็บที่เปิดทำงาน:\n${matchedWorkMode.tabs.map((t, idx) => `  ${idx + 1}. [${t.name}](${t.url})`).join('\n')}\n• สถานะ: ระบบส่งแท็บไปยังเบราว์เซอร์พร้อมกันเรียบร้อยครับ`,
+            reply: `เปิด **${matchedWorkMode.name}** ให้ ${userTitle} เรียบร้อยครับ!\n• รายการแท็บที่เปิดทำงาน:\n${matchedWorkMode.tabs.map((t, idx) => `  ${idx + 1}. [${t.name}](${t.url})`).join('\n')}\n• สถานะ: ระบบส่งแท็บไปยังเบราว์เซอร์พร้อมกัน และแสดงผลแท็บแรกบนจอ HUD ทันทีเรียบร้อยครับ`,
             speech: matchedWorkMode.speech(userTitle),
             hologram: {
               title: `WORK MODE // ${matchedWorkMode.id.toUpperCase()}`,
@@ -1192,29 +1201,67 @@ export function JarvisHudView({
               details: summaryRes.bullets.map((b, i) => ({ label: `Point ${i + 1}`, val: b.replace(/\*\*/g, '').slice(0, 50) })),
             },
           };
-        } else if (isSplitScreenCommand) {
+        } else if (isSplitScreenCommand || isBrowserCommand) {
           playClickSound();
           playSciFiBeep();
-          const target = extractWebTarget(clean) || { url: 'https://www.google.com', name: 'Google Search' };
-          setSplitScreenUrl(target.url);
-          setSplitScreenTitle(target.name);
+          const webTarget = extractWebTarget(clean) || { url: 'https://www.google.com', name: 'Google Search' };
+          const isMapTarget =
+            webTarget.url.includes('maps.google') ||
+            webTarget.name.includes('map') ||
+            webTarget.name.includes('แผนที่') ||
+            webTarget.name.includes('แมพ');
+
+          if (isMapTarget) {
+            setIsMapPanoramic(true);
+          }
+
+          // Build optimal display URL for HUD PiP view so iframe renders seamlessly
+          let displayUrl = webTarget.url;
+          if (isMapTarget) {
+            const dest = extractDestination(clean) || 'กรุงเทพมหานคร';
+            displayUrl = `https://maps.google.com/maps?q=${encodeURIComponent(dest)}&output=embed`;
+          } else if (webTarget.url.includes('youtube.com/watch?v=')) {
+            displayUrl = webTarget.url.replace('watch?v=', 'embed/');
+          } else if (webTarget.url.includes('youtu.be/')) {
+            displayUrl = webTarget.url.replace('youtu.be/', 'www.youtube.com/embed/');
+          }
+
+          // 1. Immediately display live on HUD screen without waiting for clicks ("ไม่ต้องให้กด")
+          setSplitScreenUrl(displayUrl);
+          setSplitScreenTitle(webTarget.name.toUpperCase());
           setIsSplitScreenOpen(true);
+
+          // 2. Parallel background open
+          openSystemBrowser(webTarget.url);
+
           result = {
-            action: 'SPLIT_SCREEN_OPENED',
+            action: isMapTarget ? 'TRAFFIC_REPORT' : 'BROWSER_OPENED',
             squadId: 'ops',
-            delegatedTo: 'Split-Screen HUD Window Manager',
-            reply: `เปิดหน้าต่างเว็บ **${target.name}** (${target.url}) ในจอ HUD แบบ Split-Screen (PiP) ให้ ${userTitle} เรียบร้อยครับ\n• สามารถกดปุ่มขยายเต็มจอ หรือกดปุ่มเปิดแท็บแยกได้ตลอดเวลาครับ`,
-            speech: `เปิดหน้าเว็บ ${target.name} ซ้อนในจอ HUD แบบ Split-Screen ให้แล้วครับ ${userTitle}`,
+            delegatedTo: isMapTarget ? 'GPS Telemetry & Route Map Canvas' : 'J.A.R.V.I.S. Web Navigator Core',
+            reply: isMapTarget
+              ? `เปิดแผนที่ระบบนำทางและข้อมูลการจราจรสดให้ ${userTitle} เรียบร้อยครับ!\n• เว็บไซต์: Google Maps Live Telemetry\n• สิทธิ์การเข้าถึง: ได้รับอนุมัติ Level 5 Supreme Clearance จาก ${userTitle}\n• สถานะการแสดงผล: แสดงผลสดบนหน้าจอ HUD ทันทีโดยไม่ต้องกด + เปิดเบราว์เซอร์จริงคู่ขนาน`
+              : `เปิดหน้าเว็บไซต์ "${webTarget.name}" (${webTarget.url}) เรียบร้อยครับ ${userTitle}\n• สิทธิ์การเข้าถึง: ได้รับอนุมัติ Level 5 Supreme Clearance จาก ${userTitle}\n• สถานะการแสดงผล: กางหน้าต่าง PiP แสดงผลบนหน้าจอ HUD ให้ดูทันที 100% (ไม่ต้องกดคลิกใดๆ)`,
+            speech: isMapTarget
+              ? `เปิดระบบแผนที่นำทางสดขึ้นหน้าจอให้ ${userTitle} เรียบร้อยครับ`
+              : `เปิดเว็บไซต์ ${webTarget.name} ขึ้นแสดงผลบนหน้าจอให้ ${userTitle} เรียบร้อยครับ`,
             hologram: {
-              title: `SPLIT-SCREEN // ${target.name.toUpperCase()}`,
-              category: 'IN-HUD EMBEDDED WEB',
-              badge: 'PiP ACTIVE',
-              targetUrl: target.url,
-              targetName: target.name,
-              details: [
-                { label: 'Mode', val: 'HUD PiP Iframe' },
-                { label: 'Target', val: target.name },
-                { label: 'URL', val: target.url },
+              title: isMapTarget ? 'GOOGLE MAPS // NAVIGATION' : 'SYSTEM WEB BROWSER // LIVE HUD VIEW',
+              category: isMapTarget ? 'NAVIGATION TELEMETRY' : 'EXTERNAL WEB CLEARANCE',
+              badge: 'AUTO-DISPLAY ACTIVE',
+              topicType: isMapTarget ? 'traffic' : 'web_open',
+              destination: isMapTarget ? (extractDestination(clean) || 'กรุงเทพมหานคร') : undefined,
+              targetUrl: webTarget.url,
+              targetName: webTarget.name,
+              details: isMapTarget ? [
+                { label: 'Destination', val: extractDestination(clean) || 'กรุงเทพมหานคร' },
+                { label: 'Map Engine', val: 'Google Maps Live Traffic' },
+                { label: 'Display Mode', val: 'HUD PiP + Panoramic Canvas' },
+                { label: 'Auto Open', val: 'Active (ไม่ต้องกด)' },
+              ] : [
+                { label: 'Target Web', val: webTarget.name },
+                { label: 'Target URL', val: webTarget.url },
+                { label: 'HUD Display', val: 'PiP In-Screen Active' },
+                { label: 'Auto Open', val: 'Active (ไม่ต้องกด)' },
               ],
             },
           };
@@ -1868,46 +1915,6 @@ export function JarvisHudView({
               ],
             },
           };
-        } else if (isBrowserCommand) {
-          const webTarget = extractWebTarget(clean);
-          if (webTarget) {
-            const isMapTarget =
-              webTarget.url.includes('maps.google') ||
-              webTarget.name.includes('map') ||
-              webTarget.name.includes('แผนที่') ||
-              webTarget.name.includes('แมพ');
-
-            if (isMapTarget) {
-              setIsMapPanoramic(true);
-            }
-            openSystemBrowser(webTarget.url);
-            result = {
-              action: isMapTarget ? 'TRAFFIC_REPORT' : 'BROWSER_OPENED',
-              squadId: 'ops',
-              delegatedTo: isMapTarget ? 'GPS Telemetry & Route Map Canvas' : 'J.A.R.V.I.S. Web Navigator Core',
-              reply: isMapTarget
-                ? `เปิดแผนที่ระบบนำทางและข้อมูลการจราจรสดให้ ${userTitle} เรียบร้อยครับ!\n• เว็บไซต์: Google Maps Live Telemetry\n• สิทธิ์การเข้าถึง: ได้รับอนุมัติ Level 5 Supreme Clearance จาก ${userTitle}\n• ช่องทางเปิด: กางแผนที่บนจอ HUD และเปิดแท็บ Google Maps จริงเรียบร้อยครับ`
-                : `เปิดหน้าเว็บไซต์ "${webTarget.name}" (${webTarget.url}) เรียบร้อยครับ ${userTitle}\n• สิทธิ์การเข้าถึง: ได้รับอนุมัติ Level 5 Supreme Clearance จาก ${userTitle}\n• ช่องทางเปิด: เบราว์เซอร์หลักของระบบปฏิบัติการ (Default System Browser)`,
-              speech: isMapTarget
-                ? `เปิดระบบแผนที่นำทางสดให้ ${userTitle} เรียบร้อยครับ`
-                : `เปิดเว็บไซต์ ${webTarget.name} ให้ ${userTitle} เรียบร้อยครับ`,
-              hologram: {
-                title: isMapTarget ? 'GOOGLE MAPS // NAVIGATION' : 'SYSTEM WEB BROWSER // LAUNCHED',
-                category: isMapTarget ? 'NAVIGATION TELEMETRY' : 'EXTERNAL WEB CLEARANCE',
-                badge: isMapTarget ? 'LIVE MAP ACTIVE' : 'SUPREME CLEARANCE',
-                topicType: isMapTarget ? 'traffic' : 'web_open',
-                destination: isMapTarget ? (extractDestination(clean) || 'กรุงเทพมหานคร') : undefined,
-                targetUrl: webTarget.url,
-                targetName: webTarget.name,
-                details: isMapTarget ? [
-                  { label: 'Destination', val: extractDestination(clean) || 'กรุงเทพมหานคร' },
-                  { label: 'Map Engine', val: 'Google Maps Live Traffic' },
-                  { label: 'Display Mode', val: 'Panoramic HUD Canvas' },
-                  { label: 'Live Traffic Flow', val: 'Active GPS Link' },
-                ] : undefined,
-              },
-            };
-          }
         } else if (isReaCommand) {
           const urlMatch = clean.match(/(?:https?:\/\/[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*)/i);
           const targetUrl = urlMatch ? urlMatch[0] : 'https://example.com';

@@ -20,15 +20,24 @@ const KNOWN_WEB_SHORTCUTS = {
 
   // Video & Code & Social
   ยูทูป: 'https://www.youtube.com',
+  ยูทูบ: 'https://www.youtube.com',
   youtube: 'https://www.youtube.com',
+  yt: 'https://www.youtube.com',
   กิตฮับ: 'https://github.com',
+  กิทฮับ: 'https://github.com',
   github: 'https://github.com',
+  git: 'https://github.com',
   เฟสบุ๊ค: 'https://www.facebook.com',
+  เฟสบุค: 'https://www.facebook.com',
+  เฟซบุ๊ก: 'https://www.facebook.com',
   facebook: 'https://www.facebook.com',
+  fb: 'https://www.facebook.com',
   ทวิตเตอร์: 'https://x.com',
   twitter: 'https://x.com',
   เอ็กซ์: 'https://x.com',
+  x: 'https://x.com',
   ติ๊กต๊อก: 'https://www.tiktok.com',
+  ติ๊กตอก: 'https://www.tiktok.com',
   tiktok: 'https://www.tiktok.com',
   พันทิป: 'https://pantip.com',
   pantip: 'https://pantip.com',
@@ -36,11 +45,38 @@ const KNOWN_WEB_SHORTCUTS = {
   sanook: 'https://www.sanook.com',
   ไทยรัฐ: 'https://www.thairath.co.th',
   thairath: 'https://www.thairath.co.th',
+  ข่าวสด: 'https://www.khaosod.co.th',
+  khaosod: 'https://www.khaosod.co.th',
+  มติชน: 'https://www.matichon.co.th',
+  matichon: 'https://www.matichon.co.th',
+  เดลินิวส์: 'https://www.dailynews.co.th',
+  dailynews: 'https://www.dailynews.co.th',
+  bbc: 'https://www.bbc.com',
+  cnn: 'https://www.cnn.com',
+  reuters: 'https://www.reuters.com',
+  วิกิพีเดีย: 'https://th.wikipedia.org',
+  วิกิ: 'https://th.wikipedia.org',
+  wikipedia: 'https://th.wikipedia.org',
+  อินสตาแกรม: 'https://www.instagram.com',
+  instagram: 'https://www.instagram.com',
+  ไอจี: 'https://www.instagram.com',
+  ig: 'https://www.instagram.com',
+  ไลน์: 'https://line.me',
+  line: 'https://line.me',
+  สปอติฟาย: 'https://open.spotify.com',
+  spotify: 'https://open.spotify.com',
 
   // AI & Productivity & Commerce
   chatgpt: 'https://chatgpt.com',
   แชทจีพีที: 'https://chatgpt.com',
   openai: 'https://openai.com',
+  เจมินาย: 'https://gemini.google.com',
+  เจมิไน: 'https://gemini.google.com',
+  gemini: 'https://gemini.google.com',
+  โคลด: 'https://claude.ai',
+  claude: 'https://claude.ai',
+  ดีพซีค: 'https://chat.deepseek.com',
+  deepseek: 'https://chat.deepseek.com',
   จีเมล: 'https://mail.google.com',
   gmail: 'https://mail.google.com',
   ช้อปปี้: 'https://shopee.co.th',
@@ -55,6 +91,14 @@ const KNOWN_WEB_SHORTCUTS = {
   โนชั่น: 'https://www.notion.so',
   notion: 'https://www.notion.so',
   vercel: 'https://vercel.com',
+  tradingview: 'https://www.tradingview.com',
+  กราฟหุ้น: 'https://www.tradingview.com',
+  หุ้น: 'https://www.settrade.com',
+  ตลาดหลักทรัพย์: 'https://www.set.or.th',
+  set: 'https://www.set.or.th',
+  พยากรณ์อากาศ: 'https://www.tmd.go.th',
+  กรมอุตุ: 'https://www.tmd.go.th',
+  เรดาร์ฝน: 'https://weather.bangkok.go.th',
 };
 
 /**
@@ -108,6 +152,32 @@ export function extractWebTarget(prompt) {
     }
   }
 
+  // 4. Universal "เปิด [อะไรก็ตาม]" fallback for voice commands:
+  // e.g. "เปิด รถไฟฟ้าสายสีส้ม", "เปิด ข่าวสด", "เปิด เว็บ bbc"
+  const openActionMatch = clean.match(
+    /^(?:สั่งเปิด|สั่งให้เปิด|เปิดเว็บ|เปิดเวบ|เปิดหน้าเว็บ|เปิดเว็บไซต์|เปิดเว็บไซค์|เปิดดูเว็บ|เปิดหาเว็บ|เปิด|เข้าเว็บ|เข้าเว็บไซต์|เข้า)\s+(.+)$/i
+  );
+  if (openActionMatch) {
+    const rawTarget = openActionMatch[1].trim();
+    const isInternal = /^(?:โหมด|เสียง|เรดอเลิร์ท|ใบเสนอราคา|พอดแคสต์|วิดีโอ|สรุป|กล้อง|ไมค์|ธีม)/i.test(
+      rawTarget
+    );
+    if (!isInternal && rawTarget.length > 0) {
+      if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/i.test(rawTarget)) {
+        return {
+          url: `https://${rawTarget}`,
+          name: rawTarget,
+          isDirectUrl: true,
+        };
+      }
+      return {
+        url: `https://www.google.com/search?q=${encodeURIComponent(rawTarget)}`,
+        name: rawTarget,
+        isDirectUrl: false,
+      };
+    }
+  }
+
   return null;
 }
 
@@ -116,7 +186,7 @@ export function extractWebTarget(prompt) {
  */
 export function isBrowserOpenCommand(prompt) {
   if (!prompt || typeof prompt !== 'string') return false;
-  const lower = prompt.toLowerCase();
+  const lower = prompt.toLowerCase().trim();
   const noSpace = lower.replace(/\s+/g, '');
   const openKeywords = [
     'สั่งเปิด',
@@ -152,9 +222,34 @@ export function isBrowserOpenCommand(prompt) {
     return true;
   }
 
+  // Check open action + extractWebTarget
+  const openActionMatch = lower.match(
+    /^(?:สั่งเปิด|สั่งให้เปิด|เปิดเว็บ|เปิดเวบ|เปิดหน้าเว็บ|เปิดเว็บไซต์|เปิดดูเว็บ|เปิดหาเว็บ|เปิด|เข้าเว็บ|เข้าเว็บไซต์|เข้า|open\s+|launch\s+|browse\s+)\s+(.+)$/i
+  );
+  if (openActionMatch) {
+    const rawTarget = openActionMatch[1].trim();
+    const isInternal = /^(?:โหมด|เสียง|เรดอเลิร์ท|ใบเสนอราคา|พอดแคสต์|วิดีโอ|สรุป|กล้อง|ไมค์|ธีม)/i.test(
+      rawTarget
+    );
+    if (!isInternal && rawTarget.length > 0) {
+      return true;
+    }
+  }
+
   // Also check if prompt starts with "เปิด " followed by a domain
   if (/^เปิด\s+[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/i.test(prompt.trim())) {
     return true;
+  }
+
+  // Domain match with open intention
+  if (
+    /(?:https?:\/\/|www\.)[^\s]+|[a-zA-Z0-9-]+\.(?:com|org|net|co\.th|in\.th|io|dev|app|ai|me)[^\s]*/i.test(
+      prompt
+    )
+  ) {
+    if (lower.includes('เปิด') || lower.includes('เข้า') || lower.includes('ดู') || lower.includes('ไป')) {
+      return true;
+    }
   }
 
   return false;

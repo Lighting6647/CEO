@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ceo-master-cache-v15';
+const CACHE_NAME = 'ceo-master-cache-v16';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -30,13 +30,19 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   // Only handle GET requests for http / https
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (!url.protocol.startsWith('http')) return;
 
-  // Never intercept backend API endpoints like /api/tts
+  // Never intercept backend API endpoints like /api/tts or /api/browser
   if (url.pathname.startsWith('/api')) return;
 
   event.respondWith(

@@ -29,6 +29,7 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
       setCurrentUrl(url);
       setInputUrl(url);
       setHasIframeBlocked(false);
+      setIframeKey((k) => k + 1);
     }
   }, [url]);
 
