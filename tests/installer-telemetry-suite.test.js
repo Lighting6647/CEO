@@ -14,8 +14,22 @@ import {
 import {
   getSilentInstallCommand,
   isSilentInstallCommand,
+  getWingetInstallCommand,
+  isWingetCommand,
   KNOWN_APP_DOWNLOADS,
 } from '../src/services/browserLauncherService.js';
+import {
+  createDownloadSession,
+  progressDownloadSession,
+  simulateNetworkDrop,
+  autoRepairAndResume,
+  isResumeOrRepairCommand,
+} from '../src/services/downloadResumeRepairService.js';
+import {
+  generateUninstallerPlan,
+  isUninstallCommand,
+  formatUninstallPlanReport,
+} from '../src/services/appUninstallerService.js';
 
 test('Security Scan: scans installer binary hash against 72 AV engines with clean reputation', () => {
   const zoom = KNOWN_APP_DOWNLOADS.zoom;
@@ -93,3 +107,78 @@ test('Silent Auto-Install Execution: generates valid PowerShell & CMD unattended
   assert.equal(isSilentInstallCommand('ติดตั้งอัตโนมัติ chrome'), true);
   assert.equal(isSilentInstallCommand('เปิดเว็บ sanook'), false);
 });
+
+test('Winget Package Manager: generates direct silent install commands with agreement auto-acceptance', () => {
+  const zoom = KNOWN_APP_DOWNLOADS.zoom;
+  assert.ok(zoom);
+  const wingetCmd = getWingetInstallCommand(zoom);
+  assert.ok(wingetCmd.includes('winget install --id Zoom.Zoom'));
+  assert.ok(wingetCmd.includes('--silent'));
+  assert.ok(wingetCmd.includes('--accept-package-agreements'));
+
+  assert.equal(isWingetCommand('สั่ง winget ติดตั้ง zoom'), true);
+  assert.equal(isWingetCommand('ติดตั้ง chrome ผ่าน วินเก็ต'), true);
+  assert.equal(isWingetCommand('ดูสภาพอากาศวันนี้'), false);
+});
+
+test('Download Resume & Auto-Repair: tracks byte ranges, detects drop, and heals chunks', () => {
+  const line = KNOWN_APP_DOWNLOADS.line;
+  assert.ok(line);
+
+  // 1. Session initialization
+  const session = createDownloadSession(line);
+  assert.ok(session);
+  assert.equal(session.totalChunks, 10);
+  assert.equal(session.supportsHttpRange, true);
+  assert.equal(session.chunks.length, 10);
+
+  // 2. Progression
+  progressDownloadSession(session, 50);
+  assert.equal(session.progressPercent, 50);
+  assert.ok(session.downloadedMb > 0);
+  assert.ok(session.resumeByteOffset > 0);
+
+  // 3. Simulate connection drop
+  simulateNetworkDrop(session);
+  assert.equal(session.status, 'INTERRUPTED');
+  assert.equal(session.corruptedChunksCount, 1);
+
+  // 4. Auto-repair and resume
+  autoRepairAndResume(session);
+  assert.equal(session.status, 'VERIFIED_CLEAN');
+  assert.equal(session.corruptedChunksCount, 0);
+  assert.ok(session.repairedChunksCount >= 1);
+  assert.equal(session.progressPercent, 100);
+
+  // Intent parsing
+  assert.equal(isResumeOrRepairCommand('ดาวน์โหลดต่อจากเดิมให้หน่อย'), true);
+  assert.equal(isResumeOrRepairCommand('ซ่อมไฟล์ที่โหลดค้างไว้'), true);
+  assert.equal(isResumeOrRepairCommand('เปิด youtube'), false);
+});
+
+test('App Uninstaller & Cleanup Sentinel: generates process kill, silent removal, and cache purge plan', () => {
+  const discord = KNOWN_APP_DOWNLOADS.discord;
+  assert.ok(discord);
+
+  const plan = generateUninstallerPlan(discord);
+  assert.ok(plan);
+  assert.equal(plan.processName, 'Discord.exe');
+  assert.ok(plan.wingetCommand.includes('winget uninstall --id Discord.Discord'));
+  assert.ok(plan.powershellScript.includes('Stop-Process'));
+  assert.ok(plan.powershellScript.includes('Remove-Item'));
+  assert.ok(plan.cleanPaths.length >= 2);
+  assert.ok(plan.estimatedReclaimedMb > 0);
+
+  // Command detection
+  assert.equal(isUninstallCommand('ถอนการติดตั้ง discord ให้หน่อย'), true);
+  assert.equal(isUninstallCommand('ลบโปรแกรม zoom ออกจากเครื่อง'), true);
+  assert.equal(isUninstallCommand('คลีนไฟล์ขยะ line'), true);
+  assert.equal(isUninstallCommand('เปิดเพลงฟัง'), false);
+
+  // Report formatting
+  const report = formatUninstallPlanReport(plan, 'คุณไลท์');
+  assert.ok(report.reply.includes(plan.wingetCommand));
+  assert.ok(report.reply.includes(String(plan.estimatedReclaimedMb)));
+  assert.ok(report.speech.includes('เตรียมแผนถอนการติดตั้ง'));
+});
+

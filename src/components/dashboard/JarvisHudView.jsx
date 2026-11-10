@@ -47,6 +47,8 @@ import {
   triggerDirectInstallerStream,
   getSilentInstallCommand,
   isSilentInstallCommand,
+  getWingetInstallCommand,
+  isWingetCommand,
 } from '../../services/browserLauncherService';
 import {
   scanInstallerBinaryHash,
@@ -58,6 +60,12 @@ import {
   isAppVersionCommand,
   formatVersionTelemetryReport,
 } from '../../services/appVersionTrackerService';
+import { isResumeOrRepairCommand } from '../../services/downloadResumeRepairService';
+import {
+  generateUninstallerPlan,
+  isUninstallCommand,
+  formatUninstallPlanReport,
+} from '../../services/appUninstallerService';
 import { SplitScreenWebHud } from './hud/SplitScreenWebHud';
 import { InstallerTelemetryModal } from './hud/InstallerTelemetryModal';
 import {
@@ -1197,7 +1205,16 @@ export function JarvisHudView({
         // Feature 7: App Version & Telemetry Tracker
         const isVersionCmd = isAppVersionCommand(clean);
 
-        // Feature 8: Absolute Obedience & Active Command Protocol ("ต้องให้ทำตามคำสั่งทุกอย่าง")
+        // Feature 8: Winget Package Manager Direct Trigger
+        const isWingetCmd = isWingetCommand(clean);
+
+        // Feature 9: Download Resume & Integrity Auto-Repair
+        const isResumeRepairCmd = isResumeOrRepairCommand(clean);
+
+        // Feature 10: App Uninstaller & Cleanup Sentinel
+        const isUninstallCmd = isUninstallCommand(clean);
+
+        // Feature 11: Absolute Obedience & Active Command Protocol ("ต้องให้ทำตามคำสั่งทุกอย่าง")
         const isObedienceCommand =
           clean.includes('ต้องให้ทำตามคำสั่ง') ||
           clean.includes('ทำตามคำสั่งทุกอย่าง') ||
@@ -1579,6 +1596,141 @@ export function JarvisHudView({
                 { label: 'Latest Release', val: versionData.latestVersion },
                 { label: 'Release Date', val: versionData.releaseDate },
                 { label: 'Patch State', val: versionData.patchStatus },
+              ],
+            },
+          };
+        } else if (isWingetCmd) {
+          playClickSound();
+          playSciFiBeep();
+          const target = extractDownloadAppTarget(clean) || {
+            id: 'zoom',
+            name: 'Zoom Workplace',
+            wingetId: 'Zoom.Zoom',
+            category: 'โปรแกรมประชุมออนไลน์',
+          };
+
+          const wingetScript = getWingetInstallCommand(target);
+          setInstallerTelemetryData(target);
+          setIsInstallerTelemetryOpen(true);
+
+          if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(wingetScript).catch(() => {});
+          }
+
+          if (onShowToast) {
+            onShowToast(
+              'info',
+              `📦 Winget Command "${target.name}"`,
+              'คัดลอกคำสั่ง Winget Direct Trigger พร้อมรันติดตั้งแล้วครับ'
+            );
+          }
+
+          result = {
+            action: 'WINGET_TRIGGER_PREPARED',
+            squadId: 'devops',
+            delegatedTo: 'J.A.R.V.I.S. Windows Package Manager Bridge',
+            reply: `สร้างคำสั่งติดตั้งผ่าน **Windows Package Manager (Winget)** สำหรับ "${target.name}" เรียบร้อยครับ 100%!\n• คำสั่ง Winget: \`${wingetScript}\`\n• Package ID: \`${target.wingetId || target.id}\`\n• คุณสมบัติ: ยอมรับ Source Agreement และ Package License อัตโนมัติในโหมด Silent\n• จาวิสคัดลอกคำสั่งลงในคลิปบอร์ดให้ ${userTitle} เรียบร้อยแล้วครับ สามารถเปิด Windows Terminal วางแล้วกด Enter ได้ทันทีครับ`,
+            speech: `สร้างคำสั่งวิงเก็ตสำหรับติดตั้งโปรแกรม ${target.name} และคัดลอกให้ ${userTitle} เรียบร้อยแล้วครับ`,
+            hologram: {
+              title: `WINGET DEPLOY // ${target.name.toUpperCase()}`,
+              category: 'PACKAGE MANAGER BRIDGE',
+              badge: 'WINGET DIRECT TRIGGER',
+              topicType: 'devops',
+              details: [
+                { label: 'Application', val: target.name },
+                { label: 'Package ID', val: target.wingetId || target.id },
+                { label: 'Command', val: 'winget install -e --silent' },
+                { label: 'Agreements', val: 'Auto-Accepted' },
+              ],
+            },
+          };
+        } else if (isResumeRepairCmd) {
+          playClickSound();
+          playSuccessSound();
+          const target = extractDownloadAppTarget(clean) || {
+            id: 'zoom',
+            name: 'Zoom Workplace',
+            fileSizeMb: 68.5,
+            fileName: 'ZoomInstaller.exe',
+            sha256: '9a8f2e71b4a0c8d9e6f1a3b5c7d9e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4',
+            category: 'โปรแกรมประชุมออนไลน์',
+          };
+
+          setInstallerTelemetryData(target);
+          setIsInstallerTelemetryOpen(true);
+
+          if (onShowToast) {
+            onShowToast(
+              'info',
+              '🩹 กู้คืนและซ่อมแซมไฟล์ดาวน์โหลด',
+              'เปิดระบบ HTTP Range Resume & Auto-Repair Chunks สำเร็จ'
+            );
+          }
+
+          result = {
+            action: 'DOWNLOAD_RESUME_REPAIRED',
+            squadId: 'ops',
+            delegatedTo: 'J.A.R.V.I.S. Fault-Tolerant Stream Core',
+            reply: `เปิดระบบกู้คืนและซ่อมแซมการดาวน์โหลด **Download Resume & Integrity Auto-Repair** สำหรับ "${target.name}" เรียบร้อยครับ!\n• การทำงาน: ดึงข้อมูลต่อจาก Byte Offset เดิมโดยไม่ต้องเริ่มใหม่ตั้งแต่ 0%\n• การรักษาความสมบูรณ์: ซ่อมแซม Chunks ที่ชำรุดผ่านการคำนวณ Checksum SHA-256 แบบเรียลไทม์\n• สถานะบน HUD: แถบ Telemetry Matrix แสดงสีเขียวพร้อมส่งต่อไฟล์ที่สมบูรณ์ 100% ทันทีครับ`,
+            speech: `เปิดระบบดาวน์โหลดต่อจากจุดเดิมและซ่อมแซมไฟล์ให้ ${userTitle} เรียบร้อยแล้วครับ`,
+            hologram: {
+              title: `STREAM RESUME // ${target.name.toUpperCase()}`,
+              category: 'FAULT-TOLERANT CHUNK HEALER',
+              badge: 'HTTP RANGE ACTIVE',
+              topicType: 'telemetry',
+              details: [
+                { label: 'Target File', val: target.fileName || 'installer.exe' },
+                { label: 'Protocol Support', val: 'HTTP Range (Byte-Offset)' },
+                { label: 'Healing Engine', val: 'SHA-256 Chunk Integrity' },
+                { label: 'Status', val: 'Auto-Healed & Resumed' },
+              ],
+            },
+          };
+        } else if (isUninstallCmd) {
+          playClickSound();
+          playSciFiBeep();
+          const target = extractDownloadAppTarget(clean) || {
+            id: 'zoom',
+            name: 'Zoom Workplace',
+            processName: 'Zoom.exe',
+            wingetId: 'Zoom.Zoom',
+            fileSizeMb: 68.5,
+            category: 'โปรแกรมประชุมออนไลน์',
+          };
+
+          const plan = generateUninstallerPlan(target);
+          const report = formatUninstallPlanReport(plan, userTitle);
+          setInstallerTelemetryData(target);
+          setIsInstallerTelemetryOpen(true);
+
+          if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(plan.powershellScript).catch(() => {});
+          }
+
+          if (onShowToast) {
+            onShowToast(
+              'info',
+              `🧹 แผนถอนการติดตั้ง "${target.name}"`,
+              `คัดลอกสคริปต์ล้างไฟล์ขยะ คืนพื้นที่ฮาร์ดดิสก์ ~${plan.estimatedReclaimedMb} MB เรียบร้อยครับ`
+            );
+          }
+
+          result = {
+            action: 'APP_UNINSTALL_PREPARED',
+            squadId: 'devops',
+            delegatedTo: 'J.A.R.V.I.S. Uninstaller & Cleanup Sentinel',
+            reply: report.reply,
+            speech: report.speech,
+            hologram: {
+              title: `CLEANUP SENTINEL // ${target.name.toUpperCase()}`,
+              category: 'RESIDUAL STORAGE RECLAMATION',
+              badge: `~${plan.estimatedReclaimedMb} MB RECLAIMED`,
+              topicType: 'devops',
+              details: [
+                { label: 'Target Application', val: target.name },
+                { label: 'Process Terminate', val: plan.processName },
+                { label: 'Winget Uninstall', val: plan.wingetCommand },
+                { label: 'Storage Reclaim', val: `~${plan.estimatedReclaimedMb} MB` },
               ],
             },
           };

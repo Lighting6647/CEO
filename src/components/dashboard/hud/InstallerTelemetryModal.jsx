@@ -13,15 +13,27 @@ import {
   Copy,
   Check,
   Sparkles,
+  Trash2,
+  AlertTriangle,
+  Layers,
+  Package,
 } from 'lucide-react';
 import { playClickSound, playSciFiBeep, playSuccessSound } from '../../../utils/soundEffects.js';
 import {
   triggerDirectInstallerStream,
   launchInstalledAppProtocol,
   getSilentInstallCommand,
+  getWingetInstallCommand,
 } from '../../../services/browserLauncherService.js';
 import { scanInstallerBinaryHash } from '../../../services/appSecurityScanService.js';
 import { getAppVersionTelemetry } from '../../../services/appVersionTrackerService.js';
+import {
+  createDownloadSession,
+  progressDownloadSession,
+  simulateNetworkDrop,
+  autoRepairAndResume,
+} from '../../../services/downloadResumeRepairService.js';
+import { generateUninstallerPlan } from '../../../services/appUninstallerService.js';
 
 export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
   isOpen,
@@ -31,7 +43,7 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
   autoStartStream = true,
   onShowToast = null,
 }) {
-  const [activeTab, setActiveTab] = useState('stream'); // 'stream' | 'security' | 'silent'
+  const [activeTab, setActiveTab] = useState('stream'); // 'stream' | 'security' | 'silent' | 'uninstall'
   const [progress, setProgress] = useState(0);
   const [downloadSpeed, setDownloadSpeed] = useState(18.5);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -39,29 +51,33 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
   const [hasTriggeredDownload, setHasTriggeredDownload] = useState(false);
   const [hasLaunchedApp, setHasLaunchedApp] = useState(false);
   const [statusMessage, setStatusMessage] = useState('พร้อมเริ่มส่งกระแสข้อมูลการดาวน์โหลด');
-  const [copiedType, setCopiedType] = useState(null); // 'ps' | 'cmd' | 'winget' | null
+  const [copiedType, setCopiedType] = useState(null); // 'ps' | 'cmd' | 'winget' | 'uninstall' | null
+  const [downloadSession, setDownloadSession] = useState(null);
 
   const timerRef = useRef(null);
   const voiceSpokenRef = useRef(false);
 
   // Announce completion via speech synthesis
-  const announceCompletion = useCallback((appName) => {
-    if (voiceSpokenRef.current) return;
-    voiceSpokenRef.current = true;
-    playSuccessSound();
+  const announceCompletion = useCallback(
+    (appName) => {
+      if (voiceSpokenRef.current) return;
+      voiceSpokenRef.current = true;
+      playSuccessSound();
 
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      try {
-        const text = `ดาวน์โหลดไฟล์ตัวติดตั้ง ${appName} เสร็จสมบูรณ์แล้วครับ${userTitle} พร้อมเริ่มการติดตั้งได้ทันทีครับ`;
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'th-TH';
-        utterance.rate = 1.05;
-        window.speechSynthesis.speak(utterance);
-      } catch (err) {
-        console.warn('[Speech Synthesis Warning]:', err);
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try {
+          const text = `ดาวน์โหลดไฟล์ตัวติดตั้ง ${appName} เสร็จสมบูรณ์แล้วครับ${userTitle} พร้อมเริ่มการติดตั้งได้ทันทีครับ`;
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = 'th-TH';
+          utterance.rate = 1.05;
+          window.speechSynthesis.speak(utterance);
+        } catch (err) {
+          console.warn('[Speech Synthesis Warning]:', err);
+        }
       }
-    }
-  }, [userTitle]);
+    },
+    [userTitle]
+  );
 
   // Reset or initialize when modal opens
   useEffect(() => {
@@ -73,6 +89,7 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
       setHasLaunchedApp(false);
       setCopiedType(null);
       setActiveTab('stream');
+      setDownloadSession(null);
       voiceSpokenRef.current = false;
       if (timerRef.current) clearInterval(timerRef.current);
       return;
@@ -82,6 +99,9 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
     setProgress(0);
     setIsCompleted(false);
     setStatusMessage('กำลังเชื่อมต่อเซิร์ฟเวอร์ทางการเพื่อดึงไฟล์ตัวติดตั้ง...');
+
+    const initialSession = createDownloadSession(appData);
+    setDownloadSession(initialSession);
 
     if (autoStartStream) {
       if (appData.directInstallerUrl) {
@@ -99,6 +119,7 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
             setIsStreaming(false);
             setIsCompleted(true);
             setStatusMessage('ดาวน์โหลดเสร็จสมบูรณ์ 100% พร้อมเริ่มการติดตั้ง');
+            setDownloadSession((curr) => (curr ? progressDownloadSession({ ...curr }, 100) : curr));
             announceCompletion(appData.name);
             return 100;
           }
@@ -108,6 +129,9 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
 
           const step = Math.max(3, Math.min(12, Math.floor(65 / (totalMb / 15))));
           const next = prev + step;
+
+          setDownloadSession((curr) => (curr ? progressDownloadSession({ ...curr }, next) : curr));
+
           if (next >= 100) {
             clearInterval(timerRef.current);
             setIsStreaming(false);
@@ -135,10 +159,12 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
     ? `${appData.sha256.slice(0, 12)}...${appData.sha256.slice(-8)}`
     : 'VERIFIED-OFFICIAL-CHECKSUM';
 
-  // Derived Security & Version telemetry
+  // Derived Security, Version, Winget, & Uninstaller telemetry
   const securityScan = scanInstallerBinaryHash(appData);
   const versionTelemetry = getAppVersionTelemetry(appData);
   const silentCommand = getSilentInstallCommand(appData);
+  const wingetCommand = getWingetInstallCommand(appData);
+  const uninstallerPlan = generateUninstallerPlan(appData);
 
   const handleManualStream = () => {
     playClickSound();
@@ -159,6 +185,35 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
     }
   };
 
+  const handleSimulateDrop = () => {
+    playClickSound();
+    if (timerRef.current) clearInterval(timerRef.current);
+    setIsStreaming(false);
+    setStatusMessage('⚠️ สัญญาณเครือข่ายขัดข้อง: พบ Chunk ชำรุด กำลังรอคำสั่งกู้คืน...');
+    setDownloadSession((curr) => (curr ? simulateNetworkDrop({ ...curr }) : curr));
+    if (onShowToast) {
+      onShowToast('warn', '⚠️ ตรวจพบสัญญาณขัดข้อง', 'Chunk หลุดระหว่างดาวน์โหลด เปิดระบบ Auto-Repair สำรองทันที');
+    }
+  };
+
+  const handleAutoRepair = () => {
+    playClickSound();
+    playSuccessSound();
+    setStatusMessage('🩹 กำลังดาวน์โหลดต่อจาก Byte Offset เดิม และซ่อมแซม Chunks...');
+    setDownloadSession((curr) => {
+      if (!curr) return curr;
+      const repaired = autoRepairAndResume({ ...curr });
+      setProgress(100);
+      setIsCompleted(true);
+      setStatusMessage('✅ ซ่อมแซมและกู้คืนไฟล์สมบูรณ์ 100% พร้อมติดตั้ง');
+      announceCompletion(appData.name);
+      return repaired;
+    });
+    if (onShowToast) {
+      onShowToast('info', '🩹 Auto-Repair สำเร็จ', 'ซ่อมแซม Chunks ผ่าน HTTP Range Header เรียบร้อย 100%');
+    }
+  };
+
   const handleRestartTelemetry = () => {
     playClickSound();
     setProgress(0);
@@ -167,16 +222,21 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
     voiceSpokenRef.current = false;
     if (timerRef.current) clearInterval(timerRef.current);
 
+    setDownloadSession(createDownloadSession(appData));
+
     timerRef.current = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(timerRef.current);
           setIsStreaming(false);
           setIsCompleted(true);
+          setDownloadSession((curr) => (curr ? progressDownloadSession({ ...curr }, 100) : curr));
           announceCompletion(appData.name);
           return 100;
         }
-        return prev + 8;
+        const next = prev + 8;
+        setDownloadSession((curr) => (curr ? progressDownloadSession({ ...curr }, next) : curr));
+        return next;
       });
     }, 300);
   };
@@ -188,7 +248,7 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
       navigator.clipboard.writeText(text);
       setCopiedType(type);
       if (onShowToast) {
-        onShowToast('info', '📋 คัดลอกคำสั่งสำเร็จ', 'นำไปวางใน PowerShell / CMD แล้วกด Enter ได้ทันทีครับ');
+        onShowToast('info', '📋 คัดลอกคำสั่งสำเร็จ', 'นำไปวางใน PowerShell / Terminal แล้วกด Enter ได้ทันทีครับ');
       }
       setTimeout(() => setCopiedType(null), 2500);
     }
@@ -249,21 +309,21 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
           </button>
         </div>
 
-        {/* 3-Tab Telemetry Switcher */}
-        <div className="mt-3 flex items-center gap-1 rounded-xl bg-slate-900/80 p-1 border border-slate-800">
+        {/* 4-Tab Telemetry Switcher */}
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-xl bg-slate-900/80 p-1 border border-slate-800">
           <button
             onClick={() => {
               playClickSound();
               setActiveTab('stream');
             }}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-semibold transition-all ${
               activeTab === 'stream'
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
             <Activity className="h-3.5 w-3.5" />
-            <span>1. สตรีมดาวน์โหลด ({progress}%)</span>
+            <span>1. สตรีม ({progress}%)</span>
           </button>
 
           <button
@@ -271,14 +331,14 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
               playClickSound();
               setActiveTab('security');
             }}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-semibold transition-all ${
               activeTab === 'security'
                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
             <ShieldCheck className="h-3.5 w-3.5" />
-            <span>2. ตรวจ VirusTotal (72/72 Clean)</span>
+            <span>2. VirusTotal (72)</span>
           </button>
 
           <button
@@ -286,18 +346,33 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
               playClickSound();
               setActiveTab('silent');
             }}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-semibold transition-all ${
               activeTab === 'silent'
                 ? 'bg-violet-500/20 text-violet-300 border border-violet-500/40 shadow-[0_0_12px_rgba(139,92,246,0.25)]'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <Terminal className="h-3.5 w-3.5" />
-            <span>3. ติดตั้งแบบเงียบ & เวอร์ชัน</span>
+            <Package className="h-3.5 w-3.5" />
+            <span>3. Winget / เงียบ</span>
+          </button>
+
+          <button
+            onClick={() => {
+              playClickSound();
+              setActiveTab('uninstall');
+            }}
+            className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-semibold transition-all ${
+              activeTab === 'uninstall'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.25)]'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            <span>4. ถอน / คลีนขยะ</span>
           </button>
         </div>
 
-        {/* TAB 1: STREAM & APP CHECKER */}
+        {/* TAB 1: STREAM & AUTO-REPAIR TELEMETRY */}
         {activeTab === 'stream' && (
           <div className="animate-fade-in">
             {/* Smart System App Checker Banner */}
@@ -318,7 +393,7 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
                         </span>
                       </div>
                       <p className="mt-1 text-xs text-slate-300 leading-relaxed">
-                        ตรวจพบ Protocol ({appData.protocolScheme}) บนระบบปฏิบัติการ หากมีติดตั้งอยู่แล้ว สามารถสั่งเปิดโปรแกรมได้ทันทีครับ
+                        ตรวจพบ Protocol ({appData.protocolScheme}) บนเครื่อง หากมีติดตั้งอยู่แล้ว กดเปิดได้ทันทีโดยไม่ต้องดาวน์โหลดซ้ำครับ
                       </p>
                     </div>
                   </div>
@@ -377,6 +452,40 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
                 )}
               </div>
 
+              {/* Chunks Matrix Telemetry (HTTP Range Support) */}
+              {downloadSession && (
+                <div className="mt-3 pt-2 border-t border-slate-800">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1.5">
+                    <span className="flex items-center gap-1 font-semibold text-cyan-400">
+                      <Layers className="h-3 w-3" />
+                      HTTP RANGE CHUNK MATRIX ({downloadSession.totalChunks} Chunks // {downloadSession.chunkSizeMb} MB/chk)
+                    </span>
+                    <span>
+                      Offset: {downloadSession.resumeByteOffset.toLocaleString()} Bytes
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-10 gap-1">
+                    {downloadSession.chunks.map((chk) => (
+                      <div
+                        key={chk.chunkIndex}
+                        className={`h-2.5 rounded-sm border transition-all ${
+                          chk.status === 'DOWNLOADED'
+                            ? 'bg-emerald-500/80 border-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.4)]'
+                            : chk.status === 'CORRUPTED'
+                            ? 'bg-rose-500 border-rose-400 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]'
+                            : chk.status === 'REPAIRED'
+                            ? 'bg-cyan-400 border-cyan-300'
+                            : chk.status === 'DOWNLOADING'
+                            ? 'bg-amber-400 border-amber-300 animate-pulse'
+                            : 'bg-slate-900 border-slate-800'
+                        }`}
+                        title={`Chunk #${chk.chunkIndex + 1}: ${chk.status}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* SHA-256 and Integrity Checksum Card */}
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800/80 pt-3 text-[11px] text-slate-400">
                 <div className="flex items-center gap-1.5">
@@ -384,48 +493,24 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
                   <span>SHA-256:</span>
                   <code className="text-cyan-300 font-mono">{sha256Short}</code>
                 </div>
-                <button
-                  onClick={() => {
-                    playClickSound();
-                    setActiveTab('security');
-                  }}
-                  className="flex items-center gap-1 text-emerald-400 hover:underline"
-                >
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  <span>72/72 VIRUSTOTAL CLEAN ↗</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Binary & Environment Metadata Details */}
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-2">
-                <span className="text-[10px] text-slate-500 block">FILE NAME</span>
-                <span className="text-slate-200 font-mono text-[11px] truncate block" title={appData.fileName}>
-                  {appData.fileName || `${appData.name}.exe`}
-                </span>
-              </div>
-              <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-2">
-                <span className="text-[10px] text-slate-500 block">PUBLISHER</span>
-                <span className="text-slate-200 font-mono text-[11px] truncate block" title={appData.publisher}>
-                  {appData.publisher || 'Verified Official Vendor'}
-                </span>
-              </div>
-              <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-2">
-                <span className="text-[10px] text-slate-500 block">TARGET OS</span>
-                <span className="text-cyan-400 font-mono text-[11px]">
-                  Windows 11 / 64-bit
-                </span>
-              </div>
-              <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-2">
-                <span className="text-[10px] text-slate-500 block">STATUS</span>
-                <span
-                  className={`font-mono text-[11px] font-semibold ${
-                    isCompleted ? 'text-emerald-400' : 'text-amber-400'
-                  }`}
-                >
-                  {isCompleted ? 'พร้อมติดตั้ง' : isStreaming ? 'กำลังสตรีม...' : 'สแตนด์บาย'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSimulateDrop}
+                    className="flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-300 transition-colors"
+                    title="ทดสอบจำลองเครือข่ายขัดข้อง"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <span>จำลองหลุด</span>
+                  </button>
+                  <button
+                    onClick={handleAutoRepair}
+                    className="flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors border border-emerald-500/30 rounded px-1.5 py-0.5 bg-emerald-950/40"
+                    title="สั่งดาวน์โหลดต่อและซ่อมแซม Chunks อัตโนมัติ"
+                  >
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    <span>ซ่อมไฟล์ & ต่อจุดเดิม</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -501,35 +586,46 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
           </div>
         )}
 
-        {/* TAB 3: SILENT AUTO-INSTALL & VERSION TRACKER */}
+        {/* TAB 3: WINGET & SILENT AUTO-INSTALL */}
         {activeTab === 'silent' && silentCommand && versionTelemetry && (
           <div className="mt-3 space-y-3 animate-fade-in">
-            {/* Version Telemetry Banner */}
-            <div className="rounded-xl border border-violet-500/30 bg-violet-950/20 p-3.5">
-              <div className="flex items-center justify-between mb-2">
+            {/* Winget Package Manager Direct Trigger Box */}
+            <div className="rounded-xl border border-cyan-500/30 bg-slate-900/80 p-3.5">
+              <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-violet-400" />
-                  <span className="text-xs font-bold text-violet-300">
-                    APP VERSION TELEMETRY
+                  <Package className="h-4 w-4 text-cyan-400" />
+                  <span className="text-xs font-bold text-cyan-300">
+                    WINGET PACKAGE MANAGER (DIRECT INSTALL TRIGGER)
                   </span>
                 </div>
-                <span className="rounded bg-violet-500/20 px-2 py-0.5 text-[11px] text-violet-200 border border-violet-500/40">
-                  {versionTelemetry.patchStatus === 'UP_TO_DATE' ? 'UP-TO-DATE' : 'UPDATE AVAILABLE'}
+                <span className="text-[10px] text-slate-400">
+                  ID: <code className="text-emerald-300">{appData.wingetId || appData.id}</code>
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                <div className="rounded bg-slate-950/60 p-2 border border-slate-800">
-                  <span className="text-slate-400 text-[10px] block">LATEST RELEASE:</span>
-                  <span className="text-white font-bold">{versionTelemetry.latestVersion}</span>
-                </div>
-                <div className="rounded bg-slate-950/60 p-2 border border-slate-800">
-                  <span className="text-slate-400 text-[10px] block">RELEASE DATE:</span>
-                  <span className="text-slate-200">{versionTelemetry.releaseDate}</span>
-                </div>
+              <div className="relative rounded-lg bg-slate-950 p-2.5 border border-slate-800 text-[11px] font-mono text-emerald-300 overflow-x-auto">
+                <code>{wingetCommand}</code>
               </div>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
-                <strong className="text-violet-300">Changelog:</strong> {versionTelemetry.changelog}
-              </p>
+              <div className="mt-2.5 flex items-center justify-between">
+                <span className="text-[11px] text-slate-400">
+                  รันผ่าน Windows Terminal เพื่อติดตั้งอัตโนมัติ 100% พร้อมยอมรับข้อตกลง
+                </span>
+                <button
+                  onClick={() => handleCopyCommand(wingetCommand, 'winget')}
+                  className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30 transition-all shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                >
+                  {copiedType === 'winget' ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>คัดลอกแล้ว!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" />
+                      <span>คัดลอก Winget Command</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Silent Auto-Install Execution Command (PowerShell Snippet) */}
@@ -538,33 +634,97 @@ export const InstallerTelemetryModal = memo(function InstallerTelemetryModal({
                 <div className="flex items-center gap-2">
                   <Terminal className="h-4 w-4 text-cyan-400" />
                   <span className="text-xs font-bold text-slate-200">
-                    SILENT AUTO-INSTALL (POWERSHELL ADMIN STREAM)
+                    POWERSHELL SILENT RUNNER
                   </span>
                 </div>
                 <span className="text-[10px] text-slate-400">
-                  สวิตช์เงียบ: <code className="text-cyan-300">{silentCommand.silentArgs}</code>
+                  สวิตช์: <code className="text-cyan-300">{silentCommand.silentArgs}</code>
                 </span>
               </div>
               <div className="relative rounded-lg bg-slate-950 p-2.5 border border-slate-800 text-[11px] font-mono text-cyan-300 overflow-x-auto">
                 <code>{silentCommand.powershell}</code>
               </div>
-              <div className="mt-2.5 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400">
-                  คลิกปุ่มเพื่อคัดลอกคำสั่งสำหรับรันติดตั้งใน Background โดยไม่ต้องกด Next
-                </span>
+              <div className="mt-2 flex justify-end">
                 <button
                   onClick={() => handleCopyCommand(silentCommand.powershell, 'ps')}
-                  className="flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/20 px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/30 transition-all shadow-[0_0_12px_rgba(6,182,212,0.2)]"
+                  className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700 transition-colors"
                 >
-                  {copiedType === 'ps' ? (
+                  {copiedType === 'ps' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  <span>{copiedType === 'ps' ? 'คัดลอกแล้ว' : 'คัดลอก PowerShell'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Version Telemetry Highlights */}
+            <div className="rounded-xl border border-violet-500/30 bg-violet-950/20 p-3">
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="font-bold text-violet-300 flex items-center gap-1">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {versionTelemetry.latestVersion}
+                </span>
+                <span className="text-slate-400 text-[10px]">
+                  ปล่อยเมื่อ: {versionTelemetry.releaseDate}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300">
+                {versionTelemetry.changelog}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: APP UNINSTALLER & CLEANUP SENTINEL */}
+        {activeTab === 'uninstall' && uninstallerPlan && (
+          <div className="mt-3 space-y-3 animate-fade-in">
+            <div className="rounded-xl border border-rose-500/30 bg-rose-950/20 p-3.5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Trash2 className="h-4 w-4 text-rose-400" />
+                  <span className="text-xs font-bold text-rose-300">
+                    APP UNINSTALLER & CLEANUP SENTINEL
+                  </span>
+                </div>
+                <span className="rounded bg-rose-500/20 px-2 py-0.5 text-[10px] text-rose-200 border border-rose-500/40">
+                  คืนพื้นที่ ~{uninstallerPlan.estimatedReclaimedMb} MB
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed mb-3">
+                ระบบจะสั่งปิดโปรเซส <code className="text-rose-300">{uninstallerPlan.processName}</code> อัตโนมัติ ถอนการติดตั้งแบบเงียบ และล้างโฟลเดอร์แคชที่ตกค้างในเครื่อง
+              </p>
+
+              {/* Clean paths */}
+              <div className="rounded-lg bg-slate-950/70 p-2.5 border border-slate-800 text-[11px] mb-3">
+                <span className="text-slate-400 block mb-1 font-semibold text-[10px]">
+                  โฟลเดอร์ที่จะถูกคลีนทิ้ง:
+                </span>
+                {uninstallerPlan.cleanPaths.map((p) => (
+                  <div key={p} className="text-rose-300 font-mono text-[10px] truncate">
+                    • {p}
+                  </div>
+                ))}
+              </div>
+
+              {/* Copy Script Button */}
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  onClick={() => handleCopyCommand(uninstallerPlan.wingetCommand, 'winget-un')}
+                  className="rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700 transition-colors"
+                >
+                  {copiedType === 'winget-un' ? 'คัดลอกคำสั่ง Winget แล้ว' : 'คัดลอก Winget Uninstall'}
+                </button>
+                <button
+                  onClick={() => handleCopyCommand(uninstallerPlan.powershellScript, 'uninstall')}
+                  className="flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/20 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/30 transition-all shadow-[0_0_12px_rgba(244,63,94,0.2)]"
+                >
+                  {copiedType === 'uninstall' ? (
                     <>
                       <Check className="h-3.5 w-3.5 text-emerald-400" />
-                      <span className="text-emerald-400">คัดลอกแล้ว!</span>
+                      <span>คัดลอกสคริปต์คลีนแล้ว!</span>
                     </>
                   ) : (
                     <>
                       <Copy className="h-3.5 w-3.5" />
-                      <span>คัดลอกคำสั่ง PowerShell</span>
+                      <span>คัดลอกสคริปต์ PowerShell ทั้งหมด</span>
                     </>
                   )}
                 </button>

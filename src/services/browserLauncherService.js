@@ -129,6 +129,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'โปรแกรมประชุมออนไลน์',
     publisher: 'Zoom Video Communications, Inc.',
     silentArgs: '/silent',
+    wingetId: 'Zoom.Zoom',
   },
   line: {
     id: 'line',
@@ -144,6 +145,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'โปรแกรมแชทและติดต่อสื่อสาร',
     publisher: 'LY Corporation',
     silentArgs: '/S',
+    wingetId: 'LINE.LINE',
   },
   discord: {
     id: 'discord',
@@ -159,6 +161,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'โปรแกรมสื่อสารและชุมชน',
     publisher: 'Discord Inc.',
     silentArgs: '/s',
+    wingetId: 'Discord.Discord',
   },
   telegram: {
     id: 'telegram',
@@ -174,6 +177,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'โปรแกรมสนทนาความปลอดภัยสูง',
     publisher: 'Telegram FZ-LLC',
     silentArgs: '/VERYSILENT /NORESTART',
+    wingetId: 'Telegram.TelegramDesktop',
   },
   chrome: {
     id: 'chrome',
@@ -189,6 +193,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'เว็บเบราว์เซอร์',
     publisher: 'Google LLC',
     silentArgs: '/silent /install',
+    wingetId: 'Google.Chrome',
   },
   vscode: {
     id: 'vscode',
@@ -204,6 +209,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'โปรแกรมเขียนโค้ดและพัฒนาซอฟต์แวร์',
     publisher: 'Microsoft Corporation',
     silentArgs: '/verysilent /suppressmsgboxes /mergetasks="!runcode"',
+    wingetId: 'Microsoft.VisualStudioCode',
   },
   obs: {
     id: 'obs',
@@ -219,6 +225,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'โปรแกรมสตรีมและบันทึกหน้าจอ',
     publisher: 'OBS Project',
     silentArgs: '/S',
+    wingetId: 'OBSProject.OBSStudio',
   },
   spotify: {
     id: 'spotify',
@@ -234,6 +241,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'โปรแกรมฟังเพลงและพอดแคสต์',
     publisher: 'Spotify AB',
     silentArgs: '/silent',
+    wingetId: 'Spotify.Spotify',
   },
   notion: {
     id: 'notion',
@@ -249,6 +257,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'โปรแกรมจัดการงานและฐานข้อมูล',
     publisher: 'Notion Labs, Inc.',
     silentArgs: '/S',
+    wingetId: 'Notion.Notion',
   },
   anydesk: {
     id: 'anydesk',
@@ -264,6 +273,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'โปรแกรมรีโมทควบคุมระยะไกล',
     publisher: 'AnyDesk Software GmbH',
     silentArgs: '/install /silent',
+    wingetId: 'AnyDeskSoftwareGmbH.AnyDesk',
   },
   teamviewer: {
     id: 'teamviewer',
@@ -279,6 +289,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'โปรแกรมควบคุมระยะไกล',
     publisher: 'TeamViewer Germany GmbH',
     silentArgs: '/S',
+    wingetId: 'TeamViewer.TeamViewer',
   },
   capcut: {
     id: 'capcut',
@@ -294,6 +305,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'โปรแกรมตัดต่อวิดีโอ',
     publisher: 'ByteDance Ltd.',
     silentArgs: '/S',
+    wingetId: 'ByteDance.CapCut',
   },
   git: {
     id: 'git',
@@ -309,6 +321,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'ระบบควบคุมเวอร์ชันโค้ด',
     publisher: 'The Git Development Community',
     silentArgs: '/VERYSILENT /NORESTART',
+    wingetId: 'Git.Git',
   },
   node: {
     id: 'node',
@@ -324,6 +337,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'JavaScript Runtime Engine',
     publisher: 'OpenJS Foundation',
     silentArgs: '/qn /norestart',
+    wingetId: 'OpenJS.NodeJS',
   },
   python: {
     id: 'python',
@@ -339,6 +353,7 @@ const BASE_APP_DEFINITIONS = {
     category: 'ภาษาการเขียนโปรแกรม Python',
     publisher: 'Python Software Foundation',
     silentArgs: '/quiet InstallAllUsers=1 PrependPath=1',
+    wingetId: 'Python.Python.3.13',
   },
 };
 
@@ -1104,8 +1119,28 @@ export function getSilentInstallCommand(appData) {
     silentArgs,
     powershell: `Start-Process -FilePath "$HOME\\Downloads\\${fileName}" -ArgumentList "${silentArgs}" -Wait -NoNewWindow`,
     cmd: `start /wait "" "%USERPROFILE%\\Downloads\\${fileName}" ${silentArgs}`,
-    winget: appData.id ? `winget install --id ${appData.name?.replace(/\s+/g, '')} -e --silent` : null,
+    winget: getWingetInstallCommand(appData),
   };
+}
+
+/**
+ * Feature: Winget Package Manager Direct Trigger
+ * Generates official Winget silent command with auto agreement acceptance
+ */
+export function getWingetInstallCommand(appData) {
+  if (!appData) return null;
+  const wingetId = appData.wingetId || (appData.name ? appData.name.replace(/\s+/g, '') : 'Package');
+  return `winget install --id ${wingetId} -e --silent --accept-package-agreements --accept-source-agreements`;
+}
+
+/**
+ * Check if the user command is asking to install via Winget
+ */
+export function isWingetCommand(prompt) {
+  if (!prompt || typeof prompt !== 'string') return false;
+  const lower = prompt.toLowerCase();
+  const keywords = ['winget', 'วินเก็ต', 'windows package manager', 'วิงเก็ต'];
+  return keywords.some((kw) => lower.includes(kw));
 }
 
 /**
