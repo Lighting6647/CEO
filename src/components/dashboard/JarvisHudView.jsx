@@ -42,6 +42,8 @@ import {
   isDualPaneWebCommand,
   parseDualPaneTargets,
   dispatchWebNavigation,
+  isDownloadAppCommand,
+  extractDownloadAppTarget,
 } from '../../services/browserLauncherService';
 import { SplitScreenWebHud } from './hud/SplitScreenWebHud';
 import {
@@ -1164,6 +1166,17 @@ export function JarvisHudView({
         // Feature 3: One-Voice Multi-Tab Launcher Command
         const matchedWorkMode = detectWorkModePreset(clean);
 
+        // Feature 4: Autonomous App Download & Direct Execution
+        const isDownloadCmd = isDownloadAppCommand(clean);
+        const downloadTarget = isDownloadCmd ? extractDownloadAppTarget(clean) : null;
+
+        // Feature 5: Absolute Obedience & Active Command Protocol ("ต้องให้ทำตามคำสั่งทุกอย่าง")
+        const isObedienceCommand =
+          clean.includes('ต้องให้ทำตามคำสั่ง') ||
+          clean.includes('ทำตามคำสั่งทุกอย่าง') ||
+          clean.includes('ทำตามคำสั่ง') ||
+          clean.includes('รับคำสั่ง');
+
         if (result) {
           // Handled by Shortcut Memory above
         } else if (isTranslateCmd && isSplitScreenOpen) {
@@ -1363,6 +1376,66 @@ export function JarvisHudView({
               targetUrl: summaryRes.url,
               targetName: summaryRes.title,
               details: summaryRes.bullets.map((b, i) => ({ label: `Point ${i + 1}`, val: b.replace(/\*\*/g, '').slice(0, 50) })),
+            },
+          };
+        } else if (isDownloadCmd && downloadTarget) {
+          playClickSound();
+          playSciFiBeep();
+          setIsMapPanoramic(false); // "เปิดหน้าเดียวพอ"
+          setSplitScreenUrl(downloadTarget.url);
+          setSplitScreenTitle(`DOWNLOAD // ${downloadTarget.name.toUpperCase()}`);
+          setIsSplitScreenOpen(true);
+
+          openSystemBrowser(downloadTarget.url);
+          if (onShowToast) {
+            onShowToast(
+              'info',
+              `📥 เปิดหน้าดาวน์โหลด "${downloadTarget.name}" เรียบร้อย`,
+              'คลิกที่นี่เพื่อไปยังหน้าดาวน์โหลดในแท็บใหม่ทันที ↗'
+            );
+          }
+
+          result = {
+            action: 'APP_DOWNLOAD_INITIATED',
+            squadId: 'ops',
+            delegatedTo: 'J.A.R.V.I.S. Software Deployment Core',
+            reply: `ดำเนินการเปิดหน้าดาวน์โหลดโปรแกรม "${downloadTarget.name}" ให้ ${userTitle} เรียบร้อยครับ 100%!\n• โปรแกรมเป้าหมาย: ${downloadTarget.name} (${downloadTarget.category})\n• ลิงก์ดาวน์โหลดทางการ: ${downloadTarget.url}\n• สิทธิ์คำสั่ง: Level 5 Supreme Clearance จาก ${userTitle}\n• สถานะการแสดงผล: แสดงหน้าจอเดียวบน HUD (เปิดหน้าเดียวพอ) + เปิดแท็บใหม่ในเบราว์เซอร์ให้ดาวน์โหลดทันทีครับ`,
+            speech: `กำลังเปิดหน้าดาวน์โหลดโปรแกรม ${downloadTarget.name} ให้ ${userTitle} เรียบร้อยครับ`,
+            hologram: {
+              title: `APP DOWNLOAD // ${downloadTarget.name.toUpperCase()}`,
+              category: 'SOFTWARE DEPLOYMENT',
+              badge: 'OFFICIAL INSTALLER',
+              topicType: 'download',
+              targetUrl: downloadTarget.url,
+              targetName: downloadTarget.name,
+              details: [
+                { label: 'Application', val: downloadTarget.name },
+                { label: 'Category', val: downloadTarget.category },
+                { label: 'Download URL', val: downloadTarget.url },
+                { label: 'Status', val: 'HUD Single View + New Tab' },
+              ],
+            },
+          };
+        } else if (isObedienceCommand) {
+          playClickSound();
+          playSuccessSound();
+          result = {
+            action: 'COMMAND_AUTHORITY_ENGAGED',
+            squadId: 'ops',
+            delegatedTo: 'J.A.R.V.I.S. Autonomous Command Core',
+            reply: `รับคำสั่งครับ ${userTitle}! จาวิสตั้งโหมดปฏิบัติการจริงเชิงรุกเต็มพิกัด (100% Autonomous Active Execution) เรียบร้อยครับ!\n• กฎเหล็ก: ทำตามทุกคำสั่งของ ${userTitle} ทันที โดยไม่ถามซ้ำ ไม่ตอบเลี่ยง และไม่ปล่อยให้รอนาน\n• ขอบเขตคำสั่ง: สั่งเปิดเว็บ, ดาวน์โหลดโปรแกรม, ค้นหาข้อมูลสด, ปรับแต่งหน้าจอ, นำทางจราจร หรือตรวจสอบระบบนิเวศ\n• ระดับการตอบสนอง: ลงมือกระทำทันที พร้อมแสดงผลหน้าเดียวบน HUD และเปิดแท็บใหม่ตามคำสั่งครับ`,
+            speech: `รับทราบและน้อมรับคำสั่งครับ ${userTitle} จาวิสพร้อมปฏิบัติตามทุกคำสั่งของท่านทันทีร้อยเปอร์เซ็นต์ครับ`,
+            hologram: {
+              title: 'AUTONOMOUS EXECUTION // 100% ENGAGED',
+              category: 'COMMAND PROTOCOL',
+              badge: 'SUPREME OBEDIENCE ACTIVE',
+              topicType: 'command',
+              details: [
+                { label: 'Authority', val: userTitle },
+                { label: 'Execution Mode', val: 'Direct Action (ทำตามคำสั่งทันที)' },
+                { label: 'Chatbot Bypass', val: 'Active (ห้ามตอบเลี่ยง)' },
+                { label: 'Clearance', val: 'Level 5 Supreme Clearance' },
+              ],
             },
           };
         } else if (isSplitScreenCommand || isBrowserCommand) {
@@ -2284,7 +2357,7 @@ export function JarvisHudView({
         } else if (result.action === 'TRAFFIC_REPORT' || result.action === 'PANORAMIC_MAP_EXPANDED') {
           setIsSplitScreenOpen(false); // "เปิดหน้าเดียวพอ"
           setIsMapPanoramic(true);
-        } else if (result.action === 'BROWSER_OPENED' || result.action === 'SPLIT_SCREEN_OPENED') {
+        } else if (result.action === 'BROWSER_OPENED' || result.action === 'SPLIT_SCREEN_OPENED' || result.action === 'APP_DOWNLOAD_INITIATED') {
           setIsMapPanoramic(false); // "เปิดหน้าเดียวพอ"
           setIsSplitScreenOpen(true);
         } else if (result.action === 'MAP_CLOSED') {

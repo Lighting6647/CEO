@@ -99,7 +99,217 @@ const KNOWN_WEB_SHORTCUTS = {
   พยากรณ์อากาศ: 'https://www.tmd.go.th',
   กรมอุตุ: 'https://www.tmd.go.th',
   เรดาร์ฝน: 'https://weather.bangkok.go.th',
+
+  // Communication & Conferencing
+  zoom: 'https://zoom.us',
+  ซูม: 'https://zoom.us',
+  discord: 'https://discord.com',
+  ดิสคอร์ด: 'https://discord.com',
+  telegram: 'https://web.telegram.org',
+  เทเลแกรม: 'https://web.telegram.org',
 };
+
+/**
+ * Curated Official Application Download Catalog
+ * Automatically opens official installer/download pages when sir ไลท์ commands "ดาวน์โหลด..." or "โหลด..."
+ */
+export const KNOWN_APP_DOWNLOADS = {
+  // Video Conferencing & Remote
+  zoom: {
+    name: 'Zoom Workplace',
+    url: 'https://zoom.us/download',
+    category: 'โปรแกรมประชุมออนไลน์',
+  },
+  ซูม: {
+    name: 'Zoom Workplace',
+    url: 'https://zoom.us/download',
+    category: 'โปรแกรมประชุมออนไลน์',
+  },
+  'โปรแกรม ซูม': {
+    name: 'Zoom Workplace',
+    url: 'https://zoom.us/download',
+    category: 'โปรแกรมประชุมออนไลน์',
+  },
+  'โปรแกรมซูม': {
+    name: 'Zoom Workplace',
+    url: 'https://zoom.us/download',
+    category: 'โปรแกรมประชุมออนไลน์',
+  },
+  line: {
+    name: 'LINE Desktop (PC)',
+    url: 'https://line.me/th/download',
+    category: 'โปรแกรมแชทและติดต่อสื่อสาร',
+  },
+  ไลน์: {
+    name: 'LINE Desktop (PC)',
+    url: 'https://line.me/th/download',
+    category: 'โปรแกรมแชทและติดต่อสื่อสาร',
+  },
+  discord: {
+    name: 'Discord Desktop',
+    url: 'https://discord.com/download',
+    category: 'โปรแกรมสื่อสารและชุมชน',
+  },
+  ดิสคอร์ด: {
+    name: 'Discord Desktop',
+    url: 'https://discord.com/download',
+    category: 'โปรแกรมสื่อสารและชุมชน',
+  },
+  telegram: {
+    name: 'Telegram Desktop',
+    url: 'https://desktop.telegram.org/',
+    category: 'โปรแกรมสนทนาความปลอดภัยสูง',
+  },
+  เทเลแกรม: {
+    name: 'Telegram Desktop',
+    url: 'https://desktop.telegram.org/',
+    category: 'โปรแกรมสนทนาความปลอดภัยสูง',
+  },
+  chrome: {
+    name: 'Google Chrome',
+    url: 'https://www.google.com/chrome/',
+    category: 'เว็บเบราว์เซอร์',
+  },
+  โครม: {
+    name: 'Google Chrome',
+    url: 'https://www.google.com/chrome/',
+    category: 'เว็บเบราว์เซอร์',
+  },
+  vscode: {
+    name: 'Visual Studio Code',
+    url: 'https://code.visualstudio.com/download',
+    category: 'โปรแกรมเขียนโค้ดและพัฒนาซอฟต์แวร์',
+  },
+  'vs code': {
+    name: 'Visual Studio Code',
+    url: 'https://code.visualstudio.com/download',
+    category: 'โปรแกรมเขียนโค้ดและพัฒนาซอฟต์แวร์',
+  },
+  obs: {
+    name: 'OBS Studio',
+    url: 'https://obsproject.com/download',
+    category: 'โปรแกรมสตรีมและบันทึกหน้าจอ',
+  },
+  spotify: {
+    name: 'Spotify Desktop',
+    url: 'https://www.spotify.com/download',
+    category: 'โปรแกรมฟังเพลงและพอดแคสต์',
+  },
+  สปอติฟาย: {
+    name: 'Spotify Desktop',
+    url: 'https://www.spotify.com/download',
+    category: 'โปรแกรมฟังเพลงและพอดแคสต์',
+  },
+  notion: {
+    name: 'Notion Desktop',
+    url: 'https://www.notion.so/desktop',
+    category: 'โปรแกรมจัดการงานและฐานข้อมูล',
+  },
+  โนชั่น: {
+    name: 'Notion Desktop',
+    url: 'https://www.notion.so/desktop',
+    category: 'โปรแกรมจัดการงานและฐานข้อมูล',
+  },
+  anydesk: {
+    name: 'AnyDesk Remote Desktop',
+    url: 'https://anydesk.com/download',
+    category: 'โปรแกรมรีโมทควบคุมระยะไกล',
+  },
+  เอนี่เดสก์: {
+    name: 'AnyDesk Remote Desktop',
+    url: 'https://anydesk.com/download',
+    category: 'โปรแกรมรีโมทควบคุมระยะไกล',
+  },
+  teamviewer: {
+    name: 'TeamViewer Remote',
+    url: 'https://www.teamviewer.com/download',
+    category: 'โปรแกรมควบคุมระยะไกล',
+  },
+  ทีมวิวเวอร์: {
+    name: 'TeamViewer Remote',
+    url: 'https://www.teamviewer.com/download',
+    category: 'โปรแกรมควบคุมระยะไกล',
+  },
+  capcut: {
+    name: 'CapCut Desktop',
+    url: 'https://www.capcut.com/tools/desktop-video-editor',
+    category: 'โปรแกรมตัดต่อวิดีโอ',
+  },
+  แคปคัท: {
+    name: 'CapCut Desktop',
+    url: 'https://www.capcut.com/tools/desktop-video-editor',
+    category: 'โปรแกรมตัดต่อวิดีโอ',
+  },
+  git: {
+    name: 'Git SCM',
+    url: 'https://git-scm.com/downloads',
+    category: 'ระบบควบคุมเวอร์ชันโค้ด',
+  },
+  node: {
+    name: 'Node.js LTS',
+    url: 'https://nodejs.org/en/download',
+    category: 'JavaScript Runtime Engine',
+  },
+  python: {
+    name: 'Python',
+    url: 'https://www.python.org/downloads/',
+    category: 'ภาษาการเขียนโปรแกรม Python',
+  },
+};
+
+/**
+ * Check if the user command is asking to download or install an application
+ */
+export function isDownloadAppCommand(prompt) {
+  if (!prompt || typeof prompt !== 'string') return false;
+  const lower = prompt.toLowerCase().trim();
+  const downloadKeywords = [
+    'ดาวน์โหลด',
+    'ดาวโหลด',
+    'โหลดโปรแกรม',
+    'โหลดแอพ',
+    'โหลดแอป',
+    'โหลด',
+    'ติดตั้ง',
+    'download',
+    'install',
+  ];
+  return downloadKeywords.some((kw) => lower.includes(kw));
+}
+
+/**
+ * Extract target application name and download URL from user prompt
+ */
+export function extractDownloadAppTarget(prompt) {
+  if (!prompt || typeof prompt !== 'string') return null;
+  const clean = prompt.trim();
+  const lower = clean.toLowerCase();
+
+  // 1. Check direct matches in curated catalog
+  const sortedKeys = Object.keys(KNOWN_APP_DOWNLOADS).sort((a, b) => b.length - a.length);
+  for (const key of sortedKeys) {
+    if (lower.includes(key)) {
+      return KNOWN_APP_DOWNLOADS[key];
+    }
+  }
+
+  // 2. Extract application name from command pattern
+  const rawTarget = lower
+    .replace(/^(?:ช่วย|สั่ง|วาน|ให้)?\s*(?:ดาวน์โหลด|ดาวโหลด|โหลด|ติดตั้ง|download|install)\s*(?:โปรแกรม|แอปพลิเคชัน|แอป|แอพ|app|program|software)?\s*/i, '')
+    .replace(/\s*(?:ให้หน่อย|ให้ที|ด้วยครับ|ด้วยค่ะ|หน่อยครับ|หน่อยค่ะ|หน่อย|ทีครับ|ที|เดี๋ยวนี้|ทันที)$/i, '')
+    .trim();
+
+  if (rawTarget && rawTarget.length > 0) {
+    return {
+      name: rawTarget,
+      url: `https://www.google.com/search?q=${encodeURIComponent('ดาวน์โหลด ' + rawTarget + ' official download')}`,
+      category: 'โปรแกรมประยุกต์',
+      isGenericSearch: true,
+    };
+  }
+
+  return null;
+}
 
 /**
  * Extract target URL and name from user voice or text input

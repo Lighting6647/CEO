@@ -161,6 +161,33 @@ export function processJarvisCommand(input, _context = {}) {
     };
   }
 
+  // 0.3 Absolute Obedience & Active Command Protocol ("ต้องให้ทำตามคำสั่งทุกอย่าง")
+  if (
+    clean.includes('ต้องให้ทำตามคำสั่ง') ||
+    clean.includes('ทำตามคำสั่งทุกอย่าง') ||
+    clean.includes('ทำตามคำสั่ง') ||
+    clean.includes('รับคำสั่ง')
+  ) {
+    return {
+      action: 'COMMAND_AUTHORITY_ENGAGED',
+      squadId: 'ops',
+      delegatedTo: 'J.A.R.V.I.S. Autonomous Command Core',
+      reply: `รับคำสั่งครับ ${USER_TITLE}! จาวิสตั้งโหมดปฏิบัติการจริงเชิงรุกเต็มพิกัด (100% Autonomous Active Execution) เรียบร้อยครับ!\n• กฎเหล็ก: ทำตามทุกคำสั่งของ ${USER_TITLE} ทันที โดยไม่ถามซ้ำ ไม่ตอบเลี่ยง และไม่ปล่อยให้รอนาน\n• ขอบเขตคำสั่ง: สั่งเปิดเว็บ, ดาวน์โหลดโปรแกรม, ค้นหาข้อมูลสด, ปรับแต่งหน้าจอ, นำทางจราจร หรือตรวจสอบระบบนิเวศ\n• ระดับการตอบสนอง: ลงมือกระทำทันที พร้อมแสดงผลหน้าเดียวบน HUD และเปิดแท็บใหม่ตามคำสั่งครับ`,
+      speech: `รับทราบและน้อมรับคำสั่งครับ ${USER_TITLE} จาวิสพร้อมปฏิบัติตามทุกคำสั่งของท่านทันทีร้อยเปอร์เซ็นต์ครับ`,
+      hologram: {
+        title: 'AUTONOMOUS EXECUTION // 100% ENGAGED',
+        category: 'COMMAND PROTOCOL',
+        badge: 'SUPREME OBEDIENCE ACTIVE',
+        details: [
+          { label: 'Authority', val: USER_TITLE },
+          { label: 'Execution Mode', val: 'Direct Action (ทำตามคำสั่งทันที)' },
+          { label: 'Chatbot Bypass', val: 'Active (ห้ามตอบเลี่ยง)' },
+          { label: 'Clearance', val: 'Level 5 Supreme Clearance' },
+        ],
+      },
+    };
+  }
+
   // 0.5 Multi-Agent Hub for Webapp Sales & Development (Specialized Intent)
   if (
     clean.includes('วิเคราะห์เว็บแอพ') ||

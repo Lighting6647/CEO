@@ -85,3 +85,43 @@ test('Browser Launcher: openUrlSync opens new tab with target _blank and returns
   assert.equal(result.url, 'https://maps.google.com');
   assert.equal(result.opened, false);
 });
+
+test('Browser Launcher: detects download commands and extracts official app download URLs accurately', async () => {
+  const { isDownloadAppCommand, extractDownloadAppTarget } = await import('../src/services/browserLauncherService.js');
+  
+  // Exact user command from screenshot
+  const prompt1 = 'ดาวน์โหลด โปรแกรม ซูม ให้ หน่อย';
+  assert.equal(isDownloadAppCommand(prompt1), true);
+  const target1 = extractDownloadAppTarget(prompt1);
+  assert.ok(target1);
+  assert.equal(target1.url, 'https://zoom.us/download');
+  assert.equal(target1.name, 'Zoom Workplace');
+
+  // LINE PC
+  const prompt2 = 'โหลด ไลน์ ให้หน่อย';
+  assert.equal(isDownloadAppCommand(prompt2), true);
+  const target2 = extractDownloadAppTarget(prompt2);
+  assert.ok(target2);
+  assert.equal(target2.url, 'https://line.me/th/download');
+
+  // Discord
+  const prompt3 = 'ติดตั้ง discord';
+  assert.equal(isDownloadAppCommand(prompt3), true);
+  const target3 = extractDownloadAppTarget(prompt3);
+  assert.ok(target3);
+  assert.equal(target3.url, 'https://discord.com/download');
+
+  // Generic app fallback
+  const prompt4 = 'ดาวน์โหลด โปรแกรม winrar';
+  assert.equal(isDownloadAppCommand(prompt4), true);
+  const target4 = extractDownloadAppTarget(prompt4);
+  assert.ok(target4);
+  assert.ok(target4.url.includes('google.com/search?q='));
+});
+
+test('J.A.R.V.I.S. Brain: responds with active command execution on obedience commands', async () => {
+  const { processJarvisCommand } = await import('../src/utils/jarvisBrain.js');
+  const res = processJarvisCommand('ต้องให้ทำตามคำสั่งทุกอย่าง');
+  assert.equal(res.action, 'COMMAND_AUTHORITY_ENGAGED');
+  assert.ok(res.reply.includes('100% Autonomous Active Execution'));
+});

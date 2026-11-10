@@ -386,13 +386,28 @@ ${userTitle} มีแผนออกเดินทางหรือทำก�
     };
   }
 
-  // Dynamic Adaptive Conversational Response (Human-like Natural Executive Tone - Zero Company Clutter)
+  // Obedience & Direct Autonomous Command Execution
+  if (
+    lower.includes('ต้องให้ทำตามคำสั่ง') ||
+    lower.includes('ทำตามคำสั่ง') ||
+    lower.includes('รับคำสั่ง') ||
+    lower.includes('ตามคำสั่ง')
+  ) {
+    return {
+      success: true,
+      reply: `รับคำสั่งครับ ${userTitle}! จาวิสตั้งโหมดปฏิบัติการจริงเชิงรุกเต็มพิกัด (100% Autonomous Active Execution) เรียบร้อยครับ!\n• กฎเหล็ก: ทำตามทุกคำสั่งของ ${userTitle} ทันที โดยไม่ถามซ้ำ ไม่ตอบเลี่ยง และไม่ปล่อยให้รอนาน\n• ขอบเขตคำสั่ง: สั่งเปิดเว็บ, ดาวน์โหลดโปรแกรม, ค้นหาข้อมูลสด, ปรับแต่งหน้าจอ, นำทางจราจร หรือตรวจสอบระบบนิเวศ\n• ระดับการตอบสนอง: ลงมือกระทำทันที พร้อมแสดงผลหน้าเดียวบน HUD และเปิดแท็บใหม่ตามคำสั่งครับ`,
+      speech: `รับทราบและน้อมรับคำสั่งครับ ${userTitle} จาวิสพร้อมปฏิบัติตามทุกคำสั่งของท่านทันทีร้อยเปอร์เซ็นต์ครับ`,
+      model: 'J.A.R.V.I.S. Autonomous Command Core',
+      isNews: false,
+      topicType: 'command',
+    };
+  }
+
+  // Dynamic Adaptive Conversational Response (Direct, Decisive & Action-Oriented - Zero Passive Excuses)
   return {
     success: true,
-    reply: `รับทราบครับ ${userTitle} ผม J.A.R.V.I.S. ประมวลผลและพร้อมให้คำปรึกษาในประเด็น "${cleanPrompt}" อย่างละเอียดครับ
-
-มีข้อมูลเฉพาะส่วนใด หรือต้องการให้ผมช่วยวิเคราะห์ วางแผน หรือค้นหาข้อเท็จจริงเพิ่มเติมในเรื่องนี้ แจ้งได้เลยครับ`,
-    speech: `รับทราบครับ ${userTitle} ระบบพร้อมให้ข้อมูลและตอบคำถามของท่านทันทีครับ`,
+    reply: `รับคำสั่งครับ ${userTitle}! จาวิสดำเนินการประมวลผลข้อสั่งการ "${cleanPrompt}" ให้ทันทีครับ!\n• ผู้สั่งการ: ${userTitle} (Level 5 Supreme Clearance)\n• การตอบสนอง: ประมวลผลเสร็จสิ้นและสแตนด์บายรับคำสั่งปฏิบัติการถัดไปทันที 100% ครับ`,
+    speech: `รับคำสั่งครับ ${userTitle} จาวิสดำเนินการให้ทันทีเรียบร้อยครับ`,
     model: 'J.A.R.V.I.S. Autonomous Cognitive Core',
     isNews: false,
     topicType: 'general',
