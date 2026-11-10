@@ -285,7 +285,13 @@ export function JarvisHudView({
   const [isMapPanoramic, setIsMapPanoramic] = useState(false);
   const handleTogglePanoramic = useCallback(() => {
     playClickSound();
-    setIsMapPanoramic((prev) => !prev);
+    setIsMapPanoramic((prev) => {
+      const next = !prev;
+      if (next) {
+        setIsSplitScreenOpen(false); // "เปิดหน้าเดียวพอ": ปิด PiP window เมื่อกางแผนที่เต็มผืน
+      }
+      return next;
+    });
   }, []);
 
   // Mem0 Persistent Memory Context Pinning
@@ -1369,9 +1375,8 @@ export function JarvisHudView({
             webTarget.name.includes('แผนที่') ||
             webTarget.name.includes('แมพ');
 
-          if (isMapTarget) {
-            setIsMapPanoramic(true);
-          }
+          // "เปิดหน้าเดียวพอ": Enforce single window HUD layout (Never overlap Panoramic Map + PiP Window)
+          setIsMapPanoramic(false);
 
           // Build optimal display URL for HUD PiP view so iframe renders seamlessly
           let displayUrl = webTarget.url;
@@ -1384,28 +1389,35 @@ export function JarvisHudView({
             displayUrl = webTarget.url.replace('youtu.be/', 'www.youtube.com/embed/');
           }
 
-          // 1. Immediately display live on HUD screen without waiting for clicks ("ไม่ต้องให้กด")
+          // 1. Immediately display live single window on HUD screen ("เปิดหน้าเดียวพอ")
           setSplitScreenUrl(displayUrl);
           setSplitScreenTitle(webTarget.name.toUpperCase());
           setIsSplitScreenOpen(true);
 
-          // 2. Parallel background open
+          // 2. Parallel open in external browser new tab ("แต่เปิดแท็บใหม่")
           openSystemBrowser(webTarget.url);
+          if (onShowToast) {
+            onShowToast(
+              'info',
+              `🌐 เปิด "${webTarget.name}" ในแท็บใหม่แล้ว`,
+              'คลิกที่นี่หากต้องการสลับไปยังแท็บใหม่ทันที ↗'
+            );
+          }
 
           result = {
             action: isMapTarget ? 'TRAFFIC_REPORT' : 'BROWSER_OPENED',
             squadId: 'ops',
             delegatedTo: isMapTarget ? 'GPS Telemetry & Route Map Canvas' : 'J.A.R.V.I.S. Web Navigator Core',
             reply: isMapTarget
-              ? `เปิดแผนที่ระบบนำทางและข้อมูลการจราจรสดให้ ${userTitle} เรียบร้อยครับ!\n• เว็บไซต์: Google Maps Live Telemetry\n• สิทธิ์การเข้าถึง: ได้รับอนุมัติ Level 5 Supreme Clearance จาก ${userTitle}\n• สถานะการแสดงผล: แสดงผลสดบนหน้าจอ HUD ทันทีโดยไม่ต้องกด + เปิดเบราว์เซอร์จริงคู่ขนาน`
-              : `เปิดหน้าเว็บไซต์ "${webTarget.name}" (${webTarget.url}) เรียบร้อยครับ ${userTitle}\n• สิทธิ์การเข้าถึง: ได้รับอนุมัติ Level 5 Supreme Clearance จาก ${userTitle}\n• สถานะการแสดงผล: กางหน้าต่าง PiP แสดงผลบนหน้าจอ HUD ให้ดูทันที 100% (ไม่ต้องกดคลิกใดๆ)`,
+              ? `เปิดแผนที่ระบบนำทางให้ ${userTitle} เรียบร้อยครับ!\n• เว็บไซต์: Google Maps Live Telemetry\n• สิทธิ์การเข้าถึง: ได้รับอนุมัติ Level 5 Supreme Clearance จาก ${userTitle}\n• สถานะการแสดงผล: แสดงหน้าจอเดียวบน HUD (เปิดหน้าเดียวพอ) + เปิดเบราว์เซอร์แท็บใหม่คู่ขนาน`
+              : `เปิดหน้าเว็บไซต์ "${webTarget.name}" (${webTarget.url}) เรียบร้อยครับ ${userTitle}\n• สิทธิ์การเข้าถึง: ได้รับอนุมัติ Level 5 Supreme Clearance จาก ${userTitle}\n• สถานะการแสดงผล: แสดงหน้าจอเดียวบน HUD (เปิดหน้าเดียวพอ) + เปิดเบราว์เซอร์แท็บใหม่คู่ขนาน`,
             speech: isMapTarget
               ? `เปิดระบบแผนที่นำทางสดขึ้นหน้าจอให้ ${userTitle} เรียบร้อยครับ`
               : `เปิดเว็บไซต์ ${webTarget.name} ขึ้นแสดงผลบนหน้าจอให้ ${userTitle} เรียบร้อยครับ`,
             hologram: {
               title: isMapTarget ? 'GOOGLE MAPS // NAVIGATION' : 'SYSTEM WEB BROWSER // LIVE HUD VIEW',
               category: isMapTarget ? 'NAVIGATION TELEMETRY' : 'EXTERNAL WEB CLEARANCE',
-              badge: 'AUTO-DISPLAY ACTIVE',
+              badge: 'SINGLE-HUD ACTIVE',
               topicType: isMapTarget ? 'traffic' : 'web_open',
               destination: isMapTarget ? (extractDestination(clean) || 'กรุงเทพมหานคร') : undefined,
               targetUrl: webTarget.url,
@@ -1413,19 +1425,20 @@ export function JarvisHudView({
               details: isMapTarget ? [
                 { label: 'Destination', val: extractDestination(clean) || 'กรุงเทพมหานคร' },
                 { label: 'Map Engine', val: 'Google Maps Live Traffic' },
-                { label: 'Display Mode', val: 'HUD PiP + Panoramic Canvas' },
-                { label: 'Auto Open', val: 'Active (ไม่ต้องกด)' },
+                { label: 'Display Mode', val: 'Single Window HUD' },
+                { label: 'New Tab', val: 'Opened in External Browser' },
               ] : [
                 { label: 'Target Web', val: webTarget.name },
                 { label: 'Target URL', val: webTarget.url },
-                { label: 'HUD Display', val: 'PiP In-Screen Active' },
-                { label: 'Auto Open', val: 'Active (ไม่ต้องกด)' },
+                { label: 'HUD Display', val: 'Single Window HUD' },
+                { label: 'New Tab', val: 'Opened in External Browser' },
               ],
             },
           };
         } else if (isDailyRoutine) {
           const routine = buildDailyRoutinePlan(userTitle);
           openSystemBrowser(routine.site.url);
+          setIsSplitScreenOpen(false); // "เปิดหน้าเดียวพอ"
           setIsMapPanoramic(true);
           result = {
             action: routine.action,
@@ -1646,6 +1659,7 @@ export function JarvisHudView({
         } else if (isFavRoute) {
           const favRoute = resolveFavoriteRoute(clean);
           recordFavoriteRoute(favRoute.destination, favRoute.label);
+          setIsSplitScreenOpen(false); // "เปิดหน้าเดียวพอ"
           setIsMapPanoramic(true);
           openSystemBrowser(buildDirectionsUrl(favRoute.destination));
           result = {
@@ -1714,6 +1728,7 @@ export function JarvisHudView({
             document.exitFullscreen().catch(() => {});
           }
           setIsMapPanoramic(false);
+          setIsSplitScreenOpen(false); // "เปิดหน้าเดียวพอ"
           setIsVoiceModalOpen(false);
           setIsShortcutsModalOpen(false);
           setIsReaModalOpen(false);
@@ -1746,6 +1761,7 @@ export function JarvisHudView({
           };
         } else if (isMapNavigationCommand) {
           playClickSound();
+          setIsSplitScreenOpen(false); // "เปิดหน้าเดียวพอ": ปิด PiP window เมื่อกางแผนที่นำทาง
           setIsMapPanoramic(true);
           const parsedDest = extractDestination(clean);
           const dest = parsedDest || resolveFavoriteRoute().destination || 'กรุงเทพมหานคร';
@@ -1754,8 +1770,8 @@ export function JarvisHudView({
           if (onShowToast) {
             onShowToast(
               'info',
-              '🗺️ กางแผนที่นำทางบน HUD เรียบร้อย',
-              `เปิดระบบแผนที่ Google Maps (${dest}) เรียบร้อยครับ`
+              '🗺️ เปิด Google Maps ในแท็บใหม่แล้ว',
+              `ปลายทาง: ${dest} (คลิกเพื่อสลับไปยังแท็บใหม่ ↗)`
             );
           }
           result = {
@@ -2266,7 +2282,11 @@ export function JarvisHudView({
             playSuccessSound();
           }
         } else if (result.action === 'TRAFFIC_REPORT' || result.action === 'PANORAMIC_MAP_EXPANDED') {
+          setIsSplitScreenOpen(false); // "เปิดหน้าเดียวพอ"
           setIsMapPanoramic(true);
+        } else if (result.action === 'BROWSER_OPENED' || result.action === 'SPLIT_SCREEN_OPENED') {
+          setIsMapPanoramic(false); // "เปิดหน้าเดียวพอ"
+          setIsSplitScreenOpen(true);
         } else if (result.action === 'MAP_CLOSED') {
           setIsMapPanoramic(false);
         }

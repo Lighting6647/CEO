@@ -269,6 +269,7 @@ export function openUrlSync(targetUrl) {
   let finalUrl = String(targetUrl).trim();
   if (!/^https?:\/\//i.test(finalUrl)) finalUrl = `https://${finalUrl}`;
 
+  let opened = false;
   try {
     const win = window.open(finalUrl, '_blank');
     if (win) {
@@ -282,7 +283,25 @@ export function openUrlSync(targetUrl) {
   } catch (err) {
     console.warn('[openUrlSync]:', err.message);
   }
-  return { opened: false, blocked: true, url: finalUrl };
+
+  // Fallback: Programmatic hidden anchor dispatch for browsers restricting direct window.open
+  if (typeof document !== 'undefined') {
+    try {
+      const a = document.createElement('a');
+      a.href = finalUrl;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      opened = true;
+    } catch (e) {
+      console.warn('[openUrlSync anchor click]:', e.message);
+    }
+  }
+
+  return { opened, blocked: !opened, url: finalUrl };
 }
 
 /**

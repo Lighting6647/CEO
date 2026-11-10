@@ -46,11 +46,11 @@ export function RouteMapWidget({
             href={buildDirectionsUrl(destination)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 rounded-md bg-emerald-500 px-2.5 py-0.5 font-bold text-slate-950 hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300 transition-colors cursor-pointer"
-            title="เปิดนำทางพร้อมสภาพจราจรเรียลไทม์ใน Google Maps"
+            className="flex items-center gap-1.5 rounded-md bg-emerald-500 px-2.5 py-1 font-bold text-slate-950 hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300 transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
+            title="เปิดนำทางพร้อมสภาพจราจรเรียลไทม์ใน Google Maps (เปิดแท็บใหม่)"
           >
             <Navigation className="w-3 h-3" />
-            นำทางสด
+            <span>นำทางในแท็บใหม่</span>
             <ExternalLink className="w-2.5 h-2.5" />
           </a>
           {onClose && (

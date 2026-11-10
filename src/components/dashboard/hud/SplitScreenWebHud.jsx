@@ -437,11 +437,11 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
             <button
               type="button"
               onClick={() => handlePopout(currentUrl)}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold hover:bg-emerald-400 text-[10px] cursor-pointer shadow-sm"
-              title="เปิดดูในแท็บเบราว์เซอร์จริง"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer shadow-md shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95"
+              title="เปิดดูในแท็บเบราว์เซอร์จริง (เปิดแท็บใหม่)"
             >
-              <ExternalLink className="h-3 w-3" />
-              <span className="hidden sm:inline">แท็บแยก</span>
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span>เปิดแท็บใหม่ ↗</span>
             </button>
 
             {/* Maximize */}

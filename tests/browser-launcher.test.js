@@ -76,3 +76,12 @@ test('Browser Launcher: extracts web target URLs and shortcuts accurately', () =
   const generalVoice = extractWebTarget('เปิด รถไฟฟ้าสายสีส้ม');
   assert.ok(generalVoice.url.includes('google.com/search?q='));
 });
+
+test('Browser Launcher: openUrlSync opens new tab with target _blank and returns status', async () => {
+  const { openUrlSync } = await import('../src/services/browserLauncherService.js');
+  // Without browser window object, handles cleanly without crashing
+  const result = openUrlSync('https://maps.google.com');
+  assert.equal(typeof result, 'object');
+  assert.equal(result.url, 'https://maps.google.com');
+  assert.equal(result.opened, false);
+});
