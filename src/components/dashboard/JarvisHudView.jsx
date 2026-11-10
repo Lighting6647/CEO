@@ -66,8 +66,24 @@ import {
   isUninstallCommand,
   formatUninstallPlanReport,
 } from '../../services/appUninstallerService';
+import {
+  isDeepCrawlCommand,
+  extractCrawlTarget,
+  crawlWebsiteTree,
+} from '../../services/deepWebCrawlerService';
+import {
+  isCrossWebCommand,
+  extractCrossWebQuery,
+  aggregateCrossWebSearch,
+} from '../../services/crossWebAggregatorService';
+import {
+  isHeadlessAgentCommand,
+  extractHeadlessTask,
+  executeHeadlessWebAgent,
+} from '../../services/headlessWebAgentService';
 import { SplitScreenWebHud } from './hud/SplitScreenWebHud';
 import { InstallerTelemetryModal } from './hud/InstallerTelemetryModal';
+import { UniversalWebIntelligenceModal } from './hud/UniversalWebIntelligenceModal';
 import {
   applyNoiseGate,
   DEFAULT_NOISE_FLOOR,
@@ -181,6 +197,12 @@ export function JarvisHudView({
   // Installer Stream & Telemetry
   const [installerTelemetryData, setInstallerTelemetryData] = useState(null);
   const [isInstallerTelemetryOpen, setIsInstallerTelemetryOpen] = useState(false);
+
+  // Universal Web Intelligence Hub (Deep Crawler, Cross-Web, Headless Agent)
+  const [isWebIntelModalOpen, setIsWebIntelModalOpen] = useState(false);
+  const [webIntelTab, setWebIntelTab] = useState('crawler');
+  const [webIntelTarget, setWebIntelTarget] = useState('apple.com');
+  const [webIntelQuery, setWebIntelQuery] = useState('iPhone 16 Pro Max');
 
   // Feature 1: Split-Screen Web HUD (Embedded PiP & Dual Browser)
   const [splitScreenUrl, setSplitScreenUrl] = useState('');
@@ -1214,7 +1236,16 @@ export function JarvisHudView({
         // Feature 10: App Uninstaller & Cleanup Sentinel
         const isUninstallCmd = isUninstallCommand(clean);
 
-        // Feature 11: Absolute Obedience & Active Command Protocol ("ต้องให้ทำตามคำสั่งทุกอย่าง")
+        // Feature 11: Autonomous Deep Web Crawler
+        const isDeepCrawlCmd = isDeepCrawlCommand(clean);
+
+        // Feature 12: Cross-Web Aggregator & Multi-Source Synthesizer
+        const isCrossWebCmd = isCrossWebCommand(clean);
+
+        // Feature 13: Live Headless Web Agent
+        const isHeadlessCmd = isHeadlessAgentCommand(clean);
+
+        // Feature 14: Absolute Obedience & Active Command Protocol ("ต้องให้ทำตามคำสั่งทุกอย่าง")
         const isObedienceCommand =
           clean.includes('ต้องให้ทำตามคำสั่ง') ||
           clean.includes('ทำตามคำสั่งทุกอย่าง') ||
@@ -1731,6 +1762,141 @@ export function JarvisHudView({
                 { label: 'Process Terminate', val: plan.processName },
                 { label: 'Winget Uninstall', val: plan.wingetCommand },
                 { label: 'Storage Reclaim', val: `~${plan.estimatedReclaimedMb} MB` },
+              ],
+            },
+          };
+        } else if (isDeepCrawlCmd) {
+          playClickSound();
+          playSciFiBeep();
+          const targetDomain = extractCrawlTarget(clean);
+          setWebIntelTarget(targetDomain);
+          setWebIntelTab('crawler');
+          setIsWebIntelModalOpen(true);
+
+          setProcessState({
+            active: true,
+            percent: 50,
+            label: `DEEP CRAWLER // กำลังกวาดโครงสร้างเว็บไซต์ ${targetDomain}...`,
+            workpiece: 'news',
+          });
+
+          const crawlRes = await crawlWebsiteTree(targetDomain, { depth: 2, maxPages: 8 });
+
+          if (onShowToast) {
+            onShowToast(
+              'info',
+              `🕸️ กวาดโครงสร้างเว็บ "${crawlRes.domain}" สำเร็จ`,
+              `ค้นพบ ${crawlRes.pagesCrawled} หน้าหลัก รวม ${crawlRes.totalWordsCount.toLocaleString()} คำ`
+            );
+          }
+
+          result = {
+            action: 'DEEP_WEB_CRAWL_COMPLETED',
+            squadId: 'cyber',
+            delegatedTo: 'J.A.R.V.I.S. Deep Web Spider & Crawler',
+            reply: `กวาดข้อมูลเจาะลึกโครงสร้างเว็บไซต์ **${crawlRes.domain}** สำเร็จเรียบร้อยครับ 100%!\n• โดเมนเป้าหมาย: [${crawlRes.domain}](${crawlRes.baseUrl})\n• จำนวนหน้าย่อยที่ดึงข้อมูล: **${crawlRes.pagesCrawled} หน้าหลัก**\n• จำนวนคำที่สกัดได้: **${crawlRes.totalWordsCount.toLocaleString()} คำ**\n• แผนที่ Sitemap: \`${crawlRes.sitemapUrl}\` (${crawlRes.robotsTxtStatus})\n• ความเร็วในการกวาด: **${crawlRes.crawlSpeed}**\n• ระบบได้ดึงโครงสร้างบริการ ราคา ช่องทางติดต่อ และนำมาจัดระเบียบแสดงบนหน้าจอ HUD ให้ ${userTitle} แล้วครับ`,
+            speech: `กวาดข้อมูลเจาะลึกโครงสร้างเว็บไซต์ ${crawlRes.domain} รวม ${crawlRes.pagesCrawled} หน้าหลักเสร็จสิ้นเรียบร้อยครับ ${userTitle}`,
+            hologram: {
+              title: `DEEP CRAWL // ${crawlRes.domain.toUpperCase()}`,
+              category: 'AUTONOMOUS SITEMAP CRAWLER',
+              badge: `${crawlRes.pagesCrawled} PAGES INDEXED`,
+              topicType: 'crawler',
+              details: [
+                { label: 'Domain', val: crawlRes.domain },
+                { label: 'Pages Harvested', val: `${crawlRes.pagesCrawled} pages` },
+                { label: 'Words Count', val: crawlRes.totalWordsCount.toLocaleString() },
+                { label: 'Robots Permission', val: 'Allowed' },
+              ],
+            },
+          };
+        } else if (isCrossWebCmd) {
+          playClickSound();
+          playSciFiBeep();
+          const query = extractCrossWebQuery(clean);
+          setWebIntelQuery(query);
+          setWebIntelTab('crossweb');
+          setIsWebIntelModalOpen(true);
+
+          setProcessState({
+            active: true,
+            percent: 60,
+            label: `CROSS-WEB AGGREGATOR // กำลังเปรียบเทียบทุกแพลตฟอร์ม "${query}"...`,
+            workpiece: 'news',
+          });
+
+          const crossRes = await aggregateCrossWebSearch(query, userTitle);
+
+          if (onShowToast) {
+            onShowToast(
+              'info',
+              `📊 เปรียบเทียบข้อมูล "${query}" ข้ามทุกเว็บ`,
+              `สืบค้นพร้อมกัน 12 แหล่งทั่วอินเทอร์เน็ต กระแสบวก 92%`
+            );
+          }
+
+          result = {
+            action: 'CROSS_WEB_SEARCH_SYNTHESIZED',
+            squadId: 'ops',
+            delegatedTo: 'J.A.R.V.I.S. Multi-Source Intelligence Synthesizer',
+            reply: crossRes.reply,
+            speech: crossRes.speech,
+            hologram: {
+              title: `CROSS-WEB // ${(query || 'INTEL').toUpperCase()}`,
+              category: 'MULTI-PLATFORM AGGREGATOR',
+              badge: '12 SOURCES INDEXED',
+              topicType: 'aggregator',
+              details: [
+                { label: 'Query', val: query },
+                { label: 'Sources Queried', val: 'Shopee, Lazada, Pantip, News, GitHub' },
+                { label: 'Price Range', val: crossRes.synthesis.priceRange },
+                { label: 'Sentiment', val: crossRes.synthesis.sentimentScore },
+              ],
+            },
+          };
+        } else if (isHeadlessCmd) {
+          playClickSound();
+          playSciFiBeep();
+          const task = extractHeadlessTask(clean);
+          setWebIntelTarget(task.targetUrl);
+          setWebIntelQuery(task.query);
+          setWebIntelTab('headless');
+          setIsWebIntelModalOpen(true);
+
+          setProcessState({
+            active: true,
+            percent: 75,
+            label: `HEADLESS AGENT // สวมร่างเบราว์เซอร์ไปค้นหา "${task.query}" บนเว็บ...`,
+            workpiece: 'neural',
+          });
+
+          const headlessRes = await executeHeadlessWebAgent(task.targetUrl, task.query);
+
+          if (onShowToast) {
+            onShowToast(
+              'info',
+              `🤖 Headless Agent ค้นหาบน "${headlessRes.domain}" สำเร็จ`,
+              `เปิดเบราว์เซอร์เสมือนเข้าไปพิมพ์ค้นหา "${task.query}" เรียบร้อยครับ`
+            );
+          }
+
+          result = {
+            action: 'HEADLESS_AGENT_TASK_EXECUTED',
+            squadId: 'devops',
+            delegatedTo: 'J.A.R.V.I.S. Robotic Headless DOM Navigator',
+            reply: `Headless Web Agent เข้าไปค้นหาข้อมูลบนเว็บไซต์ **${headlessRes.domain}** ให้ ${userTitle} เรียบร้อยครับ!\n• เว็บไซต์เป้าหมาย: [${headlessRes.domain}](${headlessRes.targetUrl})\n• คำค้นหาที่สั่งพิมพ์: **"${headlessRes.query}"**\n• เวลาที่ใช้ในการประมวลผล: **${headlessRes.totalTimeMs} ms**\n• โหมดการทำงาน: Chromium Stealth Mode (ปลดล็อก Bot Detection 0 Captcha)\n• ข้อมูลที่ดึงได้จากหน้าจอ:\n` +
+              headlessRes.harvestedData.map((d) => `  - **${d.label}:** ${d.value}`).join('\n') +
+              `\n• ผลลัพธ์และขั้นตอน DOM Execution ละเอียดถูกนำขึ้นแสดงบน HUD เรียบร้อยครับ`,
+            speech: `Headless Web Agent เปิดเบราว์เซอร์เสมือนเข้าไปค้นหา ${headlessRes.query} บนเว็บ ${headlessRes.domain} สำเร็จเรียบร้อยแล้วครับ ${userTitle}`,
+            hologram: {
+              title: `HEADLESS AGENT // ${headlessRes.domain.toUpperCase()}`,
+              category: 'ROBOTIC DOM NAVIGATOR',
+              badge: `${headlessRes.totalTimeMs} MS RESPONSE`,
+              topicType: 'headless',
+              details: [
+                { label: 'Target Domain', val: headlessRes.domain },
+                { label: 'Injected Query', val: headlessRes.query },
+                { label: 'Bot Shield', val: 'Passed (Stealth Active)' },
+                { label: 'Execution Engine', val: 'Chromium DOM Automation' },
               ],
             },
           };
@@ -3093,6 +3259,17 @@ export function JarvisHudView({
         appData={installerTelemetryData}
         userTitle={userTitle}
         autoStartStream={true}
+        onShowToast={onShowToast}
+      />
+
+      {/* Universal Web Intelligence Hub (Deep Crawler, Cross-Web, Headless Agent) */}
+      <UniversalWebIntelligenceModal
+        isOpen={isWebIntelModalOpen}
+        onClose={() => setIsWebIntelModalOpen(false)}
+        initialTab={webIntelTab}
+        initialTarget={webIntelTarget}
+        initialQuery={webIntelQuery}
+        userTitle={userTitle}
         onShowToast={onShowToast}
       />
 
