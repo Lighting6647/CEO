@@ -448,3 +448,169 @@ export function isSplitScreenWebCommand(prompt) {
   return splitKeywords.some((kw) => lower.includes(kw) || noSpace.includes(kw));
 }
 
+/**
+ * Feature 1: Detect voice navigation / scroll commands for active In-HUD web view
+ */
+export function parseWebNavigationVoiceCommand(prompt) {
+  if (!prompt || typeof prompt !== 'string') return null;
+  const lower = prompt.toLowerCase().trim();
+  const noSpace = lower.replace(/\s+/g, '');
+
+  if (
+    lower.includes('เลื่อนลง') ||
+    noSpace.includes('เลื่อนลง') ||
+    lower.includes('เลื่อนจอลง') ||
+    lower.includes('ลงข้างล่าง') ||
+    lower.includes('scroll down')
+  ) {
+    return { action: 'scroll-down', label: 'เลื่อนหน้าเว็บลง' };
+  }
+
+  if (
+    lower.includes('เลื่อนขึ้น') ||
+    noSpace.includes('เลื่อนขึ้น') ||
+    lower.includes('เลื่อนจอขึ้น') ||
+    lower.includes('ขึ้นข้างบน') ||
+    lower.includes('scroll up')
+  ) {
+    return { action: 'scroll-up', label: 'เลื่อนหน้าเว็บขึ้น' };
+  }
+
+  if (
+    lower.includes('บนสุด') ||
+    noSpace.includes('บนสุด') ||
+    lower.includes('เลื่อนไปบนสุด') ||
+    lower.includes('scroll top')
+  ) {
+    return { action: 'scroll-top', label: 'เลื่อนไปด้านบนสุด' };
+  }
+
+  if (
+    lower.includes('ล่างสุด') ||
+    noSpace.includes('ล่างสุด') ||
+    lower.includes('เลื่อนไปล่างสุด') ||
+    lower.includes('scroll bottom')
+  ) {
+    return { action: 'scroll-bottom', label: 'เลื่อนไปด้านล่างสุด' };
+  }
+
+  if (
+    lower.includes('ขยายเว็บ') ||
+    lower.includes('ขยายเต็มจอ') ||
+    noSpace.includes('ขยายจอ') ||
+    lower.includes('maximize web')
+  ) {
+    return { action: 'maximize', label: 'ขยายหน้าต่างเว็บเต็มจอ' };
+  }
+
+  if (
+    lower.includes('ย่อเว็บ') ||
+    lower.includes('ย่อหน้าต่าง') ||
+    noSpace.includes('ย่อจอ') ||
+    lower.includes('minimize web')
+  ) {
+    return { action: 'minimize', label: 'ย่อหน้าต่างเว็บลงเป็น PiP' };
+  }
+
+  if (
+    lower.includes('รีเฟรชเว็บ') ||
+    lower.includes('รีโหลดเว็บ') ||
+    lower.includes('โหลดหน้าใหม่') ||
+    lower.includes('reload web')
+  ) {
+    return { action: 'reload', label: 'รีเฟรชหน้าเว็บใหม่' };
+  }
+
+  return null;
+}
+
+/**
+ * Feature 2: Detect Reader Mode & AdBlock toggle voice commands
+ */
+export function isWebReaderModeCommand(prompt) {
+  if (!prompt || typeof prompt !== 'string') return false;
+  const lower = prompt.toLowerCase();
+  const noSpace = lower.replace(/\s+/g, '');
+  const keywords = [
+    'โหมดอ่าน',
+    'โหมดอ่านสบายตา',
+    'สบายตา',
+    'ตัดโฆษณา',
+    'เปิดแอดบล็อก',
+    'ปิดโฆษณา',
+    'reader mode',
+    'readermode',
+    'adblock',
+    'ad block',
+  ];
+  return keywords.some((kw) => lower.includes(kw) || noSpace.includes(kw.replace(/\s+/g, '')));
+}
+
+/**
+ * Feature 3: Detect Dual-Pane Web HUD commands (e.g. "เปิดจอคู่", "โหมดจอคู่", "แบ่งสองจอ", "เปรียบเทียบเว็บ")
+ */
+export function isDualPaneWebCommand(prompt) {
+  if (!prompt || typeof prompt !== 'string') return false;
+  const lower = prompt.toLowerCase();
+  const noSpace = lower.replace(/\s+/g, '');
+  const dualKeywords = [
+    'เปิดจอคู่',
+    'โหมดจอคู่',
+    'แบ่งสองจอ',
+    'แบ่ง2จอ',
+    'ดูสองเว็บ',
+    'ดู2เว็บ',
+    'จอคู่',
+    'dual screen',
+    'dual view',
+    'dual pane',
+    'split dual',
+    'เปรียบเทียบเว็บ',
+  ];
+  return dualKeywords.some((kw) => lower.includes(kw) || noSpace.includes(kw.replace(/\s+/g, '')));
+}
+
+/**
+ * Extract 2 website targets for Dual-Pane mode
+ * e.g. "เปิดจอคู่ กราฟหุ้น กับ ข่าวเศรษฐกิจ"
+ */
+export function parseDualPaneTargets(prompt) {
+  if (!prompt || typeof prompt !== 'string') return null;
+  const clean = prompt
+    .replace(/^(?:เปิดจอคู่|โหมดจอคู่|แบ่งสองจอ|ดูสองเว็บ|จอคู่)\s*/i, '')
+    .trim();
+
+  // Check if partitioned by "กับ" or "และ" or "คู่กับ" or "vs" or "and"
+  const splitParts = clean.split(/\s*(?:คู่กับ|กับ|และ|เทียบกับ|vs|and)\s*/i);
+  if (splitParts.length >= 2 && splitParts[0] && splitParts[1]) {
+    const target1 = extractWebTarget(splitParts[0]) || {
+      url: 'https://www.tradingview.com',
+      name: splitParts[0].trim(),
+    };
+    const target2 = extractWebTarget(splitParts[1]) || {
+      url: 'https://www.thairath.co.th/money',
+      name: splitParts[1].trim(),
+    };
+    return { target1, target2 };
+  }
+
+  // Default Preset: Stock Chart + Financial News
+  return {
+    target1: { url: 'https://www.tradingview.com', name: 'TradingView กราฟหุ้น' },
+    target2: { url: 'https://www.thairath.co.th/money', name: 'ข่าวเศรษฐกิจไทยรัฐ' },
+  };
+}
+
+/**
+ * Dispatch navigation event to In-HUD Split-Screen component
+ */
+export function dispatchWebNavigation(action, target = null) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('jarvis:web_nav', {
+        detail: { action, target },
+      })
+    );
+  }
+}
+

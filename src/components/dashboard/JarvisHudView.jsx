@@ -37,6 +37,11 @@ import {
   detectWorkModePreset,
   launchWorkModePreset,
   isSplitScreenWebCommand,
+  parseWebNavigationVoiceCommand,
+  isWebReaderModeCommand,
+  isDualPaneWebCommand,
+  parseDualPaneTargets,
+  dispatchWebNavigation,
 } from '../../services/browserLauncherService';
 import { SplitScreenWebHud } from './hud/SplitScreenWebHud';
 import {
@@ -144,9 +149,12 @@ export function JarvisHudView({
   const [liveTranscript, setLiveTranscript] = useState('');
   const [_voiceprint, setVoiceprint] = useState(getStoredVoiceprint);
 
-  // Feature 1: Split-Screen Web HUD (Embedded PiP Browser)
+  // Feature 1: Split-Screen Web HUD (Embedded PiP & Dual Browser)
   const [splitScreenUrl, setSplitScreenUrl] = useState('');
   const [splitScreenTitle, setSplitScreenTitle] = useState('');
+  const [splitScreenSecondaryUrl, setSplitScreenSecondaryUrl] = useState('');
+  const [splitScreenSecondaryTitle, setSplitScreenSecondaryTitle] = useState('');
+  const [isDualPaneActive, setIsDualPaneActive] = useState(false);
   const [isSplitScreenOpen, setIsSplitScreenOpen] = useState(false);
 
   // Audio Context & Hardware Refs (Declared first to avoid TDZ reference errors)
@@ -1122,6 +1130,9 @@ export function JarvisHudView({
 
         // Feature 1: Split-Screen Web HUD Command
         const isSplitScreenCommand = isSplitScreenWebCommand(clean);
+        const webNavCmd = parseWebNavigationVoiceCommand(clean);
+        const isReaderCmd = isWebReaderModeCommand(clean);
+        const isDualPaneCmd = isDualPaneWebCommand(clean);
         const isCloseSplitScreenCommand =
           /(?<!เ)ปิดเว็บในจอ/.test(cleanNoSpace) ||
           cleanNoSpace.includes('ปิดเว็บย่อย') ||
@@ -1141,6 +1152,76 @@ export function JarvisHudView({
 
         if (result) {
           // Handled by Shortcut Memory above
+        } else if (webNavCmd && isSplitScreenOpen) {
+          playClickSound();
+          dispatchWebNavigation(webNavCmd.action);
+          result = {
+            action: 'WEB_NAV_' + webNavCmd.action.toUpperCase(),
+            squadId: 'ops',
+            delegatedTo: 'J.A.R.V.I.S. Web Viewport Navigator',
+            reply: `สั่งการหน้าต่างเว็บ HUD: **${webNavCmd.label}** ให้ ${userTitle} เรียบร้อยครับ`,
+            speech: `${webNavCmd.label} เรียบร้อยครับ ${userTitle}`,
+            hologram: {
+              title: `VIEWPORT NAV // ${webNavCmd.action.toUpperCase()}`,
+              category: 'IN-HUD NAVIGATION',
+              badge: 'EXECUTED',
+              details: [
+                { label: 'Action', val: webNavCmd.label },
+                { label: 'Viewport Target', val: splitScreenTitle || 'Active Web View' },
+              ],
+            },
+          };
+        } else if (isReaderCmd && isSplitScreenOpen) {
+          playSciFiBeep();
+          dispatchWebNavigation('toggle-reader');
+          result = {
+            action: 'WEB_READER_MODE_TOGGLED',
+            squadId: 'ops',
+            delegatedTo: 'J.A.R.V.I.S. Distraction-Free Reader Shield',
+            reply: `สลับโหมดอ่านสบายตา & ตัดสิ่งรบกวน (Reader Mode & AdBlock) ให้ ${userTitle} เรียบร้อยครับ`,
+            speech: `สลับโหมดอ่านสบายตาและตัดโฆษณาเรียบร้อยครับ ${userTitle}`,
+            hologram: {
+              title: 'READER MODE // ADBLOCK ACTIVE',
+              category: 'PERFORMANCE & COGNITIVE SHIELD',
+              badge: 'SHIELD ON',
+              details: [
+                { label: 'Mode', val: 'Distraction-Free Reading' },
+                { label: 'AdBlock', val: 'Active (Privacy Hardened)' },
+              ],
+            },
+          };
+        } else if (isDualPaneCmd) {
+          playClickSound();
+          playSciFiBeep();
+          const dualTargets = parseDualPaneTargets(clean);
+          setSplitScreenUrl(dualTargets.target1.url);
+          setSplitScreenTitle(dualTargets.target1.name.toUpperCase());
+          setSplitScreenSecondaryUrl(dualTargets.target2.url);
+          setSplitScreenSecondaryTitle(dualTargets.target2.name.toUpperCase());
+          setIsDualPaneActive(true);
+          setIsSplitScreenOpen(true);
+          dispatchWebNavigation('set-dual', {
+            url1: dualTargets.target1.url,
+            url2: dualTargets.target2.url,
+            title2: dualTargets.target2.name,
+          });
+          result = {
+            action: 'DUAL_PANE_LAUNCHED',
+            squadId: 'ops',
+            delegatedTo: 'J.A.R.V.I.S. Dual-Screen HUD Manager',
+            reply: `เปิดโหมดจอคู่ (Dual-HUD Split Screen) ให้ ${userTitle} เรียบร้อยครับ!\n• จอที่ 1: [${dualTargets.target1.name}](${dualTargets.target1.url})\n• จอที่ 2: [${dualTargets.target2.name}](${dualTargets.target2.url})\n• การแสดงผล: กาง 2 หน้าต่างคู่ขนานบนหน้าจอ HUD พร้อมกันทันทีครับ`,
+            speech: `เปิดโหมดจอคู่ แสดงผล ${dualTargets.target1.name} คู่กับ ${dualTargets.target2.name} ให้ ${userTitle} เรียบร้อยครับ`,
+            hologram: {
+              title: 'DUAL-HUD // MULTI-SPLIT',
+              category: 'PARALLEL DISPLAY ORCHESTRATION',
+              badge: 'DUAL PANE ACTIVE',
+              details: [
+                { label: 'Pane 1', val: dualTargets.target1.name },
+                { label: 'Pane 2', val: dualTargets.target2.name },
+                { label: 'Layout', val: 'Side-by-Side HUD Grid' },
+              ],
+            },
+          };
         } else if (isCloseSplitScreenCommand) {
           playClickSound();
           setIsSplitScreenOpen(false);
@@ -2135,6 +2216,8 @@ export function JarvisHudView({
       handleCalibrateRoomNoise,
       onShowToast,
       handleSelectVoice,
+      isSplitScreenOpen,
+      splitScreenTitle,
     ]
   );
 
@@ -2514,11 +2597,14 @@ export function JarvisHudView({
         onShowToast={onShowToast}
       />
 
-      {/* Feature 1: Split-Screen Web HUD (Embedded PiP Window) */}
+      {/* Feature 1: Split-Screen Web HUD (Embedded PiP & Dual Window) */}
       <SplitScreenWebHud
         isOpen={isSplitScreenOpen}
         url={splitScreenUrl}
         title={splitScreenTitle}
+        secondaryUrl={splitScreenSecondaryUrl}
+        secondaryTitle={splitScreenSecondaryTitle}
+        initialDualPane={isDualPaneActive}
         onClose={() => setIsSplitScreenOpen(false)}
         userTitle={userTitle}
       />

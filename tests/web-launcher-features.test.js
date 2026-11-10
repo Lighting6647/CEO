@@ -5,6 +5,10 @@ import {
   launchWorkModePreset,
   isSplitScreenWebCommand,
   extractWebTarget,
+  parseWebNavigationVoiceCommand,
+  isWebReaderModeCommand,
+  isDualPaneWebCommand,
+  parseDualPaneTargets,
 } from '../src/services/browserLauncherService.js';
 import {
   isAutoSummaryCommand,
@@ -60,4 +64,35 @@ test('Feature 1: Split-Screen Web HUD - detects in-HUD embedded viewing commands
   const target = extractWebTarget('เปิดเว็บในจอ bbc.com');
   assert.ok(target);
   assert.ok(target.url.includes('bbc.com'));
+});
+
+test('Feature 4: Voice Web Scroll & Navigation - detects scroll, zoom, and reload actions', () => {
+  assert.equal(parseWebNavigationVoiceCommand('ช่วยเลื่อนลง หน่อย')?.action, 'scroll-down');
+  assert.equal(parseWebNavigationVoiceCommand('เลื่อนจอขึ้น')?.action, 'scroll-up');
+  assert.equal(parseWebNavigationVoiceCommand('เลื่อนไปบนสุด')?.action, 'scroll-top');
+  assert.equal(parseWebNavigationVoiceCommand('เลื่อนไปล่างสุด')?.action, 'scroll-bottom');
+  assert.equal(parseWebNavigationVoiceCommand('ขยายเต็มจอ')?.action, 'maximize');
+  assert.equal(parseWebNavigationVoiceCommand('ย่อเว็บ')?.action, 'minimize');
+  assert.equal(parseWebNavigationVoiceCommand('รีเฟรชเว็บ')?.action, 'reload');
+  assert.equal(parseWebNavigationVoiceCommand('สวัสดีจาร์วิส'), null);
+});
+
+test('Feature 5: AdBlock & Reader Mode Injection - detects distraction-free reading commands', () => {
+  assert.ok(isWebReaderModeCommand('เปิดโหมดอ่านสบายตา'));
+  assert.ok(isWebReaderModeCommand('ตัดโฆษณา'));
+  assert.ok(isWebReaderModeCommand('เปิดแอดบล็อก'));
+  assert.ok(isWebReaderModeCommand('reader mode'));
+  assert.ok(!isWebReaderModeCommand('เปิดยูทูป'));
+});
+
+test('Feature 6: Multi-Split Dual HUD - detects dual screen view & extracts dual targets', () => {
+  assert.ok(isDualPaneWebCommand('เปิดจอคู่'));
+  assert.ok(isDualPaneWebCommand('โหมดจอคู่'));
+  assert.ok(isDualPaneWebCommand('แบ่งสองจอ'));
+  assert.ok(!isDualPaneWebCommand('เปิดจอเดี่ยว'));
+
+  const targets = parseDualPaneTargets('เปิดจอคู่ กราฟหุ้น กับ ข่าวเศรษฐกิจ');
+  assert.ok(targets);
+  assert.ok(targets.target1.url.includes('tradingview'));
+  assert.ok(targets.target2.url.includes('thairath'));
 });
