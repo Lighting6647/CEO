@@ -1,34 +1,38 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { Search, AlertCircle } from 'lucide-react';
 import { INITIAL_PROJECTS, INITIAL_AUDIT_LOGS } from './data/projectsData';
 import { Header } from './components/layout/Header';
 import { StatCards } from './components/layout/StatCards';
 import { ProjectCard } from './components/dashboard/ProjectCard';
-import { ProjectDetailModal } from './components/dashboard/ProjectDetailModal';
-import { HooksManagerModal } from './components/dashboard/HooksManagerModal';
-import { NotificationModal } from './components/dashboard/NotificationModal';
-import { EnvVaultModal } from './components/dashboard/EnvVaultModal';
-import { VulnerabilityModal } from './components/dashboard/VulnerabilityModal';
-import { BackupManagerModal } from './components/dashboard/BackupManagerModal';
-import { MigrationDoctorModal } from './components/dashboard/MigrationDoctorModal';
-import { DesignSystemModal } from './components/dashboard/DesignSystemModal';
-import { CommandPalette } from './components/dashboard/CommandPalette';
 import { ALL_PROJECT_DESIGN_TOKENS } from './data/designTokensData';
-import { EnvironmentMatrixView } from './components/dashboard/EnvironmentMatrixView';
-import { AgentsSquadView } from './components/dashboard/AgentsSquadView';
-import { AiCompanyHubView } from './components/dashboard/AiCompanyHubView';
-import { UptimeMonitorView } from './components/dashboard/UptimeMonitorView';
-import { AuditLogsView } from './components/dashboard/AuditLogsView';
 import { Toast } from './components/ui/Toast';
 import { PwaInstallPrompt } from './components/ui/PwaInstallPrompt';
 import { downloadMarkdownReport, printExecutivePdfReport } from './utils/exportReport';
 import { exportProjectsToCsv, exportProjectsToJson } from './utils/csvExport';
 import { isSoundEnabled, setSoundEnabled, playSuccessSound, playClickSound, playAlertSound } from './utils/soundEffects';
 
+const JarvisHudView = lazy(() => import('./components/dashboard/JarvisHudView').then((m) => ({ default: m.JarvisHudView })));
+const AiCompanyHubView = lazy(() => import('./components/dashboard/AiCompanyHubView').then((m) => ({ default: m.AiCompanyHubView })));
+const EnvironmentMatrixView = lazy(() => import('./components/dashboard/EnvironmentMatrixView').then((m) => ({ default: m.EnvironmentMatrixView })));
+const AgentsSquadView = lazy(() => import('./components/dashboard/AgentsSquadView').then((m) => ({ default: m.AgentsSquadView })));
+const UptimeMonitorView = lazy(() => import('./components/dashboard/UptimeMonitorView').then((m) => ({ default: m.UptimeMonitorView })));
+const AuditLogsView = lazy(() => import('./components/dashboard/AuditLogsView').then((m) => ({ default: m.AuditLogsView })));
+
+const ProjectDetailModal = lazy(() => import('./components/dashboard/ProjectDetailModal').then((m) => ({ default: m.ProjectDetailModal })));
+const HooksManagerModal = lazy(() => import('./components/dashboard/HooksManagerModal').then((m) => ({ default: m.HooksManagerModal })));
+const NotificationModal = lazy(() => import('./components/dashboard/NotificationModal').then((m) => ({ default: m.NotificationModal })));
+const EnvVaultModal = lazy(() => import('./components/dashboard/EnvVaultModal').then((m) => ({ default: m.EnvVaultModal })));
+const VulnerabilityModal = lazy(() => import('./components/dashboard/VulnerabilityModal').then((m) => ({ default: m.VulnerabilityModal })));
+const BackupManagerModal = lazy(() => import('./components/dashboard/BackupManagerModal').then((m) => ({ default: m.BackupManagerModal })));
+const MigrationDoctorModal = lazy(() => import('./components/dashboard/MigrationDoctorModal').then((m) => ({ default: m.MigrationDoctorModal })));
+const DesignSystemModal = lazy(() => import('./components/dashboard/DesignSystemModal').then((m) => ({ default: m.DesignSystemModal })));
+const PersonaInspectorModal = lazy(() => import('./components/dashboard/PersonaInspectorModal').then((m) => ({ default: m.PersonaInspectorModal })));
+const CommandPalette = lazy(() => import('./components/dashboard/CommandPalette').then((m) => ({ default: m.CommandPalette })));
+
 export default function App() {
   const [projects] = useState(INITIAL_PROJECTS);
   const [auditLogs, setAuditLogs] = useState(INITIAL_AUDIT_LOGS);
-  const [activeView, setActiveView] = useState('company'); // 'company' | 'dashboard' | 'environments' | 'uptime' | 'logs' | 'agents'
+  const [activeView, setActiveView] = useState('jarvis'); // 'jarvis' | 'company' | 'dashboard' | 'environments' | 'uptime' | 'logs' | 'agents'
   const [selectedProject, setSelectedProject] = useState(null);
   const [isHooksModalOpen, setIsHooksModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
@@ -37,6 +41,7 @@ export default function App() {
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
   const [isDesignModalOpen, setIsDesignModalOpen] = useState(false);
+  const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -229,51 +234,84 @@ export default function App() {
   const isDark = theme === 'dark';
 
   return (
-    <div className={`min-h-screen flex flex-col transition-colors duration-200 ${isDark ? 'bg-[#0b0f19] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
-      {/* Header */}
-      <Header
-        activeView={activeView}
-        setActiveView={(v) => { playClickSound(); setActiveView(v); }}
-        onRunAudit={handleRunFullAudit}
-        isAuditing={isAuditing}
-        onExportMarkdown={handleExportMarkdown}
-        onExportPdf={handleExportPdf}
-        onExportCsv={handleExportCsv}
-        onExportJson={handleExportJson}
-        onOpenHooksModal={() => { playClickSound(); setIsHooksModalOpen(true); }}
-        onOpenNotificationModal={() => { playClickSound(); setIsNotificationModalOpen(true); }}
-        onOpenEnvVaultModal={() => { playClickSound(); setIsEnvVaultModalOpen(true); }}
-        onOpenVulnModal={() => { playClickSound(); setIsVulnModalOpen(true); }}
-        onOpenBackupModal={() => { playClickSound(); setIsBackupModalOpen(true); }}
-        onOpenDoctorModal={() => { playClickSound(); setIsDoctorModalOpen(true); }}
-        onOpenDesignSystemModal={() => { playClickSound(); setIsDesignModalOpen(true); }}
-        activeBrandTheme={activeBrandTheme}
-        onSelectBrandTheme={(brandId) => {
-          playClickSound();
-          setActiveBrandTheme(brandId);
-          const brand = ALL_PROJECT_DESIGN_TOKENS.find((p) => p.id === brandId);
-          if (brand) {
-            showToast('info', 'สลับธีมแบรนด์สด', `แสดงผลพาเลทสีของ "${brand.name}" บนแดชบอร์ด CEO`);
-          }
-        }}
-        onOpenCommandPalette={() => { playClickSound(); setIsCommandPaletteOpen(true); }}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        isSoundActive={isSoundActive}
-        onToggleSound={handleToggleSound}
-      />
+    <div className={`min-h-screen flex flex-col transition-colors duration-200 ${isDark ? 'bg-[#02050e] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
+      {/* 1. Fullscreen Cockpit HUD View for J.A.R.V.I.S. (Zero Clutter, 1:1 Iron Man Replica) */}
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center bg-[#02050e] text-xs font-mono text-cyan-400">
+            กำลังโหลดระบบ J.A.R.V.I.S. Core...
+          </div>
+        }
+      >
+      {activeView === 'jarvis' ? (
+        <JarvisHudView
+          onRunAudit={handleRunFullAudit}
+          onOpenQuotation={() => {
+            setActiveView('company');
+            showToast('info', 'J.A.R.V.I.S. เปิดหน้าใบเสนอราคา', 'เข้าสู่ระบบออกใบเสนอราคาพร้อม QR PromptPay เรียบร้อย');
+          }}
+          onOpenDoctor={() => { playClickSound(); setIsDoctorModalOpen(true); }}
+          onOpenDesignSystem={() => { playClickSound(); setIsDesignModalOpen(true); }}
+          onOpenPersona={() => { playClickSound(); setIsPersonaModalOpen(true); }}
+          onOpenAdmin={() => { playClickSound(); setActiveView('dashboard'); }}
+          onOpenCompany={() => { playClickSound(); setActiveView('company'); }}
+          onSelectBrandTheme={(brandId) => {
+            playClickSound();
+            setActiveBrandTheme(brandId);
+            const brand = ALL_PROJECT_DESIGN_TOKENS.find((p) => p.id === brandId);
+            if (brand) {
+              showToast('info', 'J.A.R.V.I.S. ปรับธีมแบรนด์', `แสดงผลพาเลทสีของ "${brand.name}" เรียบร้อย`);
+            }
+          }}
+          onShowToast={showToast}
+        />
+      ) : (
+        <>
+          {/* Header */}
+          <Header
+            activeView={activeView}
+            setActiveView={(v) => { playClickSound(); setActiveView(v); }}
+            onRunAudit={handleRunFullAudit}
+            isAuditing={isAuditing}
+            onExportMarkdown={handleExportMarkdown}
+            onExportPdf={handleExportPdf}
+            onExportCsv={handleExportCsv}
+            onExportJson={handleExportJson}
+            onOpenHooksModal={() => { playClickSound(); setIsHooksModalOpen(true); }}
+            onOpenNotificationModal={() => { playClickSound(); setIsNotificationModalOpen(true); }}
+            onOpenEnvVaultModal={() => { playClickSound(); setIsEnvVaultModalOpen(true); }}
+            onOpenVulnModal={() => { playClickSound(); setIsVulnModalOpen(true); }}
+            onOpenBackupModal={() => { playClickSound(); setIsBackupModalOpen(true); }}
+            onOpenDoctorModal={() => { playClickSound(); setIsDoctorModalOpen(true); }}
+            onOpenDesignSystemModal={() => { playClickSound(); setIsDesignModalOpen(true); }}
+            onOpenPersonaModal={() => { playClickSound(); setIsPersonaModalOpen(true); }}
+            activeBrandTheme={activeBrandTheme}
+            onSelectBrandTheme={(brandId) => {
+              playClickSound();
+              setActiveBrandTheme(brandId);
+              const brand = ALL_PROJECT_DESIGN_TOKENS.find((p) => p.id === brandId);
+              if (brand) {
+                showToast('info', 'สลับธีมแบรนด์สด', `แสดงผลพาเลทสีของ "${brand.name}" บนแดชบอร์ด CEO`);
+              }
+            }}
+            onOpenCommandPalette={() => { playClickSound(); setIsCommandPaletteOpen(true); }}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            isSoundActive={isSoundActive}
+            onToggleSound={handleToggleSound}
+          />
 
-      {/* Main Content Area */}
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
-        {/* KPI Stats Bar */}
-        <StatCards projects={projects} />
+          {/* Main Content Area */}
+          <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
+            {/* KPI Stats Bar */}
+            <StatCards projects={projects} />
 
-        {/* Content Views */}
-        {activeView === 'company' && (
-          <AiCompanyHubView onShowToast={showToast} />
-        )}
+            {/* Content Views */}
+            {activeView === 'company' && (
+              <AiCompanyHubView onShowToast={showToast} />
+            )}
 
-        {activeView === 'dashboard' && (
+            {activeView === 'dashboard' && (
           <div className="mt-8 space-y-6">
             {/* Filter and Search Bar */}
             <div className={`flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between transition-colors ${isDark ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-white shadow-sm'}`}>
@@ -375,83 +413,115 @@ export default function App() {
       <footer className={`border-t py-6 text-center text-xs transition-colors ${isDark ? 'border-slate-800/80 bg-slate-950/60 text-slate-500' : 'border-slate-200 bg-slate-100 text-slate-600'}`}>
         <p>© 2026 Antigravity CEO Master Platform • Enforcing Zero "AI Slop" & Production Standards</p>
       </footer>
+        </>
+      )}
+      </Suspense>
 
-      {/* Modals & Command Palette */}
-      <ProjectDetailModal
-        project={selectedProject}
-        isOpen={!!selectedProject}
-        onClose={() => setSelectedProject(null)}
-        onTestSingle={handleTestSingle}
-        isTesting={!!testingProjectId}
-      />
+      {/* Lazy-Loaded Modals & Command Palette */}
+      <Suspense fallback={null}>
+        {selectedProject && (
+          <ProjectDetailModal
+            project={selectedProject}
+            isOpen={!!selectedProject}
+            onClose={() => setSelectedProject(null)}
+            onTestSingle={handleTestSingle}
+            isTesting={!!testingProjectId}
+          />
+        )}
 
-      <HooksManagerModal
-        isOpen={isHooksModalOpen}
-        onClose={() => setIsHooksModalOpen(false)}
-        onCopyCommand={() => showToast('success', 'คัดลอกคำสั่งแล้ว', 'นำไปวางและรันใน Terminal เพื่อ Deploy Hooks')}
-      />
+        {isHooksModalOpen && (
+          <HooksManagerModal
+            isOpen={isHooksModalOpen}
+            onClose={() => setIsHooksModalOpen(false)}
+            onCopyCommand={() => showToast('success', 'คัดลอกคำสั่งแล้ว', 'นำไปวางและรันใน Terminal เพื่อ Deploy Hooks')}
+          />
+        )}
 
-      <NotificationModal
-        isOpen={isNotificationModalOpen}
-        onClose={() => setIsNotificationModalOpen(false)}
-        onShowToast={showToast}
-      />
+        {isNotificationModalOpen && (
+          <NotificationModal
+            isOpen={isNotificationModalOpen}
+            onClose={() => setIsNotificationModalOpen(false)}
+            onShowToast={showToast}
+          />
+        )}
 
-      <EnvVaultModal
-        isOpen={isEnvVaultModalOpen}
-        onClose={() => setIsEnvVaultModalOpen(false)}
-        onShowToast={showToast}
-      />
+        {isEnvVaultModalOpen && (
+          <EnvVaultModal
+            isOpen={isEnvVaultModalOpen}
+            onClose={() => setIsEnvVaultModalOpen(false)}
+            onShowToast={showToast}
+          />
+        )}
 
-      <VulnerabilityModal
-        isOpen={isVulnModalOpen}
-        onClose={() => setIsVulnModalOpen(false)}
-        onShowToast={showToast}
-      />
+        {isVulnModalOpen && (
+          <VulnerabilityModal
+            isOpen={isVulnModalOpen}
+            onClose={() => setIsVulnModalOpen(false)}
+            onShowToast={showToast}
+          />
+        )}
 
-      <BackupManagerModal
-        isOpen={isBackupModalOpen}
-        onClose={() => setIsBackupModalOpen(false)}
-        projects={projects}
-        auditLogs={auditLogs}
-        onShowToast={showToast}
-      />
+        {isBackupModalOpen && (
+          <BackupManagerModal
+            isOpen={isBackupModalOpen}
+            onClose={() => setIsBackupModalOpen(false)}
+            projects={projects}
+            auditLogs={auditLogs}
+            onShowToast={showToast}
+          />
+        )}
 
-      <MigrationDoctorModal
-        isOpen={isDoctorModalOpen}
-        onClose={() => setIsDoctorModalOpen(false)}
-        onShowToast={showToast}
-      />
+        {isDoctorModalOpen && (
+          <MigrationDoctorModal
+            isOpen={isDoctorModalOpen}
+            onClose={() => setIsDoctorModalOpen(false)}
+            onShowToast={showToast}
+          />
+        )}
 
-      <DesignSystemModal
-        isOpen={isDesignModalOpen}
-        onClose={() => setIsDesignModalOpen(false)}
-        onShowToast={showToast}
-        activeBrandTheme={activeBrandTheme}
-        onSelectBrandTheme={(brandId) => {
-          playClickSound();
-          setActiveBrandTheme(brandId);
-        }}
-      />
+        {isDesignModalOpen && (
+          <DesignSystemModal
+            isOpen={isDesignModalOpen}
+            onClose={() => setIsDesignModalOpen(false)}
+            onShowToast={showToast}
+            activeBrandTheme={activeBrandTheme}
+            onSelectBrandTheme={(brandId) => {
+              playClickSound();
+              setActiveBrandTheme(brandId);
+            }}
+          />
+        )}
 
-      <CommandPalette
-        isOpen={isCommandPaletteOpen}
-        onClose={() => setIsCommandPaletteOpen(false)}
-        projects={projects}
-        onSelectProject={(p) => setSelectedProject(p)}
-        onRunAudit={handleRunFullAudit}
-        onExportCsv={handleExportCsv}
-        onExportPdf={handleExportPdf}
-        onExportMarkdown={handleExportMarkdown}
-        onToggleTheme={toggleTheme}
-        theme={theme}
-        onOpenHooks={() => setIsHooksModalOpen(true)}
-        onOpenNotify={() => setIsNotificationModalOpen(true)}
-        onOpenEnvVault={() => setIsEnvVaultModalOpen(true)}
-        onOpenVuln={() => setIsVulnModalOpen(true)}
-        onOpenBackup={() => setIsBackupModalOpen(true)}
-        onSelectView={(v) => { playClickSound(); setActiveView(v); }}
-      />
+        {isPersonaModalOpen && (
+          <PersonaInspectorModal
+            isOpen={isPersonaModalOpen}
+            onClose={() => setIsPersonaModalOpen(false)}
+            onShowToast={showToast}
+          />
+        )}
+
+        {isCommandPaletteOpen && (
+          <CommandPalette
+            isOpen={isCommandPaletteOpen}
+            onClose={() => setIsCommandPaletteOpen(false)}
+            projects={projects}
+            onSelectProject={(p) => setSelectedProject(p)}
+            onRunAudit={handleRunFullAudit}
+            onExportCsv={handleExportCsv}
+            onExportPdf={handleExportPdf}
+            onExportMarkdown={handleExportMarkdown}
+            onToggleTheme={toggleTheme}
+            theme={theme}
+            onOpenHooks={() => setIsHooksModalOpen(true)}
+            onOpenNotify={() => setIsNotificationModalOpen(true)}
+            onOpenEnvVault={() => setIsEnvVaultModalOpen(true)}
+            onOpenVuln={() => setIsVulnModalOpen(true)}
+            onOpenBackup={() => setIsBackupModalOpen(true)}
+            onOpenPersona={() => setIsPersonaModalOpen(true)}
+            onSelectView={(v) => { playClickSound(); setActiveView(v); }}
+          />
+        )}
+      </Suspense>
 
       <Toast toast={toast} onClose={() => setToast(null)} />
       <PwaInstallPrompt onShowToast={showToast} />

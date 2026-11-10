@@ -14,7 +14,8 @@ import {
   Folder,
   ArrowRight,
   Database,
-  Bot
+  Bot,
+  Sparkles,
 } from 'lucide-react';
 
 export function CommandPalette({
@@ -33,6 +34,7 @@ export function CommandPalette({
   onOpenEnvVault,
   onOpenVuln,
   onOpenBackup,
+  onOpenPersona,
   onSelectView
 }) {
   const [query, setQuery] = useState('');
@@ -49,6 +51,20 @@ export function CommandPalette({
 
   // Build command list
   const systemActions = [
+    {
+      id: 'jarvis',
+      title: 'เปิดห้องควบคุม J.A.R.V.I.S. MARK 3 (สั่งการด้วยเสียงภาษาไทย)',
+      category: 'การสั่งการด่วน',
+      icon: <Sparkles className="h-4 w-4 text-cyan-400" />,
+      action: () => { onSelectView('jarvis'); onClose(); }
+    },
+    ...(onOpenPersona ? [{
+      id: 'open-persona',
+      title: 'ตรวจสอบตัวตน "จาวิส" & กฎเหล็ก 5 ประการ (คุณไลท์)',
+      category: 'การสั่งการด่วน',
+      icon: <ShieldCheck className="h-4 w-4 text-cyan-400" />,
+      action: () => { onOpenPersona(); onClose(); }
+    }] : []),
     {
       id: 'audit',
       title: 'รัน Full QA Audit 13 โปรเจกต์',

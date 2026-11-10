@@ -29,7 +29,13 @@ for file in $COMMITTED_FILES; do
   fi
 done
 
-# Check 2: Run Linter if available
+# Check 2: Auto-Sync J.A.R.V.I.S. Core Persona & 5 Ironclad Rules across all sibling projects
+if echo "$COMMITTED_FILES" | grep -Eqi "(GEMINI\\.md|AGENTS\\.md|jarvis-core-persona\\.md|anti-ai-slop-production-rules\\.md|agent-team-workflow\\.md)"; then
+  echo "🔄 [Persona Sync] Detected rule changes, syncing to all sibling projects..."
+  npm run sync:persona
+fi
+
+# Check 3: Run Linter if available
 if npm run | grep -q "lint"; then
   echo "⚡ Running Linter (oxlint / eslint)..."
   npm run lint

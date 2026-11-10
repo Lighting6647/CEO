@@ -133,3 +133,134 @@ test('Impeccable Design System standardizes all 17 projects with curated zero-AI
   assert.equal(defaultTheme.palette.primary, '#06b6d4');
   assert.equal(defaultTheme.palette.accent, '#10b981');
 });
+
+test('J.A.R.V.I.S. MARK 3 Neural Brain processes Thai voice commands and dispatches system actions accurately', async () => {
+  const { processJarvisCommand, SYSTEM_TELEMETRY } = await import('../src/utils/jarvisBrain.js');
+  
+  assert.equal(SYSTEM_TELEMETRY.codename, 'J.A.R.V.I.S. MK III');
+  assert.equal(SYSTEM_TELEMETRY.status, 'ONLINE');
+
+  // 1. Audit Command
+  const auditRes = processJarvisCommand('ช่วยตรวจระบบทั้งหมดหน่อย');
+  assert.equal(auditRes.action, 'RUN_AUDIT');
+  assert.ok(auditRes.reply.includes('17 โปรเจกต์'));
+
+  // 2. POS Query
+  const posRes = processJarvisCommand('ระบบ pos ขายหน้าร้านเป็นยังไง');
+  assert.equal(posRes.action, 'VIEW_PROJECT');
+  assert.ok(posRes.reply.includes('฿390'));
+
+  // 3. Ticket Query
+  const ticketRes = processJarvisCommand('ดูระบบบัตรคอนเสิร์ตหน่อย');
+  assert.ok(ticketRes.reply.includes('ThaiTicket'));
+
+  // 4. Quotation Command
+  const quoteRes = processJarvisCommand('ออกใบเสนอราคาพร้อมเพย์');
+  assert.equal(quoteRes.action, 'OPEN_QUOTATION');
+
+  // 5. Theme Command
+  const themeRes = processJarvisCommand('สลับธีมสีแดงคอนเสิร์ต');
+  assert.equal(themeRes.action, 'CHANGE_THEME');
+  assert.equal(themeRes.brandId, 'concert-ticket');
+
+  // 6. Persona & 5 Ironclad Rules Voice Command
+  const personaRes = processJarvisCommand('เปิดดูกฎเหล็ก 5 ประการของจาวิส');
+  assert.equal(personaRes.action, 'OPEN_PERSONA');
+  assert.ok(personaRes.reply.includes('กฎเหล็ก 5 ประการ'));
+  assert.ok(personaRes.speech.includes('กฎเหล็ก 5 ประการ'));
+});
+
+test('Multi-Agent Hub for Webapp Sales & Development coordinates all 5 specialized agents for คุณไลท์', async () => {
+  const { processJarvisCommand, USER_TITLE, MULTI_AGENT_HUB } = await import('../src/utils/jarvisBrain.js');
+
+  // Verify Default User Title is "คุณไลท์"
+  assert.equal(USER_TITLE, 'คุณไลท์');
+
+  // Verify all 5 agents are registered
+  assert.ok(MULTI_AGENT_HUB.manager, 'Missing AI Manager');
+  assert.ok(MULTI_AGENT_HUB.sales, 'Missing AI เลขา');
+  assert.ok(MULTI_AGENT_HUB.dev, 'Missing AI Dev');
+  assert.ok(MULTI_AGENT_HUB.accounting, 'Missing AI บัญชี');
+  assert.ok(MULTI_AGENT_HUB.admin, 'Missing AI Admin');
+
+  // Multi-Agent Analysis Command
+  const multiRes = processJarvisCommand('ให้ทีม AI ช่วยกันวิเคราะห์เว็บแอพ');
+  assert.equal(multiRes.action, 'MULTI_AGENT_ANALYSIS');
+  assert.ok(multiRes.reply.includes('AI เลขา'));
+  assert.ok(multiRes.reply.includes('AI Dev'));
+  assert.ok(multiRes.reply.includes('AI บัญชี'));
+  assert.ok(multiRes.reply.includes('AI Admin'));
+  assert.ok(multiRes.reply.includes('คุณไลท์'));
+  assert.ok(multiRes.speech.includes('คุณไลท์'));
+  // Ensure Speech output follows rule: no markdown symbols and spoken naturally
+  assert.ok(!multiRes.speech.includes('*'));
+  assert.ok(!multiRes.speech.includes('#'));
+});
+
+test('Traffic & Navigation Scoping: Responds strictly with traffic data and never leaks internal company/projects info', async () => {
+  const { processJarvisCommand } = await import('../src/utils/jarvisBrain.js');
+
+  const trafficRes = processJarvisCommand('การจราจรตอนนี้เป็นยังไงบ้าง เส้นทางไปสนามบินรถติดไหม');
+  assert.equal(trafficRes.action, 'TRAFFIC_REPORT');
+  assert.ok(trafficRes.reply.includes('ทางพิเศษศรีรัช') || trafficRes.reply.includes('ทางด่วน'));
+  assert.ok(trafficRes.reply.includes('การจราจร'));
+  // Strict Context Scoping Rule: No company/internal projects leak!
+  assert.ok(!trafficRes.reply.includes('18 โปรเจกต์'), 'Leaked internal 18 projects');
+  assert.ok(!trafficRes.reply.includes('POS'), 'Leaked POS project');
+  assert.ok(!trafficRes.reply.includes('บัตรคอน'), 'Leaked ticket project');
+  assert.ok(!trafficRes.speech.includes('18 โปรเจกต์'));
+
+  const weatherRes = processJarvisCommand('สภาพอากาศและฝนตกไหมวันนี้');
+  assert.equal(weatherRes.action, 'WEATHER_REPORT');
+  assert.ok(weatherRes.reply.includes('อุณหภูมิ'));
+  assert.ok(!weatherRes.reply.includes('18 โปรเจกต์'));
+  assert.ok(!weatherRes.reply.includes('POS'));
+});
+
+test('Mem0 Context Pinning: Can add pinned long-term memories for multi-turn conversational threading', async () => {
+  const { addMemory, getStoredMemories } = await import('../src/services/mem0Service.js');
+
+  const entry = addMemory('[ปักหมุดความจำ] เส้นทางเลี่ยงรถติด: ใช้ทางพิเศษศรีรัชเชื่อมมอเตอร์เวย์', 'pinned_context');
+  assert.ok(entry);
+  assert.equal(entry.category, 'pinned_context');
+
+  const allMems = getStoredMemories();
+  const hasPinned = allMems.some((m) => m.category === 'pinned_context');
+  assert.ok(hasPinned, 'Pinned memory was not found in storage');
+});
+
+test('Cross-Project Persona & 5 Ironclad Rules Health Check: Verifies GEMINI.md, AGENTS.md, and jarvis-core-persona.md across workspace', () => {
+  const ceoRoot = path.resolve(__dirname, '..');
+  const masterGemini = fs.readFileSync(path.join(ceoRoot, 'GEMINI.md'), 'utf8');
+  const masterAgents = fs.readFileSync(path.join(ceoRoot, 'AGENTS.md'), 'utf8');
+  const masterPersona = fs.readFileSync(path.join(ceoRoot, '.agent', 'rules', 'jarvis-core-persona.md'), 'utf8');
+
+  assert.ok(masterGemini.includes('คุณไลท์'), 'Master GEMINI.md must include คุณไลท์');
+  assert.ok(masterGemini.includes('จาวิส'), 'Master GEMINI.md must include จาวิส');
+  assert.ok(masterGemini.includes('กฎเหล็ก 5 ประการ'), 'Master GEMINI.md must include 5 Ironclad Rules');
+  assert.ok(masterGemini.includes('Agent Team Configuration: Software Development'), 'Master GEMINI.md must include Agent Team Configuration');
+  assert.ok(masterGemini.includes('Execution Workflow'), 'Master GEMINI.md must include Execution Workflow');
+  assert.equal(masterGemini, masterAgents, 'GEMINI.md and AGENTS.md must stay 100% synchronized');
+  assert.ok(masterPersona.includes('trigger: always_on'), 'jarvis-core-persona.md must have trigger: always_on');
+
+  const masterTeamWorkflow = fs.readFileSync(path.join(ceoRoot, '.agent', 'rules', 'agent-team-workflow.md'), 'utf8');
+  assert.ok(masterTeamWorkflow.includes('Orchestrator'), 'agent-team-workflow.md must include Orchestrator');
+  assert.ok(masterTeamWorkflow.includes('Software Architect'), 'agent-team-workflow.md must include Software Architect');
+  assert.ok(masterTeamWorkflow.includes('DevOps & Environment Manager'), 'agent-team-workflow.md must include DevOps');
+
+  const parentRoot = path.resolve(ceoRoot, '..');
+  if (fs.existsSync(parentRoot)) {
+    const entries = fs.readdirSync(parentRoot, { withFileTypes: true }).filter((e) => e.isDirectory());
+    assert.ok(entries.length >= 15, 'Should have sibling project directories in parent root');
+
+    for (const entry of entries) {
+      const projDir = path.join(parentRoot, entry.name);
+      const projGemini = path.join(projDir, 'GEMINI.md');
+      const projPersona = path.join(projDir, '.agent', 'rules', 'jarvis-core-persona.md');
+      const projTeamWorkflow = path.join(projDir, '.agent', 'rules', 'agent-team-workflow.md');
+      assert.ok(fs.existsSync(projGemini), `Missing GEMINI.md in ${entry.name}`);
+      assert.ok(fs.existsSync(projPersona), `Missing .agent/rules/jarvis-core-persona.md in ${entry.name}`);
+      assert.ok(fs.existsSync(projTeamWorkflow), `Missing .agent/rules/agent-team-workflow.md in ${entry.name}`);
+    }
+  }
+});

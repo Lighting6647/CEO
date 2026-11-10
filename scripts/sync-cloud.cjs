@@ -5,8 +5,13 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 
-const gitExe = 'C:\\Users\\Light\\AppData\\Local\\Programs\\Git\\cmd\\git.exe';
-const gitCmd = fs.existsSync(gitExe) ? `"${gitExe}"` : 'git';
+const candidateGitPaths = [
+  'C:\\Program Files\\Git\\cmd\\git.exe',
+  'C:\\Users\\User\\AppData\\Local\\Programs\\Git\\cmd\\git.exe',
+  'C:\\Users\\Light\\AppData\\Local\\Programs\\Git\\cmd\\git.exe',
+];
+const foundGit = candidateGitPaths.find((p) => fs.existsSync(p));
+const gitCmd = foundGit ? `"${foundGit}"` : 'git';
 
 console.log('================================================================');
 console.log('🔄 Antigravity 1-Click Cloud Sync -> GitHub & Vercel');

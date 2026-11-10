@@ -37,17 +37,17 @@
       "skillPath": "skills/finishing-a-development-branch/SKILL.md",
       "computedHash": "4f571e7befb8b0946d9d7770232c818812412e9ab1dfb811f847edfba1fc6275"
     },
-    "impeccable": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "skillPath": "skills/impeccable/SKILL.md",
-      "computedHash": "58c0252bca04521de87007aeb495f7ec99dc4c7341bc890fe82b6d577573af91"
-    },
     "forget": {
       "source": "mem0ai/mem0",
       "sourceType": "github",
       "skillPath": "integrations/claude-code-plugin/skills/forget/SKILL.md",
       "computedHash": "d0c22ed4fd4fa834d62459ba18499809882d69607372bdc11bb37a5900e2a41c"
+    },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "skillPath": "skills/impeccable/SKILL.md",
+      "computedHash": "58c0252bca04521de87007aeb495f7ec99dc4c7341bc890fe82b6d577573af91"
     },
     "mem0": {
       "source": "mem0ai/mem0",
@@ -156,6 +156,12 @@
       "sourceType": "github",
       "skillPath": "skills/using-superpowers/SKILL.md",
       "computedHash": "ef8670c2a2d8e2f6ed52d6f3219759903300ca13afc5ec2e25826a735112562b"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-best-practices/SKILL.md",
+      "computedHash": "ca7b0c0c6e5f2750043f7f0cd72d16ac4e2abc48f9b5500d047a4b77a2506212"
     },
     "verification-before-completion": {
       "source": "obra/superpowers",
