@@ -119,6 +119,61 @@ test('Browser Launcher: detects download commands and extracts official app down
   assert.ok(target4.url.includes('google.com/search?q='));
 });
 
+test('Direct One-Click Installer Stream: validates binary installer streams & protocols', async () => {
+  const {
+    KNOWN_APP_DOWNLOADS,
+    triggerDirectInstallerStream,
+    launchInstalledAppProtocol,
+    findKnownAppDefinition,
+  } = await import('../src/services/browserLauncherService.js');
+
+  // 1. Zoom installer metadata
+  const zoom = KNOWN_APP_DOWNLOADS.zoom;
+  assert.ok(zoom);
+  assert.equal(zoom.binaryFormat, '.EXE');
+  assert.equal(zoom.fileName, 'ZoomInstaller.exe');
+  assert.equal(zoom.directInstallerUrl, 'https://zoom.us/client/latest/ZoomInstaller.exe');
+  assert.equal(zoom.protocolScheme, 'zoommtg://');
+  assert.equal(zoom.processName, 'Zoom.exe');
+  assert.equal(typeof zoom.fileSizeMb, 'number');
+  assert.ok(zoom.fileSizeMb > 0);
+  assert.ok(zoom.sha256.length > 20);
+
+  // 2. LINE installer metadata
+  const line = KNOWN_APP_DOWNLOADS.line;
+  assert.ok(line);
+  assert.equal(line.binaryFormat, '.EXE');
+  assert.equal(line.fileName, 'LineInst.exe');
+  assert.equal(line.protocolScheme, 'line://');
+
+  // 3. VS Code installer metadata
+  const vscode = KNOWN_APP_DOWNLOADS.vscode;
+  assert.ok(vscode);
+  assert.equal(vscode.protocolScheme, 'vscode://');
+  assert.ok(vscode.directInstallerUrl.includes('code.visualstudio.com'));
+
+  // 4. Node.js .MSI installer metadata
+  const node = KNOWN_APP_DOWNLOADS.node;
+  assert.ok(node);
+  assert.equal(node.binaryFormat, '.MSI');
+  assert.ok(node.fileName.endsWith('.msi'));
+
+  // 5. triggerDirectInstallerStream safely handles non-browser environment
+  const streamRes = triggerDirectInstallerStream(zoom.directInstallerUrl, zoom.fileName);
+  assert.equal(streamRes.triggered, false);
+  assert.equal(streamRes.fileName, 'ZoomInstaller.exe');
+
+  // 6. launchInstalledAppProtocol safely handles non-browser environment
+  const protocolRes = launchInstalledAppProtocol(zoom.protocolScheme);
+  assert.equal(protocolRes.launched, false);
+  assert.equal(protocolRes.protocolScheme, 'zoommtg://');
+
+  // 7. findKnownAppDefinition lookup
+  assert.equal(findKnownAppDefinition('zoom').id, 'zoom');
+  assert.equal(findKnownAppDefinition('โปรแกรม ซูม').id, 'zoom');
+  assert.equal(findKnownAppDefinition('unknown-xyz'), null);
+});
+
 test('J.A.R.V.I.S. Brain: responds with active command execution on obedience commands', async () => {
   const { processJarvisCommand } = await import('../src/utils/jarvisBrain.js');
   const res = processJarvisCommand('ต้องให้ทำตามคำสั่งทุกอย่าง');

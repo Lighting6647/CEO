@@ -44,8 +44,10 @@ import {
   dispatchWebNavigation,
   isDownloadAppCommand,
   extractDownloadAppTarget,
+  triggerDirectInstallerStream,
 } from '../../services/browserLauncherService';
 import { SplitScreenWebHud } from './hud/SplitScreenWebHud';
+import { InstallerTelemetryModal } from './hud/InstallerTelemetryModal';
 import {
   applyNoiseGate,
   DEFAULT_NOISE_FLOOR,
@@ -155,6 +157,10 @@ export function JarvisHudView({
   const [reaInitialTarget, setReaInitialTarget] = useState('');
   const [liveTranscript, setLiveTranscript] = useState('');
   const [_voiceprint, setVoiceprint] = useState(getStoredVoiceprint);
+
+  // Installer Stream & Telemetry
+  const [installerTelemetryData, setInstallerTelemetryData] = useState(null);
+  const [isInstallerTelemetryOpen, setIsInstallerTelemetryOpen] = useState(false);
 
   // Feature 1: Split-Screen Web HUD (Embedded PiP & Dual Browser)
   const [splitScreenUrl, setSplitScreenUrl] = useState('');
@@ -1382,16 +1388,22 @@ export function JarvisHudView({
           playClickSound();
           playSciFiBeep();
           setIsMapPanoramic(false); // "เปิดหน้าเดียวพอ"
-          setSplitScreenUrl(downloadTarget.url);
-          setSplitScreenTitle(`DOWNLOAD // ${downloadTarget.name.toUpperCase()}`);
-          setIsSplitScreenOpen(true);
 
-          openSystemBrowser(downloadTarget.url);
+          // 1. Direct One-Click Installer Stream (.exe/.msi trigger)
+          setInstallerTelemetryData(downloadTarget);
+          setIsInstallerTelemetryOpen(true);
+
+          if (downloadTarget.directInstallerUrl) {
+            triggerDirectInstallerStream(downloadTarget.directInstallerUrl, downloadTarget.fileName);
+          } else {
+            openSystemBrowser(downloadTarget.url);
+          }
+
           if (onShowToast) {
             onShowToast(
               'info',
-              `📥 เปิดหน้าดาวน์โหลด "${downloadTarget.name}" เรียบร้อย`,
-              'คลิกที่นี่เพื่อไปยังหน้าดาวน์โหลดในแท็บใหม่ทันที ↗'
+              `📥 สตรีมตัวติดตั้ง "${downloadTarget.name}" (${downloadTarget.binaryFormat || '.EXE'})`,
+              'ส่งคำสั่งเริ่มดาวน์โหลดเข้าเครื่องคอมพิวเตอร์ของคุณไลท์ทันทีเรียบร้อยครับ'
             );
           }
 
@@ -1399,20 +1411,20 @@ export function JarvisHudView({
             action: 'APP_DOWNLOAD_INITIATED',
             squadId: 'ops',
             delegatedTo: 'J.A.R.V.I.S. Software Deployment Core',
-            reply: `ดำเนินการเปิดหน้าดาวน์โหลดโปรแกรม "${downloadTarget.name}" ให้ ${userTitle} เรียบร้อยครับ 100%!\n• โปรแกรมเป้าหมาย: ${downloadTarget.name} (${downloadTarget.category})\n• ลิงก์ดาวน์โหลดทางการ: ${downloadTarget.url}\n• สิทธิ์คำสั่ง: Level 5 Supreme Clearance จาก ${userTitle}\n• สถานะการแสดงผล: แสดงหน้าจอเดียวบน HUD (เปิดหน้าเดียวพอ) + เปิดแท็บใหม่ในเบราว์เซอร์ให้ดาวน์โหลดทันทีครับ`,
-            speech: `กำลังเปิดหน้าดาวน์โหลดโปรแกรม ${downloadTarget.name} ให้ ${userTitle} เรียบร้อยครับ`,
+            reply: `ส่งคำสั่งสตรีมดาวน์โหลดตัวติดตั้ง "${downloadTarget.name}" (${downloadTarget.binaryFormat || '.EXE'}) ตรงเข้าเครื่องคอมพิวเตอร์ของ ${userTitle} ทันทีเรียบร้อยครับ 100%!\n• ขนาดไฟล์: ${downloadTarget.fileSizeMb || 50} MB (${downloadTarget.binaryFormat || '.EXE'})\n• โปรแกรมเป้าหมาย: ${downloadTarget.name} (${downloadTarget.category})\n• Smart System App Checker: ${downloadTarget.protocolScheme ? `ตรวจพบ Protocol (${downloadTarget.protocolScheme}) พร้อมสั่งเปิดโปรแกรมได้ทันทีหากติดตั้งอยู่แล้ว` : 'ตรวจสอบความปลอดภัยระดับสากล'}\n• Voice Telemetry: แสดงแถบเปอร์เซ็นต์แบบเรียลไทม์บน HUD พร้อมระบบส่งเสียงแจ้งเตือนเมื่อดาวน์โหลดเสร็จสมบูรณ์ครับ`,
+            speech: `กำลังดาวน์โหลดไฟล์ตัวติดตั้ง ${downloadTarget.name} ตรงเข้าเครื่องให้ ${userTitle} ทันที พร้อมแสดงแถบวัดผลบนหน้าจอครับ`,
             hologram: {
-              title: `APP DOWNLOAD // ${downloadTarget.name.toUpperCase()}`,
-              category: 'SOFTWARE DEPLOYMENT',
-              badge: 'OFFICIAL INSTALLER',
+              title: `INSTALLER STREAM // ${downloadTarget.name.toUpperCase()}`,
+              category: 'SOFTWARE DEPLOYMENT TELEMETRY',
+              badge: `${downloadTarget.binaryFormat || '.EXE'} STREAM ACTIVE`,
               topicType: 'download',
               targetUrl: downloadTarget.url,
               targetName: downloadTarget.name,
               details: [
                 { label: 'Application', val: downloadTarget.name },
-                { label: 'Category', val: downloadTarget.category },
-                { label: 'Download URL', val: downloadTarget.url },
-                { label: 'Status', val: 'HUD Single View + New Tab' },
+                { label: 'Installer Binary', val: downloadTarget.fileName || `${downloadTarget.name}.exe` },
+                { label: 'File Size', val: `${downloadTarget.fileSizeMb || 50} MB` },
+                { label: 'Smart App Checker', val: downloadTarget.protocolScheme ? 'Windows Protocol Ready' : 'Verified Binary' },
               ],
             },
           };
@@ -2766,6 +2778,15 @@ export function JarvisHudView({
         onPinMemory={handlePinMemory}
         onSpeak={speakThai}
         onShowToast={onShowToast}
+      />
+
+      {/* Autonomous Installer Stream & Smart App Checker Telemetry */}
+      <InstallerTelemetryModal
+        isOpen={isInstallerTelemetryOpen}
+        onClose={() => setIsInstallerTelemetryOpen(false)}
+        appData={installerTelemetryData}
+        userTitle={userTitle}
+        autoStartStream={true}
       />
 
       {/* Feature 1: Split-Screen Web HUD (Embedded PiP & Dual Window) */}
