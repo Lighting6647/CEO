@@ -131,6 +131,24 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
   _onSetHologramScale = null,
   hologramSpinTrigger = 0,
 }) {
+  // Derive active conversational exchange upfront (prevents TDZ in hooks)
+  const lastUserMessage = [...(messages || [])].reverse().find((m) => m.sender !== 'JARVIS (AI MANAGER)');
+  const lastAssistantMessage = [...(messages || [])].reverse().find((m) => m.sender === 'JARVIS (AI MANAGER)');
+  const displayQuery = activeHologram?.query || lastUserMessage?.text || '';
+  const displayReply = activeHologram?.reply || lastAssistantMessage?.text || activeHologram?.speech || '';
+  const displayTime = activeHologram?.time || lastUserMessage?.time || '';
+
+  // All Canvas & 3D Interactive Refs declared upfront (prevents TDZ)
+  const canvasRef = useRef(null);
+  const radarCanvasRef = useRef(null);
+  const turbineCanvasRef = useRef(null);
+  const particlesRef = useRef(null);
+  const terminalScrollRef = useRef(null);
+  const rotXRef = useRef(0.18);
+  const rotYRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const lastMousePosRef = useRef({ x: 0, y: 0 });
+
   const [inputText, setInputText] = useState('');
   const [isHumming, setIsHumming] = useState(false);
   const [selectedMockupProject, setSelectedMockupProject] = useState(null);
@@ -201,18 +219,6 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
     { id: 5, time: '12:00:18', tag: 'ANALYTICS', text: 'Zero unhandled exceptions. Crash watchdog active.' },
     { id: 6, time: '12:00:24', tag: 'PIPELINE', text: '8 SaaS deals tracked. Expected revenue: ฿148,500 MRR.' },
   ]);
-
-  const canvasRef = useRef(null);
-  const radarCanvasRef = useRef(null);
-  const turbineCanvasRef = useRef(null);
-  const particlesRef = useRef(null);
-  const terminalScrollRef = useRef(null);
-
-  // 3D Interactive Hologram Rotation State
-  const rotXRef = useRef(0.18);
-  const rotYRef = useRef(0);
-  const isDraggingRef = useRef(false);
-  const lastMousePosRef = useRef({ x: 0, y: 0 });
 
   // Feature 1: Terminal Log Auto-Streamer
   useEffect(() => {
@@ -447,14 +453,6 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
   // Hologram modal is ONLY active when sir ไลท์ explicitly clicks a project mockup OR clicks to expand dialogue modal.
   // When replying or speaking, this window NEVER pops up automatically (keeping 3D Arc Reactor & Workpiece crystal clear)
   const isHologramActive = Boolean(selectedMockupProject || showDialogueModal);
-
-  // Derive active conversational exchange to display what was asked and the live AI reply
-  const lastUserMessage = [...(messages || [])].reverse().find((m) => m.sender !== 'JARVIS (AI MANAGER)');
-  const lastAssistantMessage = [...(messages || [])].reverse().find((m) => m.sender === 'JARVIS (AI MANAGER)');
-
-  const displayQuery = activeHologram?.query || lastUserMessage?.text || '';
-  const displayReply = activeHologram?.reply || lastAssistantMessage?.text || activeHologram?.speech || '';
-  const displayTime = activeHologram?.time || lastUserMessage?.time || '';
 
   // Context Scoping & Category Detectors (Prevents showing company stats on traffic/weather/general questions)
   const isTrafficQuery =

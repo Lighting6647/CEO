@@ -10,6 +10,7 @@ export default defineConfig({
     port: 5173,
   },
   build: {
+    sourcemap: true,
     chunkSizeWarningLimit: 1000,
     rolldownOptions: {
       output: {
