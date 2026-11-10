@@ -34,7 +34,11 @@ import {
   openSystemBrowser,
   extractWebTarget,
   isBrowserOpenCommand,
+  detectWorkModePreset,
+  launchWorkModePreset,
+  isSplitScreenWebCommand,
 } from '../../services/browserLauncherService';
+import { SplitScreenWebHud } from './hud/SplitScreenWebHud';
 import {
   applyNoiseGate,
   DEFAULT_NOISE_FLOOR,
@@ -62,6 +66,8 @@ import {
   isExternalSearchQuery,
   searchExternalWeb,
   parseMediaVoiceCommand,
+  isAutoSummaryCommand,
+  generateAutoSummaryReader,
 } from '../../services/externalWebService';
 
 export function JarvisHudView({
@@ -138,6 +144,27 @@ export function JarvisHudView({
   const [liveTranscript, setLiveTranscript] = useState('');
   const [_voiceprint, setVoiceprint] = useState(getStoredVoiceprint);
 
+  // Feature 1: Split-Screen Web HUD (Embedded PiP Browser)
+  const [splitScreenUrl, setSplitScreenUrl] = useState('');
+  const [splitScreenTitle, setSplitScreenTitle] = useState('');
+  const [isSplitScreenOpen, setIsSplitScreenOpen] = useState(false);
+
+  // Audio Context & Hardware Refs (Declared first to avoid TDZ reference errors)
+  const recognitionRef = useRef(null);
+  const audioPlayerRef = useRef(null);
+  const lastDispatchedRef = useRef({ text: '', time: 0 });
+  const isSpeakingRef = useRef(false);
+  const isListeningRef = useRef(false);
+  const isConversationActiveRef = useRef(false);
+  const conversationTimerRef = useRef(null);
+  const speechSafetyTimerRef = useRef(null);
+  const startRecognitionRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animFrameRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const gainNodeRef = useRef(null);
+
   // Microphone Sensitivity & Hardware/DSP Gain Booster (1.0x - 6.0x) for Quiet Microphones
   const [micGain, setMicGain] = useState(() => {
     try {
@@ -147,7 +174,6 @@ export function JarvisHudView({
       return 3.0;
     }
   });
-  const gainNodeRef = useRef(null);
   const micGainRef = useRef(micGain);
 
   useEffect(() => {
@@ -249,38 +275,6 @@ export function JarvisHudView({
     setIsMapPanoramic((prev) => !prev);
   }, []);
 
-  // Feature 1: Morning Routine Schedule Watchdog (08:00 AM Auto-Briefing for sir ไลท์)
-  useEffect(() => {
-    const checkSchedule = () => {
-      const now = new Date();
-      if (evaluateRoutineScheduleTrigger(now)) {
-        markRoutineRunDate(now);
-        const sched = getRoutineSchedule();
-        if (sched.autoPlayVideo) {
-          setActiveHologram({
-            type: 'video_briefing',
-            title: '30-SEC DAILY VIDEO BRIEFING // MORNING ROUTINE',
-            category: 'EXECUTIVE ROUTINE AUTOMATION',
-            badge: 'SCHEDULED 08:00',
-            query: 'กำหนดการประจำวัน 08:00',
-            reply: `อรุณสวัสดิ์ครับ ${userTitle}! ถึงเวลาตามกำหนดการ 08:00 น. ระบบเปิดเล่นวิดีโอบรีฟฟิ่ง 30 วินาทีประจำวันและซิงค์ข้อมูลให้เรียบร้อยครับ`,
-            speech: `อรุณสวัสดิ์ครับ ${userTitle} ถึงเวลาแปดโมงเช้าแล้วครับ ผมเปิดวิดีโอบรีฟฟิ่งประจำวันสามสิบวินาทีและเตรียมพร้อมทำงานสำหรับวันนี้เรียบร้อยครับ`,
-            time: now.toLocaleTimeString('th-TH'),
-          });
-        }
-        if (sched.autoSpeak) {
-          speakThai(`อรุณสวัสดิ์ครับ ${userTitle} ถึงเวลาแปดโมงเช้าแล้วครับ ผมเปิดวิดีโอบรีฟฟิ่งประจำวันสามสิบวินาทีและเตรียมพร้อมทำงานสำหรับวันนี้เรียบร้อยครับ`);
-        }
-        if (sched.autoSendWebhook) {
-          dispatchExecutiveBriefing({ forceMock: true }).catch(() => {});
-        }
-      }
-    };
-    checkSchedule();
-    const interval = setInterval(checkSchedule, 30000);
-    return () => clearInterval(interval);
-  }, [speakThai, userTitle]);
-
   // Mem0 Persistent Memory Context Pinning
   const handlePinMemory = useCallback((query, reply) => {
     playClickSound();
@@ -298,20 +292,6 @@ export function JarvisHudView({
     }
     return false;
   }, [userTitle, onShowToast]);
-
-  const recognitionRef = useRef(null);
-  const audioPlayerRef = useRef(null);
-  const lastDispatchedRef = useRef({ text: '', time: 0 });
-  const isSpeakingRef = useRef(false);
-  const isListeningRef = useRef(false);
-  const isConversationActiveRef = useRef(false);
-  const conversationTimerRef = useRef(null);
-  const speechSafetyTimerRef = useRef(null);
-  const startRecognitionRef = useRef(null);
-  const audioContextRef = useRef(null);
-  const analyserRef = useRef(null);
-  const animFrameRef = useRef(null);
-  const mediaStreamRef = useRef(null);
 
   // Live Microphone Audio Level Meter & Gain Booster (Web Audio API AnalyserNode + GainNode)
   useEffect(() => {
@@ -651,6 +631,38 @@ export function JarvisHudView({
     },
     [voiceEnabled, wakeWordActive, continuousVoice, selectedVoiceId, voiceSpeed, customPitch, stopRecognition]
   );
+
+  // Feature: Morning Routine Schedule Watchdog (08:00 AM Auto-Briefing for sir ไลท์)
+  useEffect(() => {
+    const checkSchedule = () => {
+      const now = new Date();
+      if (evaluateRoutineScheduleTrigger(now)) {
+        markRoutineRunDate(now);
+        const sched = getRoutineSchedule();
+        if (sched.autoPlayVideo) {
+          setActiveHologram({
+            type: 'video_briefing',
+            title: '30-SEC DAILY VIDEO BRIEFING // MORNING ROUTINE',
+            category: 'EXECUTIVE ROUTINE AUTOMATION',
+            badge: 'SCHEDULED 08:00',
+            query: 'กำหนดการประจำวัน 08:00',
+            reply: `อรุณสวัสดิ์ครับ ${userTitle}! ถึงเวลาตามกำหนดการ 08:00 น. ระบบเปิดเล่นวิดีโอบรีฟฟิ่ง 30 วินาทีประจำวันและซิงค์ข้อมูลให้เรียบร้อยครับ`,
+            speech: `อรุณสวัสดิ์ครับ ${userTitle} ถึงเวลาแปดโมงเช้าแล้วครับ ผมเปิดวิดีโอบรีฟฟิ่งประจำวันสามสิบวินาทีและเตรียมพร้อมทำงานสำหรับวันนี้เรียบร้อยครับ`,
+            time: now.toLocaleTimeString('th-TH'),
+          });
+        }
+        if (sched.autoSpeak) {
+          speakThai(`อรุณสวัสดิ์ครับ ${userTitle} ถึงเวลาแปดโมงเช้าแล้วครับ ผมเปิดวิดีโอบรีฟฟิ่งประจำวันสามสิบวินาทีและเตรียมพร้อมทำงานสำหรับวันนี้เรียบร้อยครับ`);
+        }
+        if (sched.autoSendWebhook) {
+          dispatchExecutiveBriefing({ forceMock: true }).catch(() => {});
+        }
+      }
+    };
+    checkSchedule();
+    const interval = setInterval(checkSchedule, 30000);
+    return () => clearInterval(interval);
+  }, [speakThai, userTitle]);
 
   // Feature 1: Auto Noise-Gate Calibration (3-Second Room Noise Scan)
   const handleCalibrateRoomNoise = useCallback(() => {
@@ -1108,8 +1120,104 @@ export function JarvisHudView({
         const recordSiteMatch = clean.match(/(?:บันทึกเว็บประจำ|จำเว็บประจำ|บันทึกเว็บโปรด)\s+(.+)/);
         const recordRouteMatch = clean.match(/(?:บันทึกเส้นทางประจำ|จำเส้นทางประจำ|บันทึกที่ประจำ)\s+(.+)/);
 
+        // Feature 1: Split-Screen Web HUD Command
+        const isSplitScreenCommand = isSplitScreenWebCommand(clean);
+        const isCloseSplitScreenCommand =
+          /(?<!เ)ปิดเว็บในจอ/.test(cleanNoSpace) ||
+          cleanNoSpace.includes('ปิดเว็บย่อย') ||
+          cleanNoSpace.includes('ย่อเว็บในจอ') ||
+          cleanNoSpace.includes('ปิดหน้าต่างเว็บ') ||
+          cleanNoSpace.includes('ปิดจอแยก');
+
+        // Feature 2: Auto-Summary Web Reader Command
+        const isAutoSummary = isAutoSummaryCommand(clean);
+
+        // Feature 3: One-Voice Multi-Tab Launcher Command
+        const matchedWorkMode = detectWorkModePreset(clean);
+
         if (result) {
           // Handled by Shortcut Memory above
+        } else if (isCloseSplitScreenCommand) {
+          playClickSound();
+          setIsSplitScreenOpen(false);
+          result = {
+            action: 'SPLIT_SCREEN_CLOSED',
+            squadId: 'ops',
+            delegatedTo: 'Split-Screen HUD Window Manager',
+            reply: `ปิดหน้าต่างเว็บย่อย Split-Screen บนหน้าจอ HUD ให้ ${userTitle} เรียบร้อยครับ พร้อมรับคำสั่งต่อไปครับ`,
+            speech: `ปิดหน้าต่างเว็บย่อยในจอเรียบร้อยแล้วครับ ${userTitle}`,
+            hologram: null,
+          };
+        } else if (matchedWorkMode) {
+          playClickSound();
+          playSciFiBeep();
+          const launched = launchWorkModePreset(matchedWorkMode);
+          if (onShowToast) {
+            onShowToast('info', `🚀 ${matchedWorkMode.name}`, `เปิดพร้อมกัน ${launched.length} แท็บเรียบร้อยครับ`);
+          }
+          result = {
+            action: 'WORK_MODE_LAUNCHED',
+            squadId: 'ops',
+            delegatedTo: 'J.A.R.V.I.S. Multi-Tab Workflow Dispatcher',
+            reply: `เปิด **${matchedWorkMode.name}** ให้ ${userTitle} เรียบร้อยครับ!\n• รายการแท็บที่เปิดทำงาน:\n${matchedWorkMode.tabs.map((t, idx) => `  ${idx + 1}. [${t.name}](${t.url})`).join('\n')}\n• สถานะ: ระบบส่งแท็บไปยังเบราว์เซอร์พร้อมกันเรียบร้อยครับ`,
+            speech: matchedWorkMode.speech(userTitle),
+            hologram: {
+              title: `WORK MODE // ${matchedWorkMode.id.toUpperCase()}`,
+              category: 'MULTI-TAB ORCHESTRATION',
+              badge: `${matchedWorkMode.tabs.length} TABS LAUNCHED`,
+              details: matchedWorkMode.tabs.map((t, i) => ({ label: `Tab ${i + 1}`, val: t.name })),
+            },
+          };
+        } else if (isAutoSummary) {
+          setProcessState({
+            active: true,
+            percent: 65,
+            label: 'AUTO-SUMMARY // กำลังสกัดสรุป 3 บรรทัดจากเว็บ...',
+            workpiece: 'news',
+          });
+          const summaryRes = await generateAutoSummaryReader(clean, userTitle);
+          result = {
+            action: 'AUTO_SUMMARY_RESULT',
+            squadId: 'ops',
+            delegatedTo: 'J.A.R.V.I.S. Executive Web Summarizer',
+            reply: summaryRes.reply,
+            speech: summaryRes.speech,
+            hologram: {
+              type: 'auto_summary_reader',
+              title: `AUTO-SUMMARY // ${(summaryRes.title || clean).slice(0, 32).toUpperCase()}`,
+              category: '3-BULLET WEB INTELLIGENCE',
+              badge: '3 BULLETS VERIFIED',
+              targetUrl: summaryRes.url,
+              targetName: summaryRes.title,
+              details: summaryRes.bullets.map((b, i) => ({ label: `Point ${i + 1}`, val: b.replace(/\*\*/g, '').slice(0, 50) })),
+            },
+          };
+        } else if (isSplitScreenCommand) {
+          playClickSound();
+          playSciFiBeep();
+          const target = extractWebTarget(clean) || { url: 'https://www.google.com', name: 'Google Search' };
+          setSplitScreenUrl(target.url);
+          setSplitScreenTitle(target.name);
+          setIsSplitScreenOpen(true);
+          result = {
+            action: 'SPLIT_SCREEN_OPENED',
+            squadId: 'ops',
+            delegatedTo: 'Split-Screen HUD Window Manager',
+            reply: `เปิดหน้าต่างเว็บ **${target.name}** (${target.url}) ในจอ HUD แบบ Split-Screen (PiP) ให้ ${userTitle} เรียบร้อยครับ\n• สามารถกดปุ่มขยายเต็มจอ หรือกดปุ่มเปิดแท็บแยกได้ตลอดเวลาครับ`,
+            speech: `เปิดหน้าเว็บ ${target.name} ซ้อนในจอ HUD แบบ Split-Screen ให้แล้วครับ ${userTitle}`,
+            hologram: {
+              title: `SPLIT-SCREEN // ${target.name.toUpperCase()}`,
+              category: 'IN-HUD EMBEDDED WEB',
+              badge: 'PiP ACTIVE',
+              targetUrl: target.url,
+              targetName: target.name,
+              details: [
+                { label: 'Mode', val: 'HUD PiP Iframe' },
+                { label: 'Target', val: target.name },
+                { label: 'URL', val: target.url },
+              ],
+            },
+          };
         } else if (isDailyRoutine) {
           const routine = buildDailyRoutinePlan(userTitle);
           openSystemBrowser(routine.site.url);
@@ -2397,6 +2505,15 @@ export function JarvisHudView({
         onPinMemory={handlePinMemory}
         onSpeak={speakThai}
         onShowToast={onShowToast}
+      />
+
+      {/* Feature 1: Split-Screen Web HUD (Embedded PiP Window) */}
+      <SplitScreenWebHud
+        isOpen={isSplitScreenOpen}
+        url={splitScreenUrl}
+        title={splitScreenTitle}
+        onClose={() => setIsSplitScreenOpen(false)}
+        userTitle={userTitle}
       />
     </>
   );

@@ -237,3 +237,119 @@ export async function openSystemBrowser(targetUrl) {
       : `เบราว์เซอร์บล็อกการเปิดแท็บใหม่ กรุณากดลิงก์เพื่อเปิด ${finalUrl}`,
   };
 }
+
+/**
+ * Feature 3: One-Voice Multi-Tab Launcher Work Mode Presets
+ */
+export const WORK_MODE_PRESETS = [
+  {
+    id: 'morning',
+    name: 'โหมดทำงานยามเช้า (Morning Executive Mode)',
+    keywords: ['โหมดเช้า', 'ทำงานเช้า', 'ยามเช้า', 'morning mode', 'morning work', 'โหมดทำงาน'],
+    tabs: [
+      { name: 'Gmail (กล่องจดหมาย)', url: 'https://mail.google.com' },
+      { name: 'GitHub (โปรเจกต์งาน)', url: 'https://github.com' },
+      { name: 'ข่าวเศรษฐกิจ (ไทยรัฐ Money)', url: 'https://www.thairath.co.th/money' },
+    ],
+    speech: (userTitle) =>
+      `เปิดโหมดทำงานยามเช้าให้ ${userTitle} เรียบร้อยครับ กำลังเปิด Gmail, GitHub และข่าวเศรษฐกิจพร้อมกัน 3 แท็บครับ`,
+  },
+  {
+    id: 'dev',
+    name: 'โหมดพัฒนาโปรแกรม (Full-Stack Dev Mode)',
+    keywords: ['โหมดเขียนโค้ด', 'โหมดเดฟ', 'โหมดพัฒนา', 'dev mode', 'coding mode', 'โหมดโปรแกรมเมอร์'],
+    tabs: [
+      { name: 'GitHub Repositories', url: 'https://github.com' },
+      { name: 'ChatGPT AI Assistant', url: 'https://chatgpt.com' },
+      { name: 'Vercel Deployment Dashboard', url: 'https://vercel.com' },
+    ],
+    speech: (userTitle) =>
+      `เปิดโหมดพัฒนาโปรแกรมให้ ${userTitle} เรียบร้อยครับ เตรียมพร้อม GitHub, ChatGPT และ Vercel ให้เรียบร้อยครับ`,
+  },
+  {
+    id: 'sales',
+    name: 'โหมดการค้าและการตลาด (Sales & E-Commerce Mode)',
+    keywords: ['โหมดขาย', 'โหมดการตลาด', 'โหมดค้าขาย', 'sales mode', 'marketing mode', 'โหมดแอด'],
+    tabs: [
+      { name: 'Shopee Seller Centre', url: 'https://seller.shopee.co.th' },
+      { name: 'Facebook Ads Manager', url: 'https://adsmanager.facebook.com' },
+      { name: 'TikTok Business Center', url: 'https://business.tiktok.com' },
+    ],
+    speech: (userTitle) =>
+      `เปิดโหมดการค้าและการตลาดให้ ${userTitle} เรียบร้อยครับ เปิด Shopee, Facebook Ads และ TikTok ให้เรียบร้อยครับ`,
+  },
+  {
+    id: 'relax',
+    name: 'โหมดพักผ่อนและบันเทิง (Relaxation & Leisure Mode)',
+    keywords: ['โหมดพักผ่อน', 'โหมดผ่อนคลาย', 'โหมดบันเทิง', 'relax mode', 'leisure mode', 'โหมดดูหนัง'],
+    tabs: [
+      { name: 'YouTube Music & Videos', url: 'https://www.youtube.com' },
+      { name: 'Netflix Movies', url: 'https://www.netflix.com' },
+      { name: 'Pantip Community', url: 'https://pantip.com' },
+    ],
+    speech: (userTitle) =>
+      `เปิดโหมดพักผ่อนให้ ${userTitle} เรียบร้อยครับ เปิด YouTube, Netflix และ Pantip ให้เรียบร้อยครับ`,
+  },
+];
+
+/**
+ * Detect whether prompt matches a Work Mode Preset
+ */
+export function detectWorkModePreset(prompt) {
+  if (!prompt || typeof prompt !== 'string') return null;
+  const lower = prompt.toLowerCase();
+  const noSpace = lower.replace(/\s+/g, '');
+
+  for (const preset of WORK_MODE_PRESETS) {
+    if (preset.keywords.some((kw) => lower.includes(kw) || noSpace.includes(kw.replace(/\s+/g, '')))) {
+      return preset;
+    }
+  }
+  return null;
+}
+
+/**
+ * Launch multiple tabs sequentially for a work mode preset
+ */
+export function launchWorkModePreset(preset) {
+  if (!preset || !Array.isArray(preset.tabs)) return [];
+  const results = [];
+  preset.tabs.forEach((tab, index) => {
+    // Open first tab synchronously to preserve user gesture
+    if (index === 0) {
+      const res = openUrlSync(tab.url);
+      results.push({ ...tab, opened: res.opened });
+    } else {
+      setTimeout(() => {
+        openUrlSync(tab.url);
+      }, index * 250);
+      results.push({ ...tab, opened: true });
+    }
+  });
+  return results;
+}
+
+/**
+ * Detect split-screen in-HUD web command (e.g. "ดูเว็บในจอ", "เปิดเว็บในจอ", "พรีวิวเว็บ")
+ */
+export function isSplitScreenWebCommand(prompt) {
+  if (!prompt || typeof prompt !== 'string') return false;
+  const lower = prompt.toLowerCase();
+  const noSpace = lower.replace(/\s+/g, '');
+  const splitKeywords = [
+    'ในจอ',
+    'บนจอ',
+    'จอhud',
+    'จอฮัด',
+    'พรีวิวเว็บ',
+    'ดูเว็บในจอ',
+    'เปิดเว็บในจอ',
+    'แบ่งจอ',
+    'เว็บย่อย',
+    'splitscreen',
+    'split-screen',
+    'pip',
+  ];
+  return splitKeywords.some((kw) => lower.includes(kw) || noSpace.includes(kw));
+}
+

@@ -1041,3 +1041,70 @@ export function openExternalResult(url) {
     openSystemBrowser(url);
   }
 }
+
+/**
+ * Feature 2: Detect whether user command is requesting an Auto-Summary Web Reader
+ */
+export function isAutoSummaryCommand(prompt) {
+  if (!prompt || typeof prompt !== 'string') return false;
+  const lower = prompt.toLowerCase();
+  const noSpace = lower.replace(/\s+/g, '');
+  const summaryKeywords = [
+    'สรุปเว็บ',
+    'อ่านสรุป',
+    'ช่วยสรุป',
+    'สรุปหน้าเว็บ',
+    'สรุปเนื้อหา',
+    'เปิดและสรุป',
+    'สรุปข่าว',
+    '3บรรทัด',
+    'สามบรรทัด',
+    'summary',
+  ];
+  return summaryKeywords.some((kw) => lower.includes(kw) || noSpace.includes(kw));
+}
+
+/**
+ * Feature 2: Auto-Summary Web Reader (3-Bullet Executive Intelligence)
+ */
+export async function generateAutoSummaryReader(prompt, userTitle = 'คุณไลท์') {
+  const clean = (prompt || '').trim();
+  const targetTopic =
+    clean
+      .replace(/^(เปิดและสรุป|ช่วยสรุป|สรุปเว็บ|อ่านสรุปเว็บ|สรุปเนื้อหา|สรุปข่าว|สรุป)\s*/i, '')
+      .trim() || clean;
+
+  const webIntel = await searchExternalWeb(targetTopic, userTitle);
+  const title = webIntel.sourceTitle || targetTopic;
+  const url = webIntel.sourceUrl || 'https://www.google.com';
+
+  const rawSummary = webIntel.summary || '';
+  const sentences = rawSummary.split(/[.!?\n]+/).filter(Boolean);
+  const p1 = sentences[0]?.trim() || title;
+  const p2 =
+    webIntel.highlightedMetrics && webIntel.highlightedMetrics.length > 0
+      ? webIntel.highlightedMetrics.map((m) => `${m.label} ${m.value} ${m.unit || ''}`).join(', ')
+      : sentences[1]?.trim() || `สกัดข้อมูลล่าสุดจากแหล่งข่าว ${webIntel.results?.[0]?.domain || 'อินเทอร์เน็ต'}`;
+  const p3 =
+    sentences[2]?.trim() ||
+    `ข้อมูลอยู่ในเกณฑ์ปกติ ระบบเตรียมพร้อมเปิดหน้าเว็บเต็มหรือบันทึกความจำ Mem0 ให้ ${userTitle} ครับ`;
+
+  const b1 = `1. **ใจความสำคัญ:** ${p1.slice(0, 110)}`;
+  const b2 = `2. **ข้อมูลเชิงลึก & ตัวเลข:** ${p2.slice(0, 120)}`;
+  const b3 = `3. **ข้อสรุปสำหรับ ${userTitle}:** ${p3.slice(0, 120)}`;
+
+  const bullets = [b1, b2, b3];
+  const speech = `สรุปประเด็นสำคัญ 3 ข้อให้ ${userTitle} ฟังครับ ข้อหนึ่ง ${p1.slice(0, 80)} ข้อสอง ${p2.slice(0, 80)} ข้อสาม ${p3.slice(0, 80)}`;
+  const reply = `📄 **สรุปเนื้อหาสำคัญ 3 บรรทัด (Auto-Summary Web Reader):**\n• แหล่งที่มา: [${title}](${url})\n\n${bullets.join('\n')}`;
+
+  return {
+    success: true,
+    title,
+    url,
+    bullets,
+    speech,
+    reply,
+    webIntel,
+  };
+}
+
