@@ -127,6 +127,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'zoommtg://',
     processName: 'Zoom.exe',
     category: 'โปรแกรมประชุมออนไลน์',
+    publisher: 'Zoom Video Communications, Inc.',
+    silentArgs: '/silent',
   },
   line: {
     id: 'line',
@@ -140,6 +142,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'line://',
     processName: 'LINE.exe',
     category: 'โปรแกรมแชทและติดต่อสื่อสาร',
+    publisher: 'LY Corporation',
+    silentArgs: '/S',
   },
   discord: {
     id: 'discord',
@@ -153,6 +157,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'discord://',
     processName: 'Discord.exe',
     category: 'โปรแกรมสื่อสารและชุมชน',
+    publisher: 'Discord Inc.',
+    silentArgs: '/s',
   },
   telegram: {
     id: 'telegram',
@@ -166,6 +172,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'tg://',
     processName: 'Telegram.exe',
     category: 'โปรแกรมสนทนาความปลอดภัยสูง',
+    publisher: 'Telegram FZ-LLC',
+    silentArgs: '/VERYSILENT /NORESTART',
   },
   chrome: {
     id: 'chrome',
@@ -179,6 +187,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'googlechrome://',
     processName: 'chrome.exe',
     category: 'เว็บเบราว์เซอร์',
+    publisher: 'Google LLC',
+    silentArgs: '/silent /install',
   },
   vscode: {
     id: 'vscode',
@@ -192,6 +202,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'vscode://',
     processName: 'Code.exe',
     category: 'โปรแกรมเขียนโค้ดและพัฒนาซอฟต์แวร์',
+    publisher: 'Microsoft Corporation',
+    silentArgs: '/verysilent /suppressmsgboxes /mergetasks="!runcode"',
   },
   obs: {
     id: 'obs',
@@ -205,6 +217,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'obs32://',
     processName: 'obs64.exe',
     category: 'โปรแกรมสตรีมและบันทึกหน้าจอ',
+    publisher: 'OBS Project',
+    silentArgs: '/S',
   },
   spotify: {
     id: 'spotify',
@@ -218,6 +232,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'spotify://',
     processName: 'Spotify.exe',
     category: 'โปรแกรมฟังเพลงและพอดแคสต์',
+    publisher: 'Spotify AB',
+    silentArgs: '/silent',
   },
   notion: {
     id: 'notion',
@@ -231,6 +247,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'notion://',
     processName: 'Notion.exe',
     category: 'โปรแกรมจัดการงานและฐานข้อมูล',
+    publisher: 'Notion Labs, Inc.',
+    silentArgs: '/S',
   },
   anydesk: {
     id: 'anydesk',
@@ -244,6 +262,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'anydesk://',
     processName: 'AnyDesk.exe',
     category: 'โปรแกรมรีโมทควบคุมระยะไกล',
+    publisher: 'AnyDesk Software GmbH',
+    silentArgs: '/install /silent',
   },
   teamviewer: {
     id: 'teamviewer',
@@ -257,6 +277,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'teamviewer://',
     processName: 'TeamViewer.exe',
     category: 'โปรแกรมควบคุมระยะไกล',
+    publisher: 'TeamViewer Germany GmbH',
+    silentArgs: '/S',
   },
   capcut: {
     id: 'capcut',
@@ -270,6 +292,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'capcut://',
     processName: 'CapCut.exe',
     category: 'โปรแกรมตัดต่อวิดีโอ',
+    publisher: 'ByteDance Ltd.',
+    silentArgs: '/S',
   },
   git: {
     id: 'git',
@@ -283,6 +307,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'git://',
     processName: 'git.exe',
     category: 'ระบบควบคุมเวอร์ชันโค้ด',
+    publisher: 'The Git Development Community',
+    silentArgs: '/VERYSILENT /NORESTART',
   },
   node: {
     id: 'node',
@@ -296,6 +322,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'node://',
     processName: 'node.exe',
     category: 'JavaScript Runtime Engine',
+    publisher: 'OpenJS Foundation',
+    silentArgs: '/qn /norestart',
   },
   python: {
     id: 'python',
@@ -309,6 +337,8 @@ const BASE_APP_DEFINITIONS = {
     protocolScheme: 'python://',
     processName: 'python.exe',
     category: 'ภาษาการเขียนโปรแกรม Python',
+    publisher: 'Python Software Foundation',
+    silentArgs: '/quiet InstallAllUsers=1 PrependPath=1',
   },
 };
 
@@ -1058,5 +1088,44 @@ export function findKnownAppDefinition(term) {
   const clean = lower.replace(/^(?:โปรแกรม|แอป|แอพ)\s*/, '');
   return KNOWN_APP_DOWNLOADS[clean] || null;
 }
+
+/**
+ * Feature: Silent Auto-Install Execution (Admin Stream)
+ * Generates PowerShell / Command Prompt silent installation strings for unattended deployment
+ */
+export function getSilentInstallCommand(appData) {
+  if (!appData) return null;
+  const fileName = appData.fileName || `${appData.name || 'installer'}.exe`;
+  const silentArgs = appData.silentArgs || '/silent';
+
+  return {
+    appName: appData.name,
+    fileName,
+    silentArgs,
+    powershell: `Start-Process -FilePath "$HOME\\Downloads\\${fileName}" -ArgumentList "${silentArgs}" -Wait -NoNewWindow`,
+    cmd: `start /wait "" "%USERPROFILE%\\Downloads\\${fileName}" ${silentArgs}`,
+    winget: appData.id ? `winget install --id ${appData.name?.replace(/\s+/g, '')} -e --silent` : null,
+  };
+}
+
+/**
+ * Check if the user command is asking for silent install
+ */
+export function isSilentInstallCommand(prompt) {
+  if (!prompt || typeof prompt !== 'string') return false;
+  const lower = prompt.toLowerCase();
+  const keywords = [
+    'ติดตั้งแบบเงียบ',
+    'ติดตั้งอัตโนมัติ',
+    'ติดตั้งอัตโนมัติแบบเงียบ',
+    'silent install',
+    'silentinstall',
+    'รันเงียบ',
+    'แอดมินติดตั้ง',
+    'admin install',
+  ];
+  return keywords.some((kw) => lower.includes(kw));
+}
+
 
 
