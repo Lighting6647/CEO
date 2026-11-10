@@ -37,8 +37,10 @@ weekly-plan/
 *.mp4
 .codex/
 .codex-temp/
-.agent/
-.agents/
+.agent/*
+!.agent/rules/
+.agents/*
+!.agents/rules/
 .gemini/
 video_assets/
 

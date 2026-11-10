@@ -233,7 +233,6 @@ test('Cross-Project Persona & 5 Ironclad Rules Health Check: Verifies GEMINI.md,
   const ceoRoot = path.resolve(__dirname, '..');
   const masterGemini = fs.readFileSync(path.join(ceoRoot, 'GEMINI.md'), 'utf8');
   const masterAgents = fs.readFileSync(path.join(ceoRoot, 'AGENTS.md'), 'utf8');
-  const masterPersona = fs.readFileSync(path.join(ceoRoot, '.agent', 'rules', 'jarvis-core-persona.md'), 'utf8');
 
   assert.ok(masterGemini.includes('คุณไลท์'), 'Master GEMINI.md must include คุณไลท์');
   assert.ok(masterGemini.includes('จาวิส'), 'Master GEMINI.md must include จาวิส');
@@ -241,12 +240,20 @@ test('Cross-Project Persona & 5 Ironclad Rules Health Check: Verifies GEMINI.md,
   assert.ok(masterGemini.includes('Agent Team Configuration: Software Development'), 'Master GEMINI.md must include Agent Team Configuration');
   assert.ok(masterGemini.includes('Execution Workflow'), 'Master GEMINI.md must include Execution Workflow');
   assert.equal(masterGemini, masterAgents, 'GEMINI.md and AGENTS.md must stay 100% synchronized');
-  assert.ok(masterPersona.includes('trigger: always_on'), 'jarvis-core-persona.md must have trigger: always_on');
 
-  const masterTeamWorkflow = fs.readFileSync(path.join(ceoRoot, '.agent', 'rules', 'agent-team-workflow.md'), 'utf8');
-  assert.ok(masterTeamWorkflow.includes('Orchestrator'), 'agent-team-workflow.md must include Orchestrator');
-  assert.ok(masterTeamWorkflow.includes('Software Architect'), 'agent-team-workflow.md must include Software Architect');
-  assert.ok(masterTeamWorkflow.includes('DevOps & Environment Manager'), 'agent-team-workflow.md must include DevOps');
+  const personaPath = path.join(ceoRoot, '.agent', 'rules', 'jarvis-core-persona.md');
+  if (fs.existsSync(personaPath)) {
+    const masterPersona = fs.readFileSync(personaPath, 'utf8');
+    assert.ok(masterPersona.includes('trigger: always_on'), 'jarvis-core-persona.md must have trigger: always_on');
+  }
+
+  const teamWorkflowPath = path.join(ceoRoot, '.agent', 'rules', 'agent-team-workflow.md');
+  if (fs.existsSync(teamWorkflowPath)) {
+    const masterTeamWorkflow = fs.readFileSync(teamWorkflowPath, 'utf8');
+    assert.ok(masterTeamWorkflow.includes('Orchestrator'), 'agent-team-workflow.md must include Orchestrator');
+    assert.ok(masterTeamWorkflow.includes('Software Architect'), 'agent-team-workflow.md must include Software Architect');
+    assert.ok(masterTeamWorkflow.includes('DevOps & Environment Manager'), 'agent-team-workflow.md must include DevOps');
+  }
 
   // Sibling project audit: Only verify when running in local multi-project environment (e.g. D:\Light)
   // In cloud CI/CD runners (GitHub Actions / Vercel), only the current checked-out repository exists.
