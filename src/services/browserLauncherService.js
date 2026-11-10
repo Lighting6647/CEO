@@ -28,10 +28,33 @@ const KNOWN_WEB_SHORTCUTS = {
   ทวิตเตอร์: 'https://x.com',
   twitter: 'https://x.com',
   เอ็กซ์: 'https://x.com',
+  ติ๊กต๊อก: 'https://www.tiktok.com',
+  tiktok: 'https://www.tiktok.com',
+  พันทิป: 'https://pantip.com',
+  pantip: 'https://pantip.com',
   สนุก: 'https://www.sanook.com',
   sanook: 'https://www.sanook.com',
   ไทยรัฐ: 'https://www.thairath.co.th',
   thairath: 'https://www.thairath.co.th',
+
+  // AI & Productivity & Commerce
+  chatgpt: 'https://chatgpt.com',
+  แชทจีพีที: 'https://chatgpt.com',
+  openai: 'https://openai.com',
+  จีเมล: 'https://mail.google.com',
+  gmail: 'https://mail.google.com',
+  ช้อปปี้: 'https://shopee.co.th',
+  ช็อปปี้: 'https://shopee.co.th',
+  shopee: 'https://shopee.co.th',
+  ลาซาด้า: 'https://lazada.co.th',
+  lazada: 'https://lazada.co.th',
+  เน็ตฟลิกซ์: 'https://www.netflix.com',
+  netflix: 'https://www.netflix.com',
+  แคนวา: 'https://www.canva.com',
+  canva: 'https://www.canva.com',
+  โนชั่น: 'https://www.notion.so',
+  notion: 'https://www.notion.so',
+  vercel: 'https://vercel.com',
 };
 
 /**
