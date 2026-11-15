@@ -244,6 +244,18 @@ export const WORKSPACE_DOCTOR_ITEMS = [
     repairedAfterMigration: false,
     repairNote: 'ไฟล์ HTML/PWA/Service Worker ครบสมบูรณ์',
   },
+  {
+    id: 'tamsang',
+    name: 'Tamsang (ตามสั่ง)',
+    folder: 'D:\\AI\\Light\\Tamsang',
+    port: 5173,
+    startCmd: 'npm run dev',
+    hasGit: false,
+    hasNodeModules: true,
+    envStatus: 'Zero-Backend SPA',
+    repairedAfterMigration: false,
+    repairNote: 'ผ่าน Node Tests 5/5 และ Vite 8 Build 100% — รอทำ git init & sync Lighting6647/tamsang',
+  },
 ];
 
 export function calculateWorkspaceDoctorSummary(items = WORKSPACE_DOCTOR_ITEMS, runtimes = SYSTEM_RUNTIMES) {

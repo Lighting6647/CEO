@@ -450,15 +450,15 @@ export function processJarvisCommand(input, _context = {}) {
       squadId: 'sec',
       delegatedTo: 'ทีม AI QA Automation & Security Auditor',
       reply:
-        `รับทราบครับ ${USER_TITLE} กำลังสั่งการทีม AI QA และ Security ตรวจสอบ 4 Quality Gates ข้ามทั้ง 17 โปรเจกต์ใน D:\\Light ให้เรียบร้อยครับ\n\n[สถานะการตรวจสอบ]:\n• Gate 1 (Design Tokens): 100% Pass\n• Gate 2 (Test Suites): 6/6 ผ่านเกณฑ์\n• Gate 3 (Linter & Build): 0 Errors\n• Gate 4 (Workspace Files): ครบ 17 โฟลเดอร์ สมบูรณ์ 100% ครับ ${USER_TITLE}`,
-      speech: `รับทราบครับ ${USER_TITLE} สั่งการทีม AI ตรวจสอบระบบทั้งสิบเจ็ดโปรเจกต์ เรียบร้อยสมบูรณ์ร้อยเปอร์เซ็นต์ครับ`,
+        `รับทราบครับ ${USER_TITLE} กำลังสั่งการทีม AI QA และ Security ตรวจสอบ 4 Quality Gates ข้ามทั้ง 18 โปรเจกต์ใน D:\\Light ให้เรียบร้อยครับ\n\n[สถานะการตรวจสอบ]:\n• Gate 1 (Design Tokens): 100% Pass\n• Gate 2 (Test Suites): 6/6 ผ่านเกณฑ์\n• Gate 3 (Linter & Build): 0 Errors\n• Gate 4 (Workspace Files): ครบ 18 โฟลเดอร์ สมบูรณ์ 100% ครับ ${USER_TITLE}`,
+      speech: `รับทราบครับ ${USER_TITLE} สั่งการทีม AI ตรวจสอบระบบทั้งสิบแปดโปรเจกต์ เรียบร้อยสมบูรณ์ร้อยเปอร์เซ็นต์ครับ`,
       hologram: {
         title: 'FULL QA SYSTEM AUDIT // REPORT',
         category: 'AI QA & SECURITY SQUAD',
         badge: '100% VERIFIED',
         details: [
-          { label: 'Total Projects', val: '15 Active Apps + CEO Director' },
-          { label: 'Workspace Files', val: '17/17 Folders Verified' },
+          { label: 'Total Projects', val: '16 Active Apps + CEO Director' },
+          { label: 'Workspace Files', val: '18/18 Folders Verified' },
           { label: 'Security Protocols', val: 'AES-256 Vault Stable' },
           { label: 'Build Status', val: 'Vite Production Passed' },
         ],
@@ -629,14 +629,14 @@ export function processJarvisCommand(input, _context = {}) {
       action: 'VIEW_SQUAD',
       squadId: 'ops',
       delegatedTo: 'ทีม AI Core Executive Squad',
-      reply: `รายงานสถานะทีม AI ทั้งหมดครับ ${USER_TITLE}:\n\nปัจจุบันทีม AI ของเราดูแลอยู่ 15 โปรเจกต์หลักใน 17 โฟลเดอร์:\n${listNames}\n...และระบบอื่นๆ รวม 15 ซอฟต์แวร์\n\nทีม AI ทั้ง 6 แผนก (การตลาด, ฝ่ายขาย, วิศวกรรม, บริการลูกค้า, การเงิน, และบริหาร) สแตนด์บายพร้อมรับคำสั่งจาก${USER_TITLE}ทุกวินาทีครับ`,
+      reply: `รายงานสถานะทีม AI ทั้งหมดครับ ${USER_TITLE}:\n\nปัจจุบันทีม AI ของเราดูแลอยู่ 16 โปรเจกต์หลักใน 18 โฟลเดอร์:\n${listNames}\n...และระบบอื่นๆ รวม 16 ซอฟต์แวร์\n\nทีม AI ทั้ง 6 แผนก (การตลาด, ฝ่ายขาย, วิศวกรรม, บริการลูกค้า, การเงิน, และบริหาร) สแตนด์บายพร้อมรับคำสั่งจาก${USER_TITLE}ทุกวินาทีครับ`,
       speech: `รายงานสถานะครับ ${USER_TITLE} ทีมเอไอทั้งหมดสแตนด์บายพร้อมค้นหาข้อมูลและสั่งการทุกระบบตามที่ท่านต้องการครับ`,
       hologram: {
-        title: 'AI WORKSPACE ROSTER // 17 PROJECTS',
+        title: 'AI WORKSPACE ROSTER // 18 PROJECTS',
         category: 'EXECUTIVE OVERVIEW',
         badge: 'ALL SQUADS READY',
         details: [
-          { label: 'Active Projects', val: '15 Commercial SaaS' },
+          { label: 'Active Projects', val: '16 Commercial SaaS' },
           { label: 'Autonomous Squads', val: '6 Business + 5 Coding Squads' },
           { label: 'Network Runtime', val: 'Dual-Stack IPv6 & IPv4' },
           { label: 'Cloud Status', val: 'Vercel Synchronized' },

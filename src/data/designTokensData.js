@@ -410,6 +410,30 @@ export const ALL_PROJECT_DESIGN_TOKENS = [
     elevation: 'Infographic layout with clean hierarchical metric callouts',
     antiPatternsBanned: ['All legacy paths updated', 'PDF rendering without clipping'],
   },
+  {
+    id: 'tamsang',
+    name: 'Tamsang (ตามสั่ง)',
+    folder: 'D:\\AI\\Light\\Tamsang',
+    mode: 'Operate',
+    theme: 'Warm Culinary Light & Chili Orange',
+    palette: {
+      primary: '#EA580C', // Chili Orange
+      accent: '#059669',  // Basil Emerald
+      background: '#FAF8F5', // Warm Canvas
+      cardSurface: '#FFFFFF', // Crisp Paper Card
+      border: '#E7E2D8',     // Subtle Warm Border
+      textPrimary: '#18181B',
+      textMuted: '#71717A',
+    },
+    typography: {
+      display: 'IBM Plex Sans Thai',
+      body: 'Plus Jakarta Sans / system-ui',
+      features: 'JetBrains Mono tabular-nums for Thai Baht pricing & PromptPay',
+    },
+    impeccableScore: 100,
+    elevation: '1px warm border (#E7E2D8) with clean culinary card hierarchy',
+    antiPatternsBanned: ['No generic purple gradients', 'Zero Lorem Ipsum', 'Tabular numbers for bill splits'],
+  },
 ];
 
 export function generateTailwindConfigForProject(project) {

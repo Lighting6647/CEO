@@ -313,10 +313,41 @@ export const INITIAL_PROJECTS = [
       gate4: { status: 'passed', label: 'Recommender', detail: 'Real-time seat lock timer, Dynamic ticket pricing, LINE Flex notification' }
     },
     metrics: { tests: 'Unit & E2E Passed', coverage: '96.2%', responsive: 'Mobile/Tablet/Desktop', linter: '0 errors' }
+  },
+  {
+    id: 'tamsang',
+    name: 'Tamsang (ตามสั่ง)',
+    thName: 'ระบบสั่งอาหารตามสั่งแบบกลุ่ม รวมออเดอร์ครัว หารบิล & PromptPay QR',
+    repo: 'Lighting6647/tamsang',
+    path: 'D:\\AI\\Light\\Tamsang',
+    category: 'Commerce',
+    score: 'A+',
+    health: 100,
+    syncStatus: 'pending',
+    commit: 'local-v1.0',
+    lastAudited: '15 พ.ย. 2569 08:32',
+    summary: 'ผ่าน Node test suite 5/5 ข้อ (Pricing, Dish Signature, Kitchen Aggregator, Bill Split, PromptPay EMVCo CRC-16) และ TypeScript + Vite 8 Build ผ่าน 100%',
+    gates: {
+      gate1: { status: 'passed', label: 'UI/UX Tokens', detail: 'Warm Culinary Light (#FAF8F5, Chili #EA580C, Basil #059669, IBM Plex Sans Thai + JetBrains Mono)' },
+      gate2: { status: 'passed', label: 'Autonomous Tests', detail: '5/5 Node Tests Passing (100%): Unit Pricing, Kitchen Aggregator, Bill Splitter, PromptPay CRC-16' },
+      gate3: { status: 'passed', label: 'Deployment Gate', detail: 'React 19 + TypeScript + Vite 8 production build clean (346ms); awaiting Git init & GitHub sync' },
+      gate4: { status: 'passed', label: 'Recommender', detail: 'GitHub repo sync, Persistent room sharing via URL/DB, LINE OA order summary push' }
+    },
+    metrics: { tests: '5/5 passed', coverage: '94.0%', responsive: 'Mobile/Tablet/Desktop', linter: '0 errors' }
   }
 ];
 
 export const INITIAL_AUDIT_LOGS = [
+  {
+    id: 'audit-006',
+    timestamp: '15 พ.ย. 2569 08:32',
+    type: 'Project Onboarding & QA',
+    title: 'นำเข้าและตรวจสอบโปรเจกต์ Tamsang (D:\\AI\\Light\\Tamsang) เข้าสู่ CEO Hub',
+    auditor: 'J.A.R.V.I.S. Master',
+    status: 'success',
+    badge: 'Passed 4 Quality Gates',
+    details: 'ตรวจสอบ Node test suite 5/5 ข้อ และ tsc -b && vite build ผ่าน 100% พร้อมบันทึก Design Tokens และ Workspace Doctor'
+  },
   {
     id: 'audit-005',
     timestamp: '16 ต.ค. 2569 23:32',

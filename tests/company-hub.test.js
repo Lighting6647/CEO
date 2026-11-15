@@ -24,12 +24,12 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-test('D:\\Light Projects Data has 15 mapped applications pointing to D:\\Light', () => {
-  assert.equal(INITIAL_PROJECTS.length, 15, 'Should track all 15 active projects in D:\\Light');
+test('D:\\Light Projects Data has 16 mapped applications pointing to D:\\Light or D:\\AI\\Light', () => {
+  assert.equal(INITIAL_PROJECTS.length, 16, 'Should track all 16 active projects in D:\\Light / D:\\AI\\Light');
   for (const project of INITIAL_PROJECTS) {
     assert.ok(
-      project.path.startsWith('D:\\Light\\'),
-      `Project ${project.id} path (${project.path}) must start with D:\\Light\\`
+      project.path.startsWith('D:\\Light\\') || project.path.startsWith('D:\\AI\\Light\\'),
+      `Project ${project.id} path (${project.path}) must start with D:\\Light\\ or D:\\AI\\Light\\`
     );
     assert.equal(project.gates.gate1.status, 'passed');
     assert.equal(project.gates.gate2.status, 'passed');
@@ -97,22 +97,22 @@ test('Quotation Generator, PromptPay EMVCo CRC-16, and Founder Digital Signature
   assert.ok(quote.signature.startsWith('KROB-SIG-'));
 });
 
-test('Workspace Migration Doctor tracks all 17 folders in D:\\Light and 4 core runtimes', () => {
-  assert.equal(WORKSPACE_DOCTOR_ITEMS.length, 17, 'Should track all 17 folders in D:\\Light');
+test('Workspace Migration Doctor tracks all 18 folders in D:\\Light / D:\\AI\\Light and 4 core runtimes', () => {
+  assert.equal(WORKSPACE_DOCTOR_ITEMS.length, 18, 'Should track all 18 folders in D:\\Light / D:\\AI\\Light');
   assert.equal(SYSTEM_RUNTIMES.length, 4, 'Should track Node.js, PowerShell, Git, and Python runtimes');
 
   const summary = calculateWorkspaceDoctorSummary();
-  assert.equal(summary.totalFolders, 17);
-  assert.equal(summary.readyFolders, 17);
+  assert.equal(summary.totalFolders, 18);
+  assert.equal(summary.readyFolders, 18);
   assert.equal(summary.overallHealthPercent, 100);
 
   const manifest = buildWorkspaceSnapshotManifest();
   assert.ok(manifest.snapshotId.startsWith('SNAP-DLIGHT-'));
-  assert.equal(manifest.projects.length, 17);
+  assert.equal(manifest.projects.length, 18);
 });
 
-test('Impeccable Design System standardizes all 17 projects with curated zero-AI-slop palettes and Tailwind configs', () => {
-  assert.equal(ALL_PROJECT_DESIGN_TOKENS.length, 17, 'All 17 projects must have defined design tokens');
+test('Impeccable Design System standardizes all 18 projects with curated zero-AI-slop palettes and Tailwind configs', () => {
+  assert.equal(ALL_PROJECT_DESIGN_TOKENS.length, 18, 'All 18 projects must have defined design tokens');
 
   for (const proj of ALL_PROJECT_DESIGN_TOKENS) {
     assert.ok(proj.name, 'Project must have a name');
@@ -143,7 +143,7 @@ test('J.A.R.V.I.S. MARK 3 Neural Brain processes Thai voice commands and dispatc
   // 1. Audit Command
   const auditRes = processJarvisCommand('ช่วยตรวจระบบทั้งหมดหน่อย');
   assert.equal(auditRes.action, 'RUN_AUDIT');
-  assert.ok(auditRes.reply.includes('17 โปรเจกต์'));
+  assert.ok(auditRes.reply.includes('18 โปรเจกต์'));
 
   // 2. POS Query
   const posRes = processJarvisCommand('ระบบ pos ขายหน้าร้านเป็นยังไง');
