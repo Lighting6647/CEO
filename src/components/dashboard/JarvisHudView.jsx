@@ -2831,6 +2831,10 @@ export function JarvisHudView({
           onOpenQuotation();
         } else if (result.action === 'OPEN_PERSONA' && onOpenPersona) {
           onOpenPersona();
+        } else if (result.action === 'OPEN_MEETING' && onOpenMeetingModal) {
+          onOpenMeetingModal();
+        } else if (result.action === 'OPEN_AI_MONITOR' && onOpenAiMonitorModal) {
+          onOpenAiMonitorModal();
         } else if (result.action === 'CHANGE_THEME' && onSelectBrandTheme) {
           onSelectBrandTheme(result.brandId);
         } else if (result.action === 'TOGGLE_RED_ALERT') {
@@ -2861,6 +2865,8 @@ export function JarvisHudView({
       onRunAudit,
       onOpenQuotation,
       onOpenPersona,
+      onOpenMeetingModal,
+      onOpenAiMonitorModal,
       onSelectBrandTheme,
       speakThai,
       userTitle,

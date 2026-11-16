@@ -161,6 +161,63 @@ export function processJarvisCommand(input, _context = {}) {
     };
   }
 
+  // 0.26 Open Meeting Notes & Summary Recorder ("เปิดอัดประชุม" / "จดประชุม")
+  if (
+    clean.includes('อัดประชุม') ||
+    clean.includes('บันทึกประชุม') ||
+    clean.includes('จดประชุม') ||
+    clean.includes('สรุปประชุม') ||
+    clean.includes('meeting')
+  ) {
+    return {
+      action: 'OPEN_MEETING',
+      squadId: 'ops',
+      delegatedTo: 'J.A.R.V.I.S. Meeting Recorder',
+      reply: `รับทราบครับ ${USER_TITLE} เปิดหน้าต่างบันทึกและสรุปการประชุมอัตโนมัติ (th-TH) เรียบร้อยครับ พร้อมอัดเสียงและส่งออกไฟล์ .txt ทันที`,
+      speech: `รับทราบครับ ${USER_TITLE} เปิดหน้าต่างอัดเสียงและสรุปการประชุมเรียบร้อยครับ`,
+      hologram: {
+        title: 'MEETING NOTES & SUMMARY // READY',
+        category: 'VOICE TRANSCRIPTION',
+        badge: 'TH-TH ACTIVE',
+        details: [
+          { label: 'Language', val: 'Thai (th-TH) + Manual' },
+          { label: 'Summarizer', val: 'Gemini API / Local Fallback' },
+          { label: 'Export', val: 'Windows CRLF (.txt)' },
+          { label: 'Max Capacity', val: '80,000 Chars (~2 Hrs)' },
+        ],
+      },
+    };
+  }
+
+  // 0.27 Open AI Account & Diagnostics Monitor ("เช็ค AI Status" / "สถานะ AI")
+  if (
+    clean.includes('ai status') ||
+    clean.includes('สถานะ ai') ||
+    clean.includes('เช็ค ai') ||
+    clean.includes('ตรวจ ai') ||
+    clean.includes('โควตา ai') ||
+    clean.includes('diagnostics')
+  ) {
+    return {
+      action: 'OPEN_AI_MONITOR',
+      squadId: 'sec',
+      delegatedTo: 'AI Account & Diagnostics Monitor',
+      reply: `รับทราบครับ ${USER_TITLE} เปิดหน้าต่างตรวจสอบสถานะ AI Providers, Latency และความพร้อมระบบเรียบร้อยครับ`,
+      speech: `รับทราบครับ ${USER_TITLE} เปิดหน้าต่างตรวจสอบสถานะเอไอเรียบร้อยครับ`,
+      hologram: {
+        title: 'AI ACCOUNT & DIAGNOSTICS // PROBE',
+        category: 'PROVIDER TELEMETRY',
+        badge: '4 PROVIDERS',
+        details: [
+          { label: 'Providers', val: 'Gemini · Claude · OpenAI · LINE' },
+          { label: 'Endpoint', val: '/api/ai-diagnostics' },
+          { label: 'Key Security', val: 'Zero-Leak Masked Check' },
+          { label: 'Status', val: 'Probe Ready' },
+        ],
+      },
+    };
+  }
+
   // 0.3 Absolute Obedience & Active Command Protocol ("ต้องให้ทำตามคำสั่งทุกอย่าง")
   if (
     clean.includes('ต้องให้ทำตามคำสั่ง') ||
