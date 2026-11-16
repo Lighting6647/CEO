@@ -218,6 +218,34 @@ export function processJarvisCommand(input, _context = {}) {
     };
   }
 
+  // 0.28 Open Local Control Bridge ("เปิด Local Bridge" / "คุม 21 โปรเจกต์")
+  if (
+    clean.includes('local bridge') ||
+    clean.includes('คุม 21') ||
+    clean.includes('คุมโปรเจกต์') ||
+    clean.includes('คุมโปรเจ็ค') ||
+    clean.includes('ควบคุมโปรเจกต์')
+  ) {
+    return {
+      action: 'OPEN_LOCAL_BRIDGE',
+      squadId: 'ops',
+      delegatedTo: 'J.A.R.V.I.S. Local Control Bridge',
+      reply: `รับทราบครับ ${USER_TITLE} เปิดแผงควบคุม Local Control Bridge (127.0.0.1:4199) สำหรับสั่งการทั้ง 21 โปรเจกต์ใน D:\\AI\\Light เรียบร้อยครับ`,
+      speech: `รับทราบครับ ${USER_TITLE} เปิดแผงควบคุม Local Bridge ทั้งยี่สิบเอ็ดโปรเจกต์เรียบร้อยครับ`,
+      hologram: {
+        title: 'LOCAL CONTROL BRIDGE // 21 PROJECTS',
+        category: 'WORKSPACE EXECUTION',
+        badge: '127.0.0.1:4199',
+        details: [
+          { label: 'Workspace', val: 'D:\\AI\\Light (21 Folders)' },
+          { label: 'Actions', val: 'Git Status · Test · Build · Start' },
+          { label: 'Batch Mode', val: 'Git Status All Ready' },
+          { label: 'Security', val: 'Allowlisted Localhost Only' },
+        ],
+      },
+    };
+  }
+
   // 0.3 Absolute Obedience & Active Command Protocol ("ต้องให้ทำตามคำสั่งทุกอย่าง")
   if (
     clean.includes('ต้องให้ทำตามคำสั่ง') ||

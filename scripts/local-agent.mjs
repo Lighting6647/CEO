@@ -228,6 +228,25 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  if (req.method === 'GET' && reqUrl.pathname === '/batch-git-status') {
+    const gitProjects = scanWorkspaceProjects().filter((p) => p.hasGit);
+    const results = await Promise.all(
+      gitProjects.map(async (p) => {
+        try {
+          const r = await runAllowlistedAction(p.folder, 'git-status');
+          return { folder: p.folder, ok: true, output: r.body?.output || '' };
+        } catch (err) {
+          return { folder: p.folder, ok: false, output: err instanceof Error ? err.message : 'Failed' };
+        }
+      })
+    );
+    return sendJson(res, 200, {
+      ok: true,
+      totalGitRepos: gitProjects.length,
+      results,
+    });
+  }
+
   if (req.method === 'POST' && reqUrl.pathname === '/action') {
     try {
       const { folder, action } = await readJsonBody(req);

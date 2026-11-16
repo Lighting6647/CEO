@@ -169,11 +169,13 @@ test('J.A.R.V.I.S. MARK 3 Neural Brain processes Thai voice commands and dispatc
   assert.ok(personaRes.reply.includes('กฎเหล็ก 5 ประการ'));
   assert.ok(personaRes.speech.includes('กฎเหล็ก 5 ประการ'));
 
-  // 7. Meeting & AI Status Voice Commands
+  // 7. Meeting, AI Status & Local Bridge Voice Commands
   const meetingRes = processJarvisCommand('เปิดอัดประชุม');
   assert.equal(meetingRes.action, 'OPEN_MEETING');
   const aiStatusRes = processJarvisCommand('เช็ค AI Status');
   assert.equal(aiStatusRes.action, 'OPEN_AI_MONITOR');
+  const bridgeRes = processJarvisCommand('เปิด Local Bridge');
+  assert.equal(bridgeRes.action, 'OPEN_LOCAL_BRIDGE');
 });
 
 test('Multi-Agent Hub for Webapp Sales & Development coordinates all 5 specialized agents for คุณไลท์', async () => {

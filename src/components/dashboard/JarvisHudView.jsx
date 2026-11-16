@@ -2836,6 +2836,8 @@ export function JarvisHudView({
           onOpenMeetingModal();
         } else if (result.action === 'OPEN_AI_MONITOR' && onOpenAiMonitorModal) {
           onOpenAiMonitorModal();
+        } else if (result.action === 'OPEN_LOCAL_BRIDGE' && onOpenLocalBridgeModal) {
+          onOpenLocalBridgeModal();
         } else if (result.action === 'CHANGE_THEME' && onSelectBrandTheme) {
           onSelectBrandTheme(result.brandId);
         } else if (result.action === 'TOGGLE_RED_ALERT') {
@@ -2868,6 +2870,7 @@ export function JarvisHudView({
       onOpenPersona,
       onOpenMeetingModal,
       onOpenAiMonitorModal,
+      onOpenLocalBridgeModal,
       onSelectBrandTheme,
       speakThai,
       userTitle,

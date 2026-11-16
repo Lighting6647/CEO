@@ -84,6 +84,26 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
     }
   };
 
+  const handleBatchGitStatus = async () => {
+    setRunningKey('batch:git-status');
+    setConsoleLog('[BATCH] กำลังตรวจ Git Status ทุกโปรเจกต์ที่มี .git...');
+    try {
+      const res = await fetch(`${BRIDGE_URL}/batch-git-status`, { method: 'GET' });
+      const data = await res.json();
+      if (data?.ok) {
+        const lines = (data.results || []).map((r) => `• ${r.folder}: ${r.output.replace(/\r?\n/g, ' | ')}`);
+        setConsoleLog(`[BATCH GIT STATUS :: ${data.totalGitRepos} Repositories]\n${lines.join('\n')}`);
+        onShowToast?.('success', `ตรวจ Git ${data.totalGitRepos} คลังสำเร็จ`, 'แสดงผลสถานะทั้งหมดใน Console ด้านล่างแล้ว');
+      } else {
+        setConsoleLog(`[BATCH ERROR] ${data?.error || 'Failed'}`);
+      }
+    } catch (error) {
+      setConsoleLog(`[CONNECTION ERROR]\n${error instanceof Error ? error.message : 'ไม่สามารถเชื่อมต่อ Local Bridge ได้'}`);
+    } finally {
+      setRunningKey('');
+    }
+  };
+
   const handleCopyCommand = async () => {
     try {
       await navigator.clipboard.writeText('cd d:\\AI\\Light\\CEO; node scripts/local-agent.mjs');
@@ -123,6 +143,16 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {online && (
+              <button
+                type="button"
+                onClick={handleBatchGitStatus}
+                disabled={Boolean(runningKey)}
+                className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1.5 text-xs text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-50 cursor-pointer"
+              >
+                <GitBranch className="h-3.5 w-3.5" /> Git Status All
+              </button>
+            )}
             <button
               type="button"
               onClick={fetchBridge}
