@@ -1807,12 +1807,12 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
               </div>
             ) : coreMode === 'neural' ? (
               <div className="w-[380px] h-[380px] flex items-center justify-center relative">
-                <JarvisNeuralSphere isAlarm={isCombatAlert} audioLevel={audioLevel} className="w-[380px] h-[380px]" />
+                <JarvisNeuralSphere isAlarm={isRedAlert} audioLevel={audioLevel} className="w-[380px] h-[380px]" />
               </div>
             ) : useThree3D ? (
               <div className="w-[380px] h-[380px] flex items-center justify-center relative">
                 <Suspense fallback={<div className="text-[11px] font-mono text-cyan-400 animate-pulse">INITIALIZING 3D ARC REACTOR...</div>}>
-                  <ThreeArcReactor isAlarm={isCombatAlert} audioLevel={audioLevel} className="w-[380px] h-[380px]" />
+                  <ThreeArcReactor isAlarm={isRedAlert} audioLevel={audioLevel} className="w-[380px] h-[380px]" />
                 </Suspense>
               </div>
             ) : (
