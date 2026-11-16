@@ -128,6 +128,7 @@ export function JarvisHudView({
   onOpenPersona,
   onOpenMeetingModal,
   onOpenAiMonitorModal,
+  onOpenLocalBridgeModal,
   onSelectBrandTheme,
   onShowToast,
   onOpenAdmin,
@@ -3210,6 +3211,7 @@ export function JarvisHudView({
         onOpenReaModal={() => setIsReaModalOpen(true)}
         onOpenMeetingModal={onOpenMeetingModal}
         onOpenAiMonitorModal={onOpenAiMonitorModal}
+        onOpenLocalBridgeModal={onOpenLocalBridgeModal}
         liveTranscript={liveTranscript}
         analyserNode={analyserRef.current}
         onCalibrateVoice={handleCalibrateVoice}

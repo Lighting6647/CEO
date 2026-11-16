@@ -31,6 +31,7 @@ export function CinemaHudLayout({
   onDispatchCommand,
   onOpenMeetingModal,
   onOpenAiMonitorModal,
+  onOpenLocalBridgeModal,
   onOpenAdmin,
   onOpenCompany,
   onOpenVoiceModal,
@@ -250,6 +251,16 @@ export function CinemaHudLayout({
             >
               <Activity className="h-3.5 w-3.5" /> AI Status
             </button>
+            {onOpenLocalBridgeModal && (
+              <button
+                type="button"
+                onClick={onOpenLocalBridgeModal}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-950/60 px-3 py-2 text-cyan-200 hover:border-cyan-400 cursor-pointer"
+                title="เชื่อมต่อ Local Control Bridge คุมทั้ง 21 โปรเจกต์"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" /> คุม 21 โปรเจกต์
+              </button>
+            )}
             <button
               type="button"
               onClick={onOpenWebFill}

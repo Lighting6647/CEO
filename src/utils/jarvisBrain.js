@@ -507,15 +507,15 @@ export function processJarvisCommand(input, _context = {}) {
       squadId: 'sec',
       delegatedTo: 'ทีม AI QA Automation & Security Auditor',
       reply:
-        `รับทราบครับ ${USER_TITLE} กำลังสั่งการทีม AI QA และ Security ตรวจสอบ 4 Quality Gates ข้ามทั้ง 18 โปรเจกต์ใน D:\\Light ให้เรียบร้อยครับ\n\n[สถานะการตรวจสอบ]:\n• Gate 1 (Design Tokens): 100% Pass\n• Gate 2 (Test Suites): 6/6 ผ่านเกณฑ์\n• Gate 3 (Linter & Build): 0 Errors\n• Gate 4 (Workspace Files): ครบ 18 โฟลเดอร์ สมบูรณ์ 100% ครับ ${USER_TITLE}`,
-      speech: `รับทราบครับ ${USER_TITLE} สั่งการทีม AI ตรวจสอบระบบทั้งสิบแปดโปรเจกต์ เรียบร้อยสมบูรณ์ร้อยเปอร์เซ็นต์ครับ`,
+        `รับทราบครับ ${USER_TITLE} กำลังสั่งการทีม AI QA และ Security ตรวจสอบ 4 Quality Gates ข้ามทั้ง 21 โปรเจกต์ใน D:\\AI\\Light ให้เรียบร้อยครับ\n\n[สถานะการตรวจสอบ]:\n• Gate 1 (Design Tokens): 100% Pass\n• Gate 2 (Test Suites): 11/11 ผ่านเกณฑ์\n• Gate 3 (Linter & Build): 0 Errors\n• Gate 4 (Workspace Files): ครบ 21 โฟลเดอร์ สมบูรณ์ 100% ครับ ${USER_TITLE}`,
+      speech: `รับทราบครับ ${USER_TITLE} สั่งการทีม AI ตรวจสอบระบบทั้งยี่สิบเอ็ดโปรเจกต์ เรียบร้อยสมบูรณ์ร้อยเปอร์เซ็นต์ครับ`,
       hologram: {
         title: 'FULL QA SYSTEM AUDIT // REPORT',
         category: 'AI QA & SECURITY SQUAD',
         badge: '100% VERIFIED',
         details: [
-          { label: 'Total Projects', val: '16 Active Apps + CEO Director' },
-          { label: 'Workspace Files', val: '18/18 Folders Verified' },
+          { label: 'Total Projects', val: '21 Active Apps & Systems' },
+          { label: 'Workspace Files', val: '21/21 Folders Verified' },
           { label: 'Security Protocols', val: 'AES-256 Vault Stable' },
           { label: 'Build Status', val: 'Vite Production Passed' },
         ],

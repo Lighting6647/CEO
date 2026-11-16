@@ -29,6 +29,7 @@ const DesignSystemModal = lazy(() => import('./components/dashboard/DesignSystem
 const PersonaInspectorModal = lazy(() => import('./components/dashboard/PersonaInspectorModal').then((m) => ({ default: m.PersonaInspectorModal })));
 const MeetingNotesModal = lazy(() => import('./components/dashboard/hud/MeetingNotesModal').then((m) => ({ default: m.MeetingNotesModal })));
 const AiAccountMonitorModal = lazy(() => import('./components/dashboard/hud/AiAccountMonitorModal').then((m) => ({ default: m.AiAccountMonitorModal })));
+const LocalControlBridgeModal = lazy(() => import('./components/dashboard/hud/LocalControlBridgeModal').then((m) => ({ default: m.LocalControlBridgeModal })));
 const CommandPalette = lazy(() => import('./components/dashboard/CommandPalette').then((m) => ({ default: m.CommandPalette })));
 
 export default function App() {
@@ -46,6 +47,7 @@ export default function App() {
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
   const [isAiMonitorModalOpen, setIsAiMonitorModalOpen] = useState(false);
+  const [isLocalBridgeModalOpen, setIsLocalBridgeModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -259,6 +261,7 @@ export default function App() {
           onOpenPersona={() => { playClickSound(); setIsPersonaModalOpen(true); }}
           onOpenMeetingModal={() => { playClickSound(); setIsMeetingModalOpen(true); }}
           onOpenAiMonitorModal={() => { playClickSound(); setIsAiMonitorModalOpen(true); }}
+          onOpenLocalBridgeModal={() => { playClickSound(); setIsLocalBridgeModalOpen(true); }}
           onOpenAdmin={() => { playClickSound(); setActiveView('dashboard'); }}
           onOpenCompany={() => { playClickSound(); setActiveView('company'); }}
           onSelectBrandTheme={(brandId) => {
@@ -524,6 +527,14 @@ export default function App() {
           />
         )}
 
+        {isLocalBridgeModalOpen && (
+          <LocalControlBridgeModal
+            isOpen={isLocalBridgeModalOpen}
+            onClose={() => setIsLocalBridgeModalOpen(false)}
+            onShowToast={showToast}
+          />
+        )}
+
         {isCommandPaletteOpen && (
           <CommandPalette
             isOpen={isCommandPaletteOpen}
@@ -544,6 +555,7 @@ export default function App() {
             onOpenPersona={() => setIsPersonaModalOpen(true)}
             onOpenMeeting={() => setIsMeetingModalOpen(true)}
             onOpenAiMonitor={() => setIsAiMonitorModalOpen(true)}
+            onOpenLocalBridge={() => setIsLocalBridgeModalOpen(true)}
             onSelectView={(v) => { playClickSound(); setActiveView(v); }}
           />
         )}

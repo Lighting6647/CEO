@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "agent": "node scripts/local-agent.mjs",
     "build": "vite build",
     "lint": "oxlint",
     "lint:imports": "node scripts/check-imports.cjs",

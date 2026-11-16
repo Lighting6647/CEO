@@ -38,6 +38,7 @@ export function CommandPalette({
   onOpenPersona,
   onOpenMeeting,
   onOpenAiMonitor,
+  onOpenLocalBridge,
   onSelectView
 }) {
   const [query, setQuery] = useState('');
@@ -81,6 +82,13 @@ export function CommandPalette({
       category: 'การสั่งการด่วน',
       icon: <Activity className="h-4 w-4 text-emerald-400" />,
       action: () => { onOpenAiMonitor(); onClose(); }
+    }] : []),
+    ...(onOpenLocalBridge ? [{
+      id: 'open-local-bridge',
+      title: 'Local Control Bridge — คุมทั้ง 21 โปรเจกต์ (Git / Test / Build / Start)',
+      category: 'การสั่งการด่วน',
+      icon: <Terminal className="h-4 w-4 text-cyan-400" />,
+      action: () => { onOpenLocalBridge(); onClose(); }
     }] : []),
     {
       id: 'audit',
