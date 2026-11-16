@@ -244,6 +244,15 @@ const server = http.createServer(async (req, res) => {
   return sendJson(res, 404, { ok: false, error: 'Not Found' });
 });
 
+server.on('error', (err) => {
+  if (err && err.code === 'EADDRINUSE') {
+    console.log(`[J.A.R.V.I.S. Local Control Bridge] พอร์ต ${PORT} กำลังทำงานอยู่แล้วครับ (http://${HOST}:${PORT}) พร้อมใช้งานบนหน้าเว็บทันที`);
+    process.exit(0);
+  }
+  console.error('[Local Bridge Error]', err);
+  process.exit(1);
+});
+
 server.listen(PORT, HOST, () => {
   console.log(`[J.A.R.V.I.S. Local Control Bridge] Listening on http://${HOST}:${PORT}`);
   console.log(`[Workspace] Monitoring ${WORKSPACE_ROOT}`);

@@ -86,7 +86,7 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
 
   const handleCopyCommand = async () => {
     try {
-      await navigator.clipboard.writeText('npm run agent');
+      await navigator.clipboard.writeText('cd d:\\AI\\Light\\CEO; node scripts/local-agent.mjs');
       setCopiedCmd(true);
       setTimeout(() => setCopiedCmd(false), 2000);
     } catch {
@@ -153,7 +153,7 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
                 เพื่อความปลอดภัย เบราว์เซอร์จะสั่งรันคำสั่งในโฟลเดอร์ <code className="text-cyan-300">D:\AI\Light</code> ได้เมื่อเปิด Bridge บนเครื่องเท่านั้น — รันคำสั่งนี้ในโฟลเดอร์ <code className="text-cyan-300">d:\AI\Light\CEO</code> แล้วกดรีเฟรช:
               </p>
               <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2">
-                <code className="text-emerald-400 font-bold">npm run agent</code>
+                <code className="text-emerald-400 font-bold">cd d:\AI\Light\CEO; node scripts/local-agent.mjs</code>
                 <button
                   type="button"
                   onClick={handleCopyCommand}
