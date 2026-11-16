@@ -274,3 +274,38 @@ test('Cross-Project Persona & 5 Ironclad Rules Health Check: Verifies GEMINI.md,
     }
   }
 });
+
+test('Meeting Engine (Ported from Javis): formats clock, exports Windows CRLF .txt, and summarizes locally', async () => {
+  const {
+    formatClock,
+    formatTranscript,
+    meetingMinutes,
+    meetingFileName,
+    buildMeetingDocument,
+    summarizeMeetingLocally,
+  } = await import('../src/utils/meetingEngine.js');
+
+  assert.equal(formatClock(0), '00:00');
+  assert.equal(formatClock(65_000), '01:05');
+  assert.equal(formatClock(3_661_000), '1:01:01');
+
+  const entries = [
+    { at: 5_000, text: 'ตกลงใช้ระบบ CEO Hub เวอร์ชันใหม่' },
+    { at: 125_000, text: 'ให้จาวิสส่งสรุปการประชุมและ deploy ขึ้น Vercel' },
+  ];
+  const transcript = formatTranscript(entries);
+  assert.ok(transcript.includes('[00:05] ตกลงใช้ระบบ CEO Hub เวอร์ชันใหม่'));
+  assert.equal(meetingMinutes(0, 125_000), 2);
+
+  const startedAt = new Date('2026-11-16T14:30:00Z').getTime();
+  assert.match(meetingFileName(startedAt), /^javis-meeting-\d{8}-\d{4}\.txt$/);
+
+  const summary = summarizeMeetingLocally(transcript, 2);
+  assert.ok(summary.includes('ข้อตกลง / การตัดสินใจ'));
+  assert.ok(summary.includes('Action Items'));
+
+  const doc = buildMeetingDocument({ summary, transcript, minutes: 2, startedAt }, 'Asia/Bangkok');
+  assert.ok(doc.includes('\r\n'), 'Meeting export must use Windows CRLF line endings');
+  assert.ok(doc.includes('สรุปการประชุม'));
+  assert.ok(doc.includes('บันทึกคำพูด'));
+});

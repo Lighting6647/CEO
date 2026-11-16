@@ -23,6 +23,7 @@ import {
   Palette,
   Sparkles,
   ExternalLink,
+  FileText,
 } from 'lucide-react';
 import { ALL_PROJECT_DESIGN_TOKENS } from '../../data/designTokensData';
 
@@ -43,6 +44,8 @@ export function Header({
   onOpenDoctorModal,
   onOpenDesignSystemModal,
   onOpenPersonaModal,
+  onOpenMeetingModal,
+  onOpenAiMonitorModal,
   activeBrandTheme = 'ceo-master',
   onSelectBrandTheme,
   onOpenCommandPalette,
@@ -227,6 +230,30 @@ export function Header({
             >
               <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
               <span>กฎจาวิส (5)</span>
+            </button>
+          )}
+
+          {/* Meeting Notes & Summary Button (Ported from Javis) */}
+          {onOpenMeetingModal && (
+            <button
+              onClick={onOpenMeetingModal}
+              className="flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-cyan-950/50 px-3 py-2 text-xs font-bold text-cyan-200 hover:bg-cyan-900/60 hover:text-white transition-all shadow-sm active:scale-95"
+              title="จดบันทึก & สรุปการประชุมอัตโนมัติ (Ported from Javis)"
+            >
+              <FileText className="h-3.5 w-3.5 text-cyan-400" />
+              <span className="hidden lg:inline">ประชุม</span>
+            </button>
+          )}
+
+          {/* AI Account & Diagnostics Monitor Button (Ported from Javis) */}
+          {onOpenAiMonitorModal && (
+            <button
+              onClick={onOpenAiMonitorModal}
+              className="flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 px-3 py-2 text-xs font-bold text-emerald-200 hover:bg-emerald-900/50 hover:text-white transition-all shadow-sm active:scale-95"
+              title="ตรวจสถานะ AI Providers & Diagnostics (Ported from Javis)"
+            >
+              <Activity className="h-3.5 w-3.5 text-emerald-400" />
+              <span className="hidden lg:inline">AI Status</span>
             </button>
           )}
 

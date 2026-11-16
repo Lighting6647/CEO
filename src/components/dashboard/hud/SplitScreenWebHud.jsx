@@ -66,8 +66,9 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
   // Feature 5: Web Snapshot
   const [snapshotBanner, setSnapshotBanner] = useState(null);
 
-  // Feature 6: Smart Form Auto-Filler
+  // Feature 6: Smart Form Auto-Filler + Fill Confirmation Card (Ported from D:\AI\Light\Javis FillCard)
   const [isFormFillerOpen, setIsFormFillerOpen] = useState(false);
+  const [isFillConfirmOpen, setIsFillConfirmOpen] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
   const formProfile = getExecutiveFormProfile(userTitle);
 
@@ -537,6 +538,82 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
               {copiedField === 'address' ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 text-slate-400" />}
               ที่อยู่
             </button>
+            <button
+              type="button"
+              onClick={() => setIsFillConfirmOpen((v) => !v)}
+              className="ml-auto px-2.5 py-0.5 rounded-md border border-cyan-500/50 bg-cyan-500/15 text-[10px] font-bold text-cyan-300 hover:bg-cyan-500/25 flex items-center gap-1 shrink-0"
+            >
+              <ShieldCheck className="w-3 h-3" />
+              ตรวจก่อนกรอก (6 ช่อง)
+            </button>
+          </div>
+        )}
+
+        {/* Fill Confirmation Card (Ported from Javis FillCard.tsx) */}
+        {isFormFillerOpen && isFillConfirmOpen && (
+          <div
+            role="group"
+            aria-label="รายการที่จะกรอกลงหน้าเว็บ"
+            className="mx-3 my-2 rounded-xl border border-cyan-500/40 bg-slate-950/95 p-3 text-xs font-mono shadow-xl space-y-2"
+          >
+            <div className="flex items-center justify-between">
+              <strong className="text-cyan-300 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                ตรวจก่อนกรอก 6 ช่อง (ยืนยันความปลอดภัย)
+              </strong>
+              <span className="text-[10px] text-slate-400">ไม่กดส่งฟอร์มให้อัตโนมัติ</span>
+            </div>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-[11px]">
+              <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-2.5 py-1.5">
+                <dt className="text-slate-400">ชื่อ-นามสกุล</dt>
+                <dd className="text-slate-100 font-semibold truncate">{formProfile.fullName}</dd>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-2.5 py-1.5">
+                <dt className="text-slate-400">อีเมล</dt>
+                <dd className="text-slate-100 font-semibold truncate">{formProfile.email}</dd>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-2.5 py-1.5">
+                <dt className="text-slate-400">บริษัท</dt>
+                <dd className="text-slate-100 font-semibold truncate">{formProfile.company}</dd>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-2.5 py-1.5">
+                <dt className="text-slate-400">เบอร์โทร</dt>
+                <dd className="text-slate-100 font-semibold truncate">{formProfile.phone}</dd>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-2.5 py-1.5">
+                <dt className="text-slate-400">เลขผู้เสียภาษี</dt>
+                <dd className="text-slate-100 font-semibold truncate">{formProfile.taxId}</dd>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-2.5 py-1.5">
+                <dt className="text-slate-400">ที่อยู่</dt>
+                <dd className="text-slate-100 font-semibold truncate">{formProfile.address}</dd>
+              </div>
+            </dl>
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[10px] text-slate-400">
+                Javis จะเตรียมข้อมูลเฉพาะช่องด้านบน และไม่กด Submit ฟอร์มให้
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const bundle = `ชื่อ: ${formProfile.fullName}\nอีเมล: ${formProfile.email}\nบริษัท: ${formProfile.company}\nโทร: ${formProfile.phone}\nเลขผู้เสียภาษี: ${formProfile.taxId}\nที่อยู่: ${formProfile.address}`;
+                    handleCopyProfileField('all', bundle);
+                    setIsFillConfirmOpen(false);
+                  }}
+                  className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1"
+                >
+                  <Check className="w-3 h-3" /> ยืนยันและคัดลอกชุดข้อมูล
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFillConfirmOpen(false)}
+                  className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px]"
+                >
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

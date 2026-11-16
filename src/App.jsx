@@ -27,6 +27,8 @@ const BackupManagerModal = lazy(() => import('./components/dashboard/BackupManag
 const MigrationDoctorModal = lazy(() => import('./components/dashboard/MigrationDoctorModal').then((m) => ({ default: m.MigrationDoctorModal })));
 const DesignSystemModal = lazy(() => import('./components/dashboard/DesignSystemModal').then((m) => ({ default: m.DesignSystemModal })));
 const PersonaInspectorModal = lazy(() => import('./components/dashboard/PersonaInspectorModal').then((m) => ({ default: m.PersonaInspectorModal })));
+const MeetingNotesModal = lazy(() => import('./components/dashboard/hud/MeetingNotesModal').then((m) => ({ default: m.MeetingNotesModal })));
+const AiAccountMonitorModal = lazy(() => import('./components/dashboard/hud/AiAccountMonitorModal').then((m) => ({ default: m.AiAccountMonitorModal })));
 const CommandPalette = lazy(() => import('./components/dashboard/CommandPalette').then((m) => ({ default: m.CommandPalette })));
 
 export default function App() {
@@ -42,6 +44,8 @@ export default function App() {
   const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
   const [isDesignModalOpen, setIsDesignModalOpen] = useState(false);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+  const [isAiMonitorModalOpen, setIsAiMonitorModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -285,6 +289,8 @@ export default function App() {
             onOpenDoctorModal={() => { playClickSound(); setIsDoctorModalOpen(true); }}
             onOpenDesignSystemModal={() => { playClickSound(); setIsDesignModalOpen(true); }}
             onOpenPersonaModal={() => { playClickSound(); setIsPersonaModalOpen(true); }}
+            onOpenMeetingModal={() => { playClickSound(); setIsMeetingModalOpen(true); }}
+            onOpenAiMonitorModal={() => { playClickSound(); setIsAiMonitorModalOpen(true); }}
             activeBrandTheme={activeBrandTheme}
             onSelectBrandTheme={(brandId) => {
               playClickSound();
@@ -496,6 +502,22 @@ export default function App() {
           <PersonaInspectorModal
             isOpen={isPersonaModalOpen}
             onClose={() => setIsPersonaModalOpen(false)}
+            onShowToast={showToast}
+          />
+        )}
+
+        {isMeetingModalOpen && (
+          <MeetingNotesModal
+            isOpen={isMeetingModalOpen}
+            onClose={() => setIsMeetingModalOpen(false)}
+            onShowToast={showToast}
+          />
+        )}
+
+        {isAiMonitorModalOpen && (
+          <AiAccountMonitorModal
+            isOpen={isAiMonitorModalOpen}
+            onClose={() => setIsAiMonitorModalOpen(false)}
             onShowToast={showToast}
           />
         )}

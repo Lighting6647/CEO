@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback, memo, lazy, Suspense
 import { AudioWaveformRibbon } from './AudioWaveformRibbon';
 import { ResponseSubtitleBanner } from './ResponseSubtitleBanner';
 import { RouteMapWidget } from './RouteMapWidget';
+import { JarvisNeuralSphere } from './JarvisNeuralSphere';
 import { extractDestination, buildDirectionsUrl } from '../../../utils/routeIntel';
 
 const GeminiSettingsModal = lazy(() => import('./GeminiSettingsModal').then((m) => ({ default: m.GeminiSettingsModal })));
@@ -196,7 +197,8 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
   const [targetProjectName, setTargetProjectName] = useState('CEO');
   const [projectsList, setProjectsList] = useState([]);
   const [isGraphifyOpen, setIsGraphifyOpen] = useState(false);
-  const [useThree3D, setUseThree3D] = useState(false);
+  const [coreMode, setCoreMode] = useState('neural'); // 'neural' | 'gyro' | 'r3f'
+  const useThree3D = coreMode === 'r3f';
   const [isMem0Open, setIsMem0Open] = useState(false);
   const [isVoiceprintOpen, setIsVoiceprintOpen] = useState(false);
 
@@ -1764,16 +1766,18 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
                 type="button"
                 onClick={() => {
                   playClickSound();
-                  setUseThree3D((prev) => !prev);
+                  setCoreMode((prev) => (prev === 'neural' ? 'gyro' : prev === 'gyro' ? 'r3f' : 'neural'));
                 }}
                 className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                  useThree3D
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
+                  coreMode === 'neural'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-400/50 shadow-md shadow-amber-500/20'
+                    : useThree3D
+                    ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
                     : 'bg-slate-800 text-cyan-300 hover:text-white border border-cyan-500/30'
                 }`}
-                title="สลับโหมดเรนเดอร์เตาปฏิกรณ์ระหว่าง React Three Fiber (R3F 3D) กับ 2D Gyroscope"
+                title="สลับโหมดแกนกลาง: Neural Matrix (หนัง) / 2D Gyroscope / 3D R3F"
               >
-                {useThree3D ? '⚡ 3D R3F' : '🪐 2D GYRO'}
+                {coreMode === 'neural' ? '🌟 NEURAL MATRIX' : useThree3D ? '⚡ 3D R3F' : '🪐 2D GYRO'}
               </button>
             </div>
           </div>
@@ -1798,6 +1802,10 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
                 >
                   🛡️ SAFE MODE ACTIVE (CLICK TO RESTORE CANVAS)
                 </button>
+              </div>
+            ) : coreMode === 'neural' ? (
+              <div className="w-[380px] h-[380px] flex items-center justify-center relative">
+                <JarvisNeuralSphere isAlarm={isCombatAlert} audioLevel={audioLevel} className="w-[380px] h-[380px]" />
               </div>
             ) : useThree3D ? (
               <div className="w-[380px] h-[380px] flex items-center justify-center relative">
