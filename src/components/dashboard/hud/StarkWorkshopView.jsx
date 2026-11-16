@@ -3,6 +3,7 @@ import { AudioWaveformRibbon } from './AudioWaveformRibbon';
 import { ResponseSubtitleBanner } from './ResponseSubtitleBanner';
 import { RouteMapWidget } from './RouteMapWidget';
 import { JarvisNeuralSphere } from './JarvisNeuralSphere';
+import { CinemaHudLayout } from './CinemaHudLayout';
 import { extractDestination, buildDirectionsUrl } from '../../../utils/routeIntel';
 
 const GeminiSettingsModal = lazy(() => import('./GeminiSettingsModal').then((m) => ({ default: m.GeminiSettingsModal })));
@@ -199,6 +200,7 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
   const [targetProjectName, setTargetProjectName] = useState('CEO');
   const [projectsList, setProjectsList] = useState([]);
   const [isGraphifyOpen, setIsGraphifyOpen] = useState(false);
+  const [cinemaMode, setCinemaMode] = useState(true);
   const [coreMode, setCoreMode] = useState('neural'); // 'neural' | 'gyro' | 'r3f'
   const useThree3D = coreMode === 'r3f';
   const [isMem0Open, setIsMem0Open] = useState(false);
@@ -1150,6 +1152,33 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
     ],
     [isRedAlert, userTitle]
   );
+
+  if (cinemaMode) {
+    return (
+      <CinemaHudLayout
+        userTitle={userTitle}
+        isListening={isListening}
+        isSpeaking={isSpeaking}
+        isRedAlert={isRedAlert}
+        audioLevel={audioLevel}
+        liveTranscript={liveTranscript}
+        messages={messages}
+        onToggleMic={onToggleMic}
+        onDispatchCommand={onDispatchCommand}
+        onOpenMeetingModal={onOpenMeetingModal}
+        onOpenAiMonitorModal={onOpenAiMonitorModal}
+        onOpenAdmin={onOpenAdmin}
+        onOpenCompany={onOpenCompany}
+        onOpenVoiceModal={onOpenVoiceModal}
+        onOpenShortcutsModal={onOpenShortcutsModal}
+        onOpenWebFill={() => onDispatchCommand?.('เปิดหน้าเว็บ https://www.google.com')}
+        onSwitchClassic={() => {
+          playClickSound();
+          setCinemaMode(false);
+        }}
+      />
+    );
+  }
 
   return (
     <div
@@ -3192,6 +3221,18 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
                 <span>📊 AI Status</span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => {
+                playSciFiBeep();
+                setCinemaMode(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-amber-400/60 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 hover:text-white transition-all cursor-pointer shadow-md hover:scale-105"
+              title="สลับไปหน้า Cinema-Grade J.A.R.V.I.S. Hologram Matrix (แบบที่ 1)"
+            >
+              <span>🌟 Cinema HUD</span>
+            </button>
 
             <button
               type="button"
