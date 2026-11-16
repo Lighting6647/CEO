@@ -14,14 +14,15 @@ import {
   Check,
 } from 'lucide-react';
 
-const BRIDGE_URL = 'http://127.0.0.1:4199';
+const BRIDGE_CANDIDATES = ['http://localhost:4199', 'http://127.0.0.1:4199'];
 
 /**
  * Local Control Bridge Modal
- * Connects CEO Hub UI directly to scripts/local-agent.mjs on the user's PC (127.0.0.1:4199)
+ * Connects CEO Hub UI directly to scripts/local-agent.mjs on the user's PC
  * to inspect all 21 D:\AI\Light folders and run allowlisted Git Status / Test / Build / Dev actions.
  */
 export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
+  const [bridgeUrl, setBridgeUrl] = useState(BRIDGE_CANDIDATES[0]);
   const [online, setOnline] = useState(false);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -31,19 +32,22 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
 
   const fetchBridge = useCallback(async () => {
     setLoading(true);
-    try {
-      const res = await fetch(`${BRIDGE_URL}/projects`, { method: 'GET' });
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.ok) {
-          setOnline(true);
-          setProjects(data.projects || []);
-          setLoading(false);
-          return;
+    for (const candidate of BRIDGE_CANDIDATES) {
+      try {
+        const res = await fetch(`${candidate}/projects`, { method: 'GET' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.ok) {
+            setBridgeUrl(candidate);
+            setOnline(true);
+            setProjects(data.projects || []);
+            setLoading(false);
+            return;
+          }
         }
+      } catch {
+        // try next candidate
       }
-    } catch {
-      // Bridge offline
     }
     setOnline(false);
     setProjects([]);
@@ -63,7 +67,7 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
     setRunningKey(key);
     setConsoleLog(`[${folder}] กำลังรันคำสั่ง ${action}...`);
     try {
-      const res = await fetch(`${BRIDGE_URL}/action`, {
+      const res = await fetch(`${bridgeUrl}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder, action }),
@@ -88,7 +92,7 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
     setRunningKey('batch:git-status');
     setConsoleLog('[BATCH] กำลังตรวจ Git Status ทุกโปรเจกต์ที่มี .git...');
     try {
-      const res = await fetch(`${BRIDGE_URL}/batch-git-status`, { method: 'GET' });
+      const res = await fetch(`${bridgeUrl}/batch-git-status`, { method: 'GET' });
       const data = await res.json();
       if (data?.ok) {
         const lines = (data.results || []).map((r) => `• ${r.folder}: ${r.output.replace(/\r?\n/g, ' | ')}`);
@@ -180,7 +184,7 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
                 ยังไม่ได้เปิด Local Control Bridge บนเครื่องของคุณไลท์
               </div>
               <p className="text-slate-300 leading-relaxed">
-                เพื่อความปลอดภัย เบราว์เซอร์จะสั่งรันคำสั่งในโฟลเดอร์ <code className="text-cyan-300">D:\AI\Light</code> ได้เมื่อเปิด Bridge บนเครื่องเท่านั้น — รันคำสั่งนี้ในโฟลเดอร์ <code className="text-cyan-300">d:\AI\Light\CEO</code> แล้วกดรีเฟรช:
+                เพื่อความปลอดภัย เบราว์เซอร์จะสั่งรันคำสั่งในโฟลเดอร์ <code className="text-cyan-300">D:\AI\Light</code> ได้เมื่อเปิด Bridge บนเครื่องเท่านั้น — รันคำสั่งนี้ในโฟลเดอร์ <code className="text-cyan-300">d:\AI\Light\CEO</code> แล้วกดรีเฟรช (หากเปิดผ่าน <code className="text-amber-300">https://</code> แล้วเบราว์เซอร์บล็อก Local Network Access แนะนำให้เปิดผ่าน <a href="http://localhost:5173" className="underline text-cyan-300">http://localhost:5173</a>):
               </p>
               <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2">
                 <code className="text-emerald-400 font-bold">cd d:\AI\Light\CEO; node scripts/local-agent.mjs</code>

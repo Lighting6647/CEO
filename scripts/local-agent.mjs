@@ -272,7 +272,7 @@ server.on('error', (err) => {
   process.exit(1);
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`[J.A.R.V.I.S. Local Control Bridge] Listening on http://${HOST}:${PORT}`);
+server.listen(PORT, () => {
+  console.log(`[J.A.R.V.I.S. Local Control Bridge] Listening on http://localhost:${PORT} (and http://127.0.0.1:${PORT})`);
   console.log(`[Workspace] Monitoring ${WORKSPACE_ROOT}`);
 });
