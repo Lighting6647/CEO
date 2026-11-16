@@ -542,6 +542,8 @@ export default function App() {
             onOpenVuln={() => setIsVulnModalOpen(true)}
             onOpenBackup={() => setIsBackupModalOpen(true)}
             onOpenPersona={() => setIsPersonaModalOpen(true)}
+            onOpenMeeting={() => setIsMeetingModalOpen(true)}
+            onOpenAiMonitor={() => setIsAiMonitorModalOpen(true)}
             onSelectView={(v) => { playClickSound(); setActiveView(v); }}
           />
         )}

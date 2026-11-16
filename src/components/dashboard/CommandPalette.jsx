@@ -16,6 +16,7 @@ import {
   Database,
   Bot,
   Sparkles,
+  FileText,
 } from 'lucide-react';
 
 export function CommandPalette({
@@ -35,6 +36,8 @@ export function CommandPalette({
   onOpenVuln,
   onOpenBackup,
   onOpenPersona,
+  onOpenMeeting,
+  onOpenAiMonitor,
   onSelectView
 }) {
   const [query, setQuery] = useState('');
@@ -64,6 +67,20 @@ export function CommandPalette({
       category: 'การสั่งการด่วน',
       icon: <ShieldCheck className="h-4 w-4 text-cyan-400" />,
       action: () => { onOpenPersona(); onClose(); }
+    }] : []),
+    ...(onOpenMeeting ? [{
+      id: 'open-meeting',
+      title: 'เปิดอัดประชุม — จดบันทึก & สรุปการประชุมอัตโนมัติ (th-TH)',
+      category: 'การสั่งการด่วน',
+      icon: <FileText className="h-4 w-4 text-cyan-400" />,
+      action: () => { onOpenMeeting(); onClose(); }
+    }] : []),
+    ...(onOpenAiMonitor ? [{
+      id: 'open-ai-monitor',
+      title: 'เช็ค AI Status — ตรวจสถานะ Providers & Latency Diagnostics',
+      category: 'การสั่งการด่วน',
+      icon: <Activity className="h-4 w-4 text-emerald-400" />,
+      action: () => { onOpenAiMonitor(); onClose(); }
     }] : []),
     {
       id: 'audit',

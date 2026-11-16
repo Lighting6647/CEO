@@ -98,7 +98,46 @@ export function VoiceShortcutsModal({ isOpen, onClose, onRunCommand, onShowToast
           </p>
         </form>
 
-        <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+        {/* Built-in System Voice Commands */}
+        <div className="mb-3 rounded-xl border border-cyan-500/25 bg-slate-900/60 p-3 space-y-2">
+          <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400">
+            คำสั่งเสียงระบบใหม่ (Built-in Voice Commands)
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound();
+                onRunCommand?.('เปิดอัดประชุม');
+                onClose?.();
+              }}
+              className="flex items-center justify-between rounded-lg border border-cyan-500/30 bg-slate-950/70 px-3 py-2 text-left hover:border-cyan-400 transition-colors cursor-pointer"
+            >
+              <div>
+                <div className="text-xs font-bold text-cyan-200">“เปิดอัดประชุม”</div>
+                <div className="text-[10px] text-slate-400">เปิดหน้าต่างจด &amp; สรุปประชุม</div>
+              </div>
+              <span className="text-[10px] font-mono text-cyan-400">รัน</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound();
+                onRunCommand?.('เช็ค AI Status');
+                onClose?.();
+              }}
+              className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-slate-950/70 px-3 py-2 text-left hover:border-emerald-400 transition-colors cursor-pointer"
+            >
+              <div>
+                <div className="text-xs font-bold text-emerald-200">“เช็ค AI Status”</div>
+                <div className="text-[10px] text-slate-400">ตรวจสถานะ AI Providers</div>
+              </div>
+              <span className="text-[10px] font-mono text-emerald-400">รัน</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
           {list.length === 0 ? (
             <p className="text-center text-xs text-slate-500 py-6">ยังไม่มีคำสั่งลัดครับ</p>
           ) : (
