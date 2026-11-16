@@ -1171,7 +1171,7 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
         onOpenCompany={onOpenCompany}
         onOpenVoiceModal={onOpenVoiceModal}
         onOpenShortcutsModal={onOpenShortcutsModal}
-        onOpenWebFill={() => onDispatchCommand?.('เปิดหน้าเว็บ https://www.google.com')}
+        onOpenWebFill={() => onDispatchCommand?.('เปิดหน้าเว็บ https://th.wikipedia.org/wiki/Iron_Man')}
         onSwitchClassic={() => {
           playClickSound();
           setCinemaMode(false);

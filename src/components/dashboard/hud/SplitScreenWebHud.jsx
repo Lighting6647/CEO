@@ -27,6 +27,63 @@ import {
   getExecutiveFormProfile,
 } from '../../../services/externalWebService';
 
+const FRAME_BLOCKED_HOSTS = [
+  'youtube.com',
+  'www.youtube.com',
+  'm.youtube.com',
+  'google.com',
+  'www.google.com',
+  'facebook.com',
+  'www.facebook.com',
+  'instagram.com',
+  'www.instagram.com',
+  'x.com',
+  'twitter.com',
+  'github.com',
+  'line.me',
+  'tiktok.com',
+];
+
+function resolveEmbedState(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl);
+    const host = parsed.hostname.toLowerCase();
+
+    // Convert YouTube watch/shorts/youtu.be URLs into embeddable /embed/ URLs
+    if (host.includes('youtube.com')) {
+      const videoId = parsed.searchParams.get('v');
+      if (videoId) {
+        return { url: `https://www.youtube.com/embed/${videoId}`, blocked: false };
+      }
+      if (parsed.pathname.startsWith('/shorts/')) {
+        const id = parsed.pathname.split('/shorts/')[1]?.split('/')[0];
+        if (id) return { url: `https://www.youtube.com/embed/${id}`, blocked: false };
+      }
+      if (parsed.pathname.startsWith('/embed/')) {
+        return { url: rawUrl, blocked: false };
+      }
+      return { url: rawUrl, blocked: true, reason: 'YouTube หน้าหลักไม่อนุญาตให้ฝังใน Iframe (อนุญาตเฉพาะลิงก์วิดีโอ /embed/)' };
+    }
+
+    if (host === 'youtu.be') {
+      const id = parsed.pathname.replace(/^\//, '').split('/')[0];
+      if (id) return { url: `https://www.youtube.com/embed/${id}`, blocked: false };
+    }
+
+    if (FRAME_BLOCKED_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))) {
+      return {
+        url: rawUrl,
+        blocked: true,
+        reason: `${host} ปิดกั้นการฝังหน้าเว็บใน Iframe (X-Frame-Options / CSP)`,
+      };
+    }
+
+    return { url: rawUrl, blocked: false };
+  } catch {
+    return { url: rawUrl, blocked: false };
+  }
+}
+
 export const SplitScreenWebHud = memo(function SplitScreenWebHud({
   isOpen,
   url,
@@ -74,9 +131,10 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
 
   useEffect(() => {
     if (url) {
-      setCurrentUrl(url);
+      const resolved = resolveEmbedState(url);
+      setCurrentUrl(resolved.url);
       setInputUrl(url);
-      setHasIframeBlocked(false);
+      setHasIframeBlocked(resolved.blocked);
       setIsTranslated(false);
       setIframeKey((k) => k + 1);
     }
@@ -235,9 +293,10 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
         target = `https://www.google.com/search?q=${encodeURIComponent(target)}`;
       }
     }
-    setCurrentUrl(target);
+    const resolved = resolveEmbedState(target);
+    setCurrentUrl(resolved.url);
     setInputUrl(target);
-    setHasIframeBlocked(false);
+    setHasIframeBlocked(resolved.blocked);
     setIsTranslated(false);
     setIframeKey((k) => k + 1);
   };
@@ -663,21 +722,54 @@ export const SplitScreenWebHud = memo(function SplitScreenWebHud({
               </div>
             )}
 
-            {/* Iframe 1 Viewport */}
+            {/* Iframe 1 Viewport (Dark Fallback when X-Frame-Options blocks embedding) */}
             <div
               id="jarvis-viewport-pane-1"
               className={`relative flex-1 w-full bg-slate-950 overflow-auto ${
                 isReaderMode ? 'filter contrast-[105%] brightness-[92%] sepia-[8%]' : ''
               }`}
             >
-              <iframe
-                key={iframeKey}
-                src={currentUrl}
-                title={title || 'Embedded Web HUD'}
-                className="w-full h-full min-h-[350px] border-0 bg-white"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-modals"
-                onError={() => setHasIframeBlocked(true)}
-              />
+              {hasIframeBlocked ? (
+                <div className="flex h-full min-h-[350px] flex-col items-center justify-center bg-[#040916] p-6 text-center font-mono space-y-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-400">
+                    <ShieldAlert className="h-7 w-7" />
+                  </div>
+                  <div className="space-y-1.5 max-w-md">
+                    <h3 className="text-sm font-bold text-amber-300">
+                      เว็บไซต์ปลายทางจำกัดการแสดงผลใน Iframe
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      {resolveEmbedState(currentUrl).reason || 'ผู้ให้บริการเว็บนี้ส่งนโยบายความปลอดภัย (X-Frame-Options) เพื่อป้องกันการฝังหน้าเว็บ'}
+                    </p>
+                    <p className="text-[11px] text-cyan-300/80 break-all">{currentUrl}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => handlePopout(currentUrl)}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 cursor-pointer"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" /> เปิดในแท็บใหม่ทันที
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsFormFillerOpen(true)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 text-xs font-bold text-cyan-200 hover:bg-cyan-500/20 cursor-pointer"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" /> ใช้ Smart Form Fill
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <iframe
+                  key={iframeKey}
+                  src={currentUrl}
+                  title={title || 'Embedded Web HUD'}
+                  className="w-full h-full min-h-[350px] border-0 bg-slate-950"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-modals"
+                  onError={() => setHasIframeBlocked(true)}
+                />
+              )}
             </div>
           </div>
 
