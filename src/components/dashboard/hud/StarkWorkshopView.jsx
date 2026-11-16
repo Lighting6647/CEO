@@ -114,6 +114,8 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
   onOpenVoiceModal,
   onOpenShortcutsModal,
   onOpenReaModal,
+  onOpenMeetingModal,
+  onOpenAiMonitorModal,
   liveTranscript = '',
   analyserNode = null,
   onCalibrateVoice = null,
@@ -3162,6 +3164,34 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
               <Cpu className="w-3 h-3 text-cyan-400 animate-pulse" />
               <span>🔬 REA INSPECTOR</span>
             </button>
+
+            {onOpenMeetingModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  playSciFiBeep();
+                  onOpenMeetingModal();
+                }}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-cyan-400/50 bg-cyan-950/60 text-cyan-200 hover:bg-cyan-900/70 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300 transition-all cursor-pointer shadow-md hover:scale-105"
+                title="จดบันทึก & สรุปการประชุมอัตโนมัติ (th-TH)"
+              >
+                <span>📝 อัดประชุม</span>
+              </button>
+            )}
+
+            {onOpenAiMonitorModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  playSciFiBeep();
+                  onOpenAiMonitorModal();
+                }}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-emerald-400/50 bg-emerald-950/60 text-emerald-200 hover:bg-emerald-900/70 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300 transition-all cursor-pointer shadow-md hover:scale-105"
+                title="ตรวจสถานะ AI Providers & Latency Diagnostics"
+              >
+                <span>📊 AI Status</span>
+              </button>
+            )}
 
             <button
               type="button"

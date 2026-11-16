@@ -257,6 +257,8 @@ export default function App() {
           onOpenDoctor={() => { playClickSound(); setIsDoctorModalOpen(true); }}
           onOpenDesignSystem={() => { playClickSound(); setIsDesignModalOpen(true); }}
           onOpenPersona={() => { playClickSound(); setIsPersonaModalOpen(true); }}
+          onOpenMeetingModal={() => { playClickSound(); setIsMeetingModalOpen(true); }}
+          onOpenAiMonitorModal={() => { playClickSound(); setIsAiMonitorModalOpen(true); }}
           onOpenAdmin={() => { playClickSound(); setActiveView('dashboard'); }}
           onOpenCompany={() => { playClickSound(); setActiveView('company'); }}
           onSelectBrandTheme={(brandId) => {

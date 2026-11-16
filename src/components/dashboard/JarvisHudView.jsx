@@ -126,6 +126,8 @@ export function JarvisHudView({
   _onOpenDoctor,
   _onOpenDesignSystem,
   onOpenPersona,
+  onOpenMeetingModal,
+  onOpenAiMonitorModal,
   onSelectBrandTheme,
   onShowToast,
   onOpenAdmin,
@@ -3200,6 +3202,8 @@ export function JarvisHudView({
         onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
         onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
         onOpenReaModal={() => setIsReaModalOpen(true)}
+        onOpenMeetingModal={onOpenMeetingModal}
+        onOpenAiMonitorModal={onOpenAiMonitorModal}
         liveTranscript={liveTranscript}
         analyserNode={analyserRef.current}
         onCalibrateVoice={handleCalibrateVoice}
