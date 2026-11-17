@@ -70,7 +70,7 @@ export function Header({
                 D:\Light v3.0
               </span>
               <a
-                href="https://ceo-flame.vercel.app/"
+                href="https://ceo-lilac-nine.vercel.app/"
                 target="_blank"
                 rel="noreferrer"
                 className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-950/40 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-900/50 hover:border-emerald-400 transition-all shadow-sm"

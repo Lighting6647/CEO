@@ -39,7 +39,7 @@ try {
 
   console.log('\n================================================================');
   console.log('✅ Cloud Sync Successful! Vercel is auto-building your changes.');
-  console.log('🔗 Live Link: https://ceo-flame.vercel.app/');
+  console.log('🔗 Live Link: https://ceo-lilac-nine.vercel.app/');
   console.log('================================================================');
 } catch (err) {
   console.error('\n❌ Cloud sync failed:', err.message);

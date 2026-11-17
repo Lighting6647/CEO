@@ -30,7 +30,7 @@ git push javis main >nul 2>&1
 echo.
 echo ===================================================
 echo   PUSH SUCCESSFUL! Vercel is building the live site.
-echo   URL: https://ceo-flame.vercel.app/
+echo   URL: https://ceo-lilac-nine.vercel.app/
 echo ===================================================
 goto END
 
