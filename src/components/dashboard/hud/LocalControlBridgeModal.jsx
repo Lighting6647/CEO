@@ -12,53 +12,75 @@ import {
   AlertTriangle,
   Copy,
   Check,
+  Network,
 } from 'lucide-react';
+import { AgentRouterVisualizer } from './AgentRouterVisualizer';
 
 const BRIDGE_CANDIDATES = ['http://localhost:4199', 'http://127.0.0.1:4199'];
+const BRIDGE_START_COMMAND = 'node d:\\AI\\Light\\CEO\\scripts\\local-agent.mjs';
 
 /**
  * Local Control Bridge Modal
  * Connects CEO Hub UI directly to scripts/local-agent.mjs on the user's PC
- * to inspect all 21 D:\AI\Light folders and run allowlisted Git Status / Test / Build / Dev actions.
+ * to inspect all 21 D:\AI\Light folders and run allowlisted Git Status / Test / Build / Dev actions
+ * as well as dispatch & visualize the JEV Agent Router (chief.py).
  */
-export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
+export function LocalControlBridgeModal({ isOpen, onClose, onShowToast, initialTab = 'projects' }) {
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [approvalCount, setApprovalCount] = useState(0);
   const [bridgeUrl, setBridgeUrl] = useState(BRIDGE_CANDIDATES[0]);
   const [online, setOnline] = useState(false);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [runningKey, setRunningKey] = useState('');
   const [consoleLog, setConsoleLog] = useState('');
+  const [bridgeError, setBridgeError] = useState('');
   const [copiedCmd, setCopiedCmd] = useState(false);
 
   const fetchBridge = useCallback(async () => {
     setLoading(true);
+    setBridgeError('');
+    let lastError = '';
+
     for (const candidate of BRIDGE_CANDIDATES) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 2500);
       try {
-        const res = await fetch(`${candidate}/projects`, { method: 'GET' });
+        const res = await fetch(`${candidate}/projects`, {
+          method: 'GET',
+          signal: controller.signal,
+        });
         if (res.ok) {
           const data = await res.json();
           if (data?.ok) {
             setBridgeUrl(candidate);
             setOnline(true);
             setProjects(data.projects || []);
+            setBridgeError('');
             setLoading(false);
             return;
           }
         }
-      } catch {
-        // try next candidate
+        lastError = `HTTP ${res.status} จาก ${candidate}`;
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : 'ไม่สามารถเชื่อมต่อได้';
+      } finally {
+        clearTimeout(timer);
       }
     }
+
     setOnline(false);
     setProjects([]);
+    setBridgeError(lastError);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     if (isOpen) {
+      setActiveTab(initialTab);
       fetchBridge();
     }
-  }, [isOpen, fetchBridge]);
+  }, [isOpen, initialTab, fetchBridge]);
 
   if (!isOpen) return null;
 
@@ -110,7 +132,7 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
 
   const handleCopyCommand = async () => {
     try {
-      await navigator.clipboard.writeText('cd d:\\AI\\Light\\CEO; node scripts/local-agent.mjs');
+      await navigator.clipboard.writeText(BRIDGE_START_COMMAND);
       setCopiedCmd(true);
       setTimeout(() => setCopiedCmd(false), 2000);
     } catch {
@@ -118,11 +140,14 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
     }
   };
 
+  const isHttpsPage = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
-      <div className="w-full max-w-4xl rounded-2xl border border-cyan-500/35 bg-slate-900 text-slate-100 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] font-mono">
+      <div className={`w-full ${activeTab === 'router' ? 'max-w-6xl' : 'max-w-4xl'} rounded-2xl border border-cyan-500/35 bg-slate-900 text-slate-100 shadow-2xl overflow-hidden flex flex-col max-h-[92vh] font-mono transition-all`}>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 bg-slate-950/80 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-slate-950/80 px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
               <Terminal className="h-5 w-5" />
@@ -138,7 +163,7 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
                   }`}
                 >
                   {online ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
-                  {online ? 'BRIDGE ONLINE (127.0.0.1:4199)' : 'BRIDGE OFFLINE'}
+                  {online ? `BRIDGE ONLINE (${bridgeUrl.replace(/^https?:\/\//, '')})` : 'BRIDGE OFFLINE'}
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
@@ -146,8 +171,39 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {online && (
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Sub-tab switcher */}
+            <div className="flex rounded-lg border border-slate-700 bg-slate-900 p-0.5 text-[11px]">
+              <button
+                type="button"
+                onClick={() => setActiveTab('projects')}
+                className={`rounded-md px-2.5 py-1 font-bold transition-all cursor-pointer ${
+                  activeTab === 'projects'
+                    ? 'bg-cyan-600 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                21 Projects
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('router')}
+                className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-bold transition-all cursor-pointer ${
+                  activeTab === 'router'
+                    ? 'bg-cyan-600 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Network className="h-3 w-3" />
+                Agent Router (chief.py)
+                {approvalCount > 0 && (
+                  <span className="rounded-full bg-amber-400 px-1.5 py-0 text-[9px] text-black font-extrabold">
+                    {approvalCount}
+                  </span>
+                )}
+              </button>
+            </div>
+            {online && activeTab === 'projects' && (
               <button
                 type="button"
                 onClick={handleBatchGitStatus}
@@ -178,16 +234,16 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {!online ? (
+          {!online && activeTab === 'projects' ? (
             <div className="rounded-xl border border-amber-500/35 bg-amber-950/20 p-5 space-y-3 text-xs">
               <div className="font-bold text-amber-300 text-sm">
                 ยังไม่ได้เปิด Local Control Bridge บนเครื่องของคุณไลท์
               </div>
               <p className="text-slate-300 leading-relaxed">
-                เพื่อความปลอดภัย เบราว์เซอร์จะสั่งรันคำสั่งในโฟลเดอร์ <code className="text-cyan-300">D:\AI\Light</code> ได้เมื่อเปิด Bridge บนเครื่องเท่านั้น — รันคำสั่งนี้ในโฟลเดอร์ <code className="text-cyan-300">d:\AI\Light\CEO</code> แล้วกดรีเฟรช (หากเปิดผ่าน <code className="text-amber-300">https://</code> แล้วเบราว์เซอร์บล็อก Local Network Access แนะนำให้เปิดผ่าน <a href="http://localhost:5173" className="underline text-cyan-300">http://localhost:5173</a>):
+                เพื่อความปลอดภัย เบราว์เซอร์จะสั่งรันคำสั่งในโฟลเดอร์ <code className="text-cyan-300">D:\AI\Light</code> ได้เมื่อเปิด Bridge บนเครื่องเท่านั้น — รันคำสั่งนี้ใน PowerShell หรือ Command Prompt (ใช้ได้ทั้งคู่) แล้วกดปุ่ม <strong className="text-white">รีเฟรช</strong>:
               </p>
               <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2">
-                <code className="text-emerald-400 font-bold">cd d:\AI\Light\CEO; node scripts/local-agent.mjs</code>
+                <code className="text-emerald-400 font-bold">{BRIDGE_START_COMMAND}</code>
                 <button
                   type="button"
                   onClick={handleCopyCommand}
@@ -197,7 +253,25 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
                   {copiedCmd ? 'คัดลอกแล้ว' : 'คัดลอกคำสั่ง'}
                 </button>
               </div>
+              {isHttpsPage && (
+                <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-3 text-[11px] text-slate-300 leading-relaxed">
+                  <strong className="text-cyan-300">หากเปิด Bridge แล้วยังขึ้น OFFLINE บนหน้า https://</strong>: Chrome/Edge อาจบล็อก <em>Local Network Access</em> — กดไอคอนรูปตัวล็อก/ตั้งค่าข้างแถบ URL ของเว็บนี้ แล้วอนุญาต <strong>Local network access</strong> หรือเปิดใช้งานผ่าน <a href="http://localhost:5173" className="underline text-cyan-300">http://localhost:5173</a> (รัน <code className="text-emerald-300">npm run dev</code>) แทนครับ
+                </div>
+              )}
+              {bridgeError && (
+                <div className="text-[11px] text-slate-400">
+                  สถานะการเชื่อมต่อล่าสุด ({currentOrigin || 'browser'}): <code className="text-amber-300">{bridgeError}</code>
+                </div>
+              )}
             </div>
+          ) : activeTab === 'router' ? (
+            <AgentRouterVisualizer
+              bridgeUrl={bridgeUrl}
+              online={online}
+              onRefreshBridge={fetchBridge}
+              onShowToast={onShowToast}
+              onApprovalCountChange={setApprovalCount}
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {projects.map((proj) => {
@@ -279,7 +353,7 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast }) {
             </div>
           )}
 
-          {consoleLog && (
+          {consoleLog && activeTab === 'projects' && (
             <div className="rounded-xl border border-slate-800 bg-black/80 p-3">
               <div className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1.5">
                 Live Output Console

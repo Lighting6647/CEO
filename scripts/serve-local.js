@@ -27,19 +27,45 @@ const webSearchCache = new Map();
 const MARKET_CACHE_TTL = 5 * 60 * 1000; // 5 minutes for gold, oil, crypto, stocks
 const GENERAL_CACHE_TTL = 30 * 60 * 1000; // 30 minutes for general encyclopedic knowledge
 
-// Call Google Gemini API (Dual-model fallback)
+/**
+ * JEV System-One Pre-Router: routes simple prompts to fast/cheap Flash-Lite
+ * and complex analysis/strategy/code prompts to stronger models.
+ */
+function selectModelTierByJev(prompt = '') {
+  const lower = String(prompt).toLowerCase();
+  const unsafe = /(?:drop\s+table|rm\s+-rf|ลบฐานข้อมูล|รหัสผ่าน|api\s*key)/i.test(lower);
+  if (unsafe) {
+    return {
+      safeToRun: false,
+      tier: 'halt',
+      models: [],
+    };
+  }
+  const isComplex =
+    prompt.length > 180 ||
+    /(?:วิเคราะห์|เปรียบเทียบ|สถาปัตยกรรม|โค้ด|strategy|architecture|debug|audit|วางแผน)/i.test(lower);
+  return {
+    safeToRun: true,
+    tier: isComplex ? 'pro-tier' : 'fast-tier',
+    models: isComplex
+      ? ['gemini-flash-latest', 'gemini-pro-latest', 'gemini-flash-lite-latest']
+      : ['gemini-flash-lite-latest', 'gemini-2.5-flash-lite', 'gemini-flash-latest'],
+  };
+}
+
+// Call Google Gemini API (JEV Model-Tier Routed)
 async function callGemini(prompt, systemInstruction = '', clientKey = '') {
   const activeKey = clientKey || GEMINI_API_KEY;
   if (!activeKey) {
     throw new Error('GEMINI_API_KEY is not configured in .env or request');
   }
 
-  const models = [
-    'gemini-flash-lite-latest',
-    'gemini-flash-latest',
-    'gemini-2.5-flash-lite',
-    'gemini-pro-latest',
-  ];
+  const route = selectModelTierByJev(prompt);
+  if (!route.safeToRun) {
+    throw new Error('JEV Noul Safety Gate blocked unsafe prompt execution');
+  }
+
+  const models = route.models;
   let lastErr = null;
 
   for (const model of models) {

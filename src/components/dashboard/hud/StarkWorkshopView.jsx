@@ -118,6 +118,7 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
   onOpenMeetingModal,
   onOpenAiMonitorModal,
   onOpenLocalBridgeModal,
+  onOpenAgentRouter,
   liveTranscript = '',
   analyserNode = null,
   onCalibrateVoice = null,
@@ -1169,6 +1170,7 @@ export const StarkWorkshopView = memo(function StarkWorkshopView({
         onOpenMeetingModal={onOpenMeetingModal}
         onOpenAiMonitorModal={onOpenAiMonitorModal}
         onOpenLocalBridgeModal={onOpenLocalBridgeModal}
+        onOpenAgentRouter={onOpenAgentRouter}
         onOpenAdmin={onOpenAdmin}
         onOpenCompany={onOpenCompany}
         onOpenVoiceModal={onOpenVoiceModal}

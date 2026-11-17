@@ -6,10 +6,15 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const CHIEF_SCRIPT_PATH = path.join(__dirname, 'chief.py');
+const PYTHON_BIN = process.env.CEO_PYTHON_BIN || 'python';
 
 const PORT = Number(process.env.CEO_LOCAL_AGENT_PORT || 4199);
 const HOST = '127.0.0.1';
@@ -24,6 +29,16 @@ const ALLOWED_ORIGINS = new Set([
   'https://ceo-flame.vercel.app',
 ]);
 
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(origin)) return true;
+  if (/^https:\/\/ceo[a-z0-9-]*\.vercel\.app$/i.test(origin)) return true;
+  if (/^https:\/\/[a-z0-9-]+-lighting6647s-projects\.vercel\.app$/i.test(origin)) return true;
+  if (/^https:\/\/[a-z0-9-]+\.netlify\.app$/i.test(origin)) return true;
+  return false;
+}
+
 const SUBAPP_HINTS = new Map([
   ['บัญชี Light', 'accounting-app'],
   ['เทรด Light', 'trading-app'],
@@ -34,11 +49,12 @@ const runningDevProcesses = new Map();
 
 function setCorsHeaders(req, res) {
   const origin = req.headers.origin;
-  if (origin && (ALLOWED_ORIGINS.has(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
+  res.setHeader('Vary', 'Origin');
+  if (isAllowedOrigin(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Private-Network', 'true');
 }
 
@@ -199,6 +215,23 @@ function readJsonBody(req) {
   });
 }
 
+async function runChiefPy(args = []) {
+  if (!fs.existsSync(CHIEF_SCRIPT_PATH)) {
+    throw new Error(`ไม่พบไฟล์ ${CHIEF_SCRIPT_PATH}`);
+  }
+  const { stdout } = await execFileAsync(PYTHON_BIN, [CHIEF_SCRIPT_PATH, ...args, '--json'], {
+    cwd: path.dirname(CHIEF_SCRIPT_PATH),
+    timeout: 45_000,
+    maxBuffer: 4 * 1024 * 1024,
+    env: {
+      ...process.env,
+      PYTHONIOENCODING: 'utf-8',
+      PYTHONUTF8: '1',
+    },
+  });
+  return JSON.parse((stdout || '{}').trim());
+}
+
 const server = http.createServer(async (req, res) => {
   setCorsHeaders(req, res);
 
@@ -256,6 +289,91 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 500, {
         ok: false,
         error: error instanceof Error ? error.message : 'Execution failed',
+      });
+    }
+  }
+
+  // J.A.R.V.I.S. x JEV Agent Router Endpoints (chief.py)
+  if (req.method === 'GET' && reqUrl.pathname === '/router/state') {
+    try {
+      const data = await runChiefPy(['--status']);
+      return sendJson(res, 200, data);
+    } catch (error) {
+      return sendJson(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : 'ไม่สามารถอ่านสถานะ Router ได้',
+      });
+    }
+  }
+
+  if (req.method === 'POST' && reqUrl.pathname === '/router/dispatch') {
+    try {
+      const { goal, live, gate, runSampleBatch } = await readJsonBody(req);
+      const args = [];
+      if (!runSampleBatch) {
+        if (!goal || typeof goal !== 'string' || !goal.trim()) {
+          return sendJson(res, 400, { ok: false, error: 'กรุณาระบุเป้าหมาย (goal) ก่อนสั่งรัน Router' });
+        }
+        args.push('--goal', goal.trim());
+      }
+      if (live) args.push('--live');
+      const gateNum = Number(gate);
+      if (Number.isFinite(gateNum) && gateNum >= 0.5 && gateNum <= 0.99) {
+        args.push('--gate', String(gateNum));
+      }
+      const data = await runChiefPy(args);
+      return sendJson(res, 200, data);
+    } catch (error) {
+      return sendJson(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Dispatch failed',
+      });
+    }
+  }
+
+  if (req.method === 'POST' && reqUrl.pathname === '/router/approve') {
+    try {
+      const { jobId, target, live } = await readJsonBody(req);
+      if (!jobId || !/^[a-f0-9]+$/i.test(String(jobId))) {
+        return sendJson(res, 400, { ok: false, error: 'รหัส jobId ไม่ถูกต้อง' });
+      }
+      const safeTarget = target === 'write' ? 'write' : 'research';
+      const args = ['--approve', String(jobId), '--target', safeTarget];
+      if (live) args.push('--live');
+      const data = await runChiefPy(args);
+      return sendJson(res, 200, data);
+    } catch (error) {
+      return sendJson(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Approval failed',
+      });
+    }
+  }
+
+  if (req.method === 'POST' && reqUrl.pathname === '/router/reject') {
+    try {
+      const { jobId } = await readJsonBody(req);
+      if (!jobId || !/^[a-f0-9]+$/i.test(String(jobId))) {
+        return sendJson(res, 400, { ok: false, error: 'รหัส jobId ไม่ถูกต้อง' });
+      }
+      const data = await runChiefPy(['--reject', String(jobId)]);
+      return sendJson(res, 200, data);
+    } catch (error) {
+      return sendJson(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Reject failed',
+      });
+    }
+  }
+
+  if (req.method === 'POST' && reqUrl.pathname === '/router/reset') {
+    try {
+      const data = await runChiefPy(['--clear-queue']);
+      return sendJson(res, 200, data);
+    } catch (error) {
+      return sendJson(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Reset failed',
       });
     }
   }

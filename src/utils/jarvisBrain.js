@@ -218,6 +218,33 @@ export function processJarvisCommand(input, _context = {}) {
     };
   }
 
+  // 0.29 Open Agent Router Node Graph ("เปิด Agent Router" / "เปิดกราฟ Router")
+  if (
+    clean.includes('agent router') ||
+    clean.includes('node graph') ||
+    clean.includes('กราฟ router') ||
+    clean.includes('chief.py')
+  ) {
+    return {
+      action: 'OPEN_AGENT_ROUTER',
+      squadId: 'ops',
+      delegatedTo: 'JEV Agent Router Visualizer',
+      reply: `รับทราบครับ ${USER_TITLE} เปิดหน้าต่าง Interactive Node Graph (01 STATE IN -> Gate -> Queue -> 8 Workers) เชื่อมตรงกับ chief.py เรียบร้อยครับ`,
+      speech: `รับทราบครับ ${USER_TITLE} เปิดกราฟการทำงานของระบบ Agent Router เรียบร้อยครับ`,
+      hologram: {
+        title: 'JEV AGENT ROUTER // NODE GRAPH',
+        category: 'SYSTEM-ONE ROUTER',
+        badge: 'GATE ≥ 0.85',
+        details: [
+          { label: 'State Bus', val: '01 STATE IN · 14 Bus Readers' },
+          { label: 'Research', val: 'DuckDuckGo + Wiki Live Worker' },
+          { label: 'Review', val: 'Human-in-the-Loop Approval' },
+          { label: 'Dispatch', val: '8 Parallel Workers (w1–w8)' },
+        ],
+      },
+    };
+  }
+
   // 0.28 Open Local Control Bridge ("เปิด Local Bridge" / "คุม 21 โปรเจกต์")
   if (
     clean.includes('local bridge') ||

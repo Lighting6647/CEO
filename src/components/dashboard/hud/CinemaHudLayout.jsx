@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Mic,
   MicOff,
@@ -11,9 +11,16 @@ import {
   Send,
   ShieldCheck,
   Sparkles,
+  Network,
 } from 'lucide-react';
 import { JarvisNeuralSphere } from './JarvisNeuralSphere';
+import { VoiceStudioTelemetry } from './VoiceStudioTelemetry';
 import { INITIAL_PROJECTS } from '../../../data/projectsData';
+import {
+  acquireTabListeningLock,
+  getHudStudioTheme,
+  setHudStudioTheme,
+} from '../../../services/hudStudioStore';
 
 /**
  * Cinema-Grade J.A.R.V.I.S. Hologram Matrix + Electric Arc Fullscreen HUD (Design Option 1).
@@ -32,6 +39,7 @@ export function CinemaHudLayout({
   onOpenMeetingModal,
   onOpenAiMonitorModal,
   onOpenLocalBridgeModal,
+  onOpenAgentRouter,
   onOpenAdmin,
   onOpenCompany,
   onOpenVoiceModal,
@@ -40,6 +48,38 @@ export function CinemaHudLayout({
   onSwitchClassic,
 }) {
   const [commandInput, setCommandInput] = useState('');
+  const [latenciesMs, setLatenciesMs] = useState([]);
+  const [studioTheme, setStudioTheme] = useState(() => getHudStudioTheme());
+  const [heldElsewhere, setHeldElsewhere] = useState(false);
+  const lastDispatchAtRef = useRef(null);
+  const lastMsgCountRef = useRef(messages.length);
+
+  useEffect(() => {
+    setHudStudioTheme(studioTheme);
+  }, [studioTheme]);
+
+  useEffect(() => {
+    if (!isListening) {
+      setHeldElsewhere(false);
+      return undefined;
+    }
+    return acquireTabListeningLock({
+      onAcquired: () => setHeldElsewhere(false),
+      onHeldElsewhere: () => setHeldElsewhere(true),
+    });
+  }, [isListening]);
+
+  useEffect(() => {
+    if (messages.length > lastMsgCountRef.current) {
+      const latest = messages[messages.length - 1];
+      if (latest?.sender === 'JARVIS' && lastDispatchAtRef.current !== null) {
+        const elapsed = Math.max(12, Math.round(performance.now() - lastDispatchAtRef.current));
+        setLatenciesMs((prev) => [...prev.slice(-11), elapsed]);
+        lastDispatchAtRef.current = null;
+      }
+    }
+    lastMsgCountRef.current = messages.length;
+  }, [messages]);
 
   const latestJarvis =
     [...messages].reverse().find((m) => m.sender === 'JARVIS')?.text ||
@@ -52,30 +92,53 @@ export function CinemaHudLayout({
     INITIAL_PROJECTS.find((p) => p.id === 'pass-app'),
   ].filter(Boolean);
 
+  const dispatchWithLatency = (cmd) => {
+    lastDispatchAtRef.current = performance.now();
+    onDispatchCommand?.(cmd);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const clean = commandInput.trim();
     if (!clean) return;
-    onDispatchCommand?.(clean);
+    dispatchWithLatency(clean);
     setCommandInput('');
   };
 
+  const isPlain = studioTheme === 'plain';
+
   return (
     <div
-      className={`relative w-full min-h-screen overflow-hidden font-mono flex flex-col justify-between p-4 sm:p-6 ${
-        isRedAlert ? 'bg-[#0b0205] text-rose-50' : 'bg-[#03040a] text-amber-50'
+      className={`relative w-full min-h-screen overflow-hidden font-mono flex flex-col justify-between p-4 sm:p-6 transition-colors duration-300 ${
+        isRedAlert
+          ? 'bg-[#0b0205] text-rose-50'
+          : isPlain
+          ? 'bg-[#090b10] text-slate-100'
+          : 'bg-[#03040a] text-amber-50'
       }`}
     >
-      {/* Volumetric Cinema Backdrop */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: isRedAlert
-            ? 'radial-gradient(circle at 50% 50%, rgba(244,63,94,0.18), rgba(14,165,233,0.06) 44%, transparent 74%)'
-            : 'radial-gradient(circle at 50% 50%, rgba(249,115,22,0.16), rgba(14,165,233,0.07) 44%, transparent 74%)',
-        }}
-      />
-      <div className="pointer-events-none absolute inset-0 opacity-15 bg-[linear-gradient(to_right,#f59e0b18_1px,transparent_1px),linear-gradient(to_bottom,#38bdf818_1px,transparent_1px)] bg-[size:40px_40px]" />
+      {/* Volumetric Cinema Backdrop & Grid (Hidden in Clean Minimal mode) */}
+      {!isPlain && (
+        <>
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background: isRedAlert
+                ? 'radial-gradient(circle at 50% 50%, rgba(244,63,94,0.18), rgba(14,165,233,0.06) 44%, transparent 74%)'
+                : 'radial-gradient(circle at 50% 50%, rgba(249,115,22,0.16), rgba(14,165,233,0.07) 44%, transparent 74%)',
+            }}
+          />
+          <div className="pointer-events-none absolute inset-0 opacity-15 bg-[linear-gradient(to_right,#f59e0b18_1px,transparent_1px),linear-gradient(to_bottom,#38bdf818_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+          {/* 4-Corner Studio Targeting Reticle (Ported from Javis Central Voice Studio) */}
+          <div className="pointer-events-none absolute inset-3 z-0" aria-hidden="true">
+            <span className="absolute top-0 left-0 h-5 w-5 border-t-2 border-l-2 border-cyan-400/50 rounded-tl-sm" />
+            <span className="absolute top-0 right-0 h-5 w-5 border-t-2 border-r-2 border-cyan-400/50 rounded-tr-sm" />
+            <span className="absolute bottom-0 left-0 h-5 w-5 border-b-2 border-l-2 border-amber-400/50 rounded-bl-sm" />
+            <span className="absolute bottom-0 right-0 h-5 w-5 border-b-2 border-r-2 border-amber-400/50 rounded-br-sm" />
+          </div>
+        </>
+      )}
 
       {/* Top Helmet Telemetry Bar */}
       <header className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/25 pb-3 text-xs">
@@ -115,6 +178,18 @@ export function CinemaHudLayout({
               <LayoutDashboard className="h-3.5 w-3.5" /> Dashboard
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setStudioTheme((t) => (t === 'holo' ? 'plain' : 'holo'))}
+            className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 cursor-pointer ${
+              isPlain
+                ? 'border-cyan-400 bg-cyan-500/20 text-cyan-200'
+                : 'border-slate-700 bg-slate-900/80 text-slate-300 hover:border-cyan-400'
+            }`}
+            title="สลับหน้าจอ Holo HUD ↔ Clean Minimal (เหมาะสำหรับใช้งานในที่สาธารณะ)"
+          >
+            <Sparkles className="h-3.5 w-3.5" /> {isPlain ? 'Clean Minimal' : 'Holo HUD'}
+          </button>
           {onSwitchClassic && (
             <button
               type="button"
@@ -128,8 +203,9 @@ export function CinemaHudLayout({
         </div>
       </header>
 
-      {/* Main Cinema Stage: Left Glass Wing + 3D Sphere + Right Glass Wing */}
-      <main className="relative z-10 my-4 grid grid-cols-1 lg:grid-cols-12 items-center gap-5 max-w-7xl w-full mx-auto">
+      {/* Main Cinema Stage: Left Glass Wing + 3D Sphere + Right Glass Wing (Hidden in Clean Minimal mode) */}
+      {!isPlain ? (
+        <main className="relative z-10 my-4 grid grid-cols-1 lg:grid-cols-12 items-center gap-5 max-w-7xl w-full mx-auto">
         {/* Left Translucent Glass Wing */}
         <section className="lg:col-span-3 rounded-2xl border-l-2 border-y border-sky-400/40 bg-slate-950/45 p-4 space-y-3 text-xs backdrop-blur-md">
           <div className="flex items-center justify-between border-b border-sky-500/20 pb-1.5 font-bold text-sky-300">
@@ -216,6 +292,34 @@ export function CinemaHudLayout({
           </div>
         </section>
       </main>
+      ) : (
+        <div className="relative z-10 max-w-7xl w-full mx-auto my-2 flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-xs">
+          <div>
+            <div className="text-[10px] text-cyan-400 font-bold">CLEAN MINIMAL STUDIO</div>
+            <div className="text-sm font-bold text-white">โหมดหน้าจอเรียบประหยัดพลังงาน — พร้อมสั่งการและติดตาม Telemetry สด</div>
+          </div>
+          {liveTranscript && (
+            <div className="rounded-full border border-sky-400/40 bg-slate-900 px-3 py-1 text-xs text-sky-200">
+              🎤 {liveTranscript}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Central Voice Studio Telemetry, Filters & Live Charts (Ported from javis-bice.vercel.app) */}
+      <section className="relative z-10 max-w-7xl w-full mx-auto my-2">
+        <VoiceStudioTelemetry
+          messages={messages}
+          latenciesMs={latenciesMs}
+          isListening={isListening}
+          isSpeaking={isSpeaking}
+          isRedAlert={isRedAlert}
+          audioLevel={audioLevel}
+          heldElsewhere={heldElsewhere}
+          onDispatchCommand={dispatchWithLatency}
+          onOpenAgentRouter={onOpenAgentRouter}
+        />
+      </section>
 
       {/* Bottom Movie Subtitle + Command Input + Action Dock */}
       <footer className="relative z-10 space-y-3 border-t border-amber-500/25 pt-3 text-xs max-w-6xl w-full mx-auto">
@@ -259,6 +363,16 @@ export function CinemaHudLayout({
                 title="เชื่อมต่อ Local Control Bridge คุมทั้ง 21 โปรเจกต์"
               >
                 <ShieldCheck className="h-3.5 w-3.5" /> คุม 21 โปรเจกต์
+              </button>
+            )}
+            {onOpenAgentRouter && (
+              <button
+                type="button"
+                onClick={onOpenAgentRouter}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-950/50 px-3 py-2 text-emerald-200 hover:border-emerald-400 cursor-pointer"
+                title="เปิด Node Graph Visualizer (01 STATE IN -> Gate -> Queue -> 8 Workers)"
+              >
+                <Network className="h-3.5 w-3.5" /> Node Graph
               </button>
             )}
             <button

@@ -24,6 +24,7 @@ import {
   Sparkles,
   ExternalLink,
   FileText,
+  Network,
 } from 'lucide-react';
 import { ALL_PROJECT_DESIGN_TOKENS } from '../../data/designTokensData';
 
@@ -171,6 +172,16 @@ export function Header({
             >
               <Bot className="h-3.5 w-3.5 text-emerald-400" />
               10 AI Squads
+            </button>
+            <button
+              onClick={() => setActiveView('router')}
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-medium transition-all ${
+                activeView === 'router' ? 'bg-cyan-600 text-white shadow-sm' : 'text-cyan-300 hover:text-white'
+              }`}
+              title="เปิดหน้าต่าง Interactive Node Graph (01 STATE IN -> Gate -> Queue -> 8 Workers)"
+            >
+              <Network className="h-3.5 w-3.5 text-cyan-400" />
+              Agent Router
             </button>
           </div>
 

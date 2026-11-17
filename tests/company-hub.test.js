@@ -176,6 +176,8 @@ test('J.A.R.V.I.S. MARK 3 Neural Brain processes Thai voice commands and dispatc
   assert.equal(aiStatusRes.action, 'OPEN_AI_MONITOR');
   const bridgeRes = processJarvisCommand('เปิด Local Bridge');
   assert.equal(bridgeRes.action, 'OPEN_LOCAL_BRIDGE');
+  const routerRes = processJarvisCommand('เปิด Agent Router');
+  assert.equal(routerRes.action, 'OPEN_AGENT_ROUTER');
 });
 
 test('Multi-Agent Hub for Webapp Sales & Development coordinates all 5 specialized agents for คุณไลท์', async () => {
@@ -316,4 +318,37 @@ test('Meeting Engine (Ported from Javis): formats clock, exports Windows CRLF .t
   assert.ok(doc.includes('\r\n'), 'Meeting export must use Windows CRLF line endings');
   assert.ok(doc.includes('สรุปการประชุม'));
   assert.ok(doc.includes('บันทึกคำพูด'));
+});
+
+test('HUD Studio Store: sanitizes holo/plain themes and coordinates cross-tab listening lock', async () => {
+  const { sanitizeHudTheme, acquireTabListeningLock } = await import('../src/services/hudStudioStore.js');
+
+  assert.equal(sanitizeHudTheme('plain'), 'plain');
+  assert.equal(sanitizeHudTheme('holo'), 'holo');
+  assert.equal(sanitizeHudTheme('unknown'), 'holo');
+
+  let acquired = false;
+  let held = false;
+  const fakeLocksBusy = {
+    request: (_name, _opts, cb) => {
+      cb(null);
+      return Promise.resolve();
+    },
+  };
+  const release1 = acquireTabListeningLock({
+    locksApi: fakeLocksBusy,
+    onAcquired: () => { acquired = true; },
+    onHeldElsewhere: () => { held = true; },
+  });
+  assert.equal(acquired, false);
+  assert.equal(held, true);
+  release1();
+
+  let acquired2 = false;
+  const release2 = acquireTabListeningLock({
+    locksApi: null,
+    onAcquired: () => { acquired2 = true; },
+  });
+  assert.equal(acquired2, true);
+  release2();
 });

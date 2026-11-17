@@ -17,6 +17,7 @@ import {
   Bot,
   Sparkles,
   FileText,
+  Network,
 } from 'lucide-react';
 
 export function CommandPalette({
@@ -90,6 +91,13 @@ export function CommandPalette({
       icon: <Terminal className="h-4 w-4 text-cyan-400" />,
       action: () => { onOpenLocalBridge(); onClose(); }
     }] : []),
+    {
+      id: 'open-agent-router',
+      title: 'JEV Agent Router — Interactive Node Graph (chief.py + 8 Workers)',
+      category: 'การสั่งการด่วน',
+      icon: <Network className="h-4 w-4 text-emerald-400" />,
+      action: () => { onSelectView('router'); onClose(); }
+    },
     {
       id: 'audit',
       title: 'รัน Full QA Audit 13 โปรเจกต์',

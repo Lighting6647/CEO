@@ -129,6 +129,7 @@ export function JarvisHudView({
   onOpenMeetingModal,
   onOpenAiMonitorModal,
   onOpenLocalBridgeModal,
+  onOpenAgentRouter,
   onSelectBrandTheme,
   onShowToast,
   onOpenAdmin,
@@ -2838,6 +2839,8 @@ export function JarvisHudView({
           onOpenAiMonitorModal();
         } else if (result.action === 'OPEN_LOCAL_BRIDGE' && onOpenLocalBridgeModal) {
           onOpenLocalBridgeModal();
+        } else if (result.action === 'OPEN_AGENT_ROUTER' && onOpenAgentRouter) {
+          onOpenAgentRouter();
         } else if (result.action === 'CHANGE_THEME' && onSelectBrandTheme) {
           onSelectBrandTheme(result.brandId);
         } else if (result.action === 'TOGGLE_RED_ALERT') {
@@ -2871,6 +2874,7 @@ export function JarvisHudView({
       onOpenMeetingModal,
       onOpenAiMonitorModal,
       onOpenLocalBridgeModal,
+      onOpenAgentRouter,
       onSelectBrandTheme,
       speakThai,
       userTitle,
@@ -3215,6 +3219,7 @@ export function JarvisHudView({
         onOpenMeetingModal={onOpenMeetingModal}
         onOpenAiMonitorModal={onOpenAiMonitorModal}
         onOpenLocalBridgeModal={onOpenLocalBridgeModal}
+        onOpenAgentRouter={onOpenAgentRouter}
         liveTranscript={liveTranscript}
         analyserNode={analyserRef.current}
         onCalibrateVoice={handleCalibrateVoice}

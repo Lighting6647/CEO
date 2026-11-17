@@ -17,6 +17,7 @@ const EnvironmentMatrixView = lazy(() => import('./components/dashboard/Environm
 const AgentsSquadView = lazy(() => import('./components/dashboard/AgentsSquadView').then((m) => ({ default: m.AgentsSquadView })));
 const UptimeMonitorView = lazy(() => import('./components/dashboard/UptimeMonitorView').then((m) => ({ default: m.UptimeMonitorView })));
 const AuditLogsView = lazy(() => import('./components/dashboard/AuditLogsView').then((m) => ({ default: m.AuditLogsView })));
+const AgentRouterView = lazy(() => import('./components/dashboard/AgentRouterView').then((m) => ({ default: m.AgentRouterView })));
 
 const ProjectDetailModal = lazy(() => import('./components/dashboard/ProjectDetailModal').then((m) => ({ default: m.ProjectDetailModal })));
 const HooksManagerModal = lazy(() => import('./components/dashboard/HooksManagerModal').then((m) => ({ default: m.HooksManagerModal })));
@@ -48,6 +49,7 @@ export default function App() {
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
   const [isAiMonitorModalOpen, setIsAiMonitorModalOpen] = useState(false);
   const [isLocalBridgeModalOpen, setIsLocalBridgeModalOpen] = useState(false);
+  const [localBridgeInitialTab, setLocalBridgeInitialTab] = useState('projects');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -261,7 +263,15 @@ export default function App() {
           onOpenPersona={() => { playClickSound(); setIsPersonaModalOpen(true); }}
           onOpenMeetingModal={() => { playClickSound(); setIsMeetingModalOpen(true); }}
           onOpenAiMonitorModal={() => { playClickSound(); setIsAiMonitorModalOpen(true); }}
-          onOpenLocalBridgeModal={() => { playClickSound(); setIsLocalBridgeModalOpen(true); }}
+          onOpenLocalBridgeModal={() => {
+            playClickSound();
+            setLocalBridgeInitialTab('projects');
+            setIsLocalBridgeModalOpen(true);
+          }}
+          onOpenAgentRouter={() => {
+            playClickSound();
+            setActiveView('router');
+          }}
           onOpenAdmin={() => { playClickSound(); setActiveView('dashboard'); }}
           onOpenCompany={() => { playClickSound(); setActiveView('company'); }}
           onSelectBrandTheme={(brandId) => {
@@ -418,6 +428,19 @@ export default function App() {
             />
           </div>
         )}
+
+        {activeView === 'router' && (
+          <div className="mt-8">
+            <AgentRouterView
+              onShowToast={showToast}
+              onOpenLocalBridgeModal={() => {
+                playClickSound();
+                setLocalBridgeInitialTab('router');
+                setIsLocalBridgeModalOpen(true);
+              }}
+            />
+          </div>
+        )}
       </main>
 
       {/* Footer */}
@@ -530,6 +553,7 @@ export default function App() {
         {isLocalBridgeModalOpen && (
           <LocalControlBridgeModal
             isOpen={isLocalBridgeModalOpen}
+            initialTab={localBridgeInitialTab}
             onClose={() => setIsLocalBridgeModalOpen(false)}
             onShowToast={showToast}
           />
@@ -555,7 +579,10 @@ export default function App() {
             onOpenPersona={() => setIsPersonaModalOpen(true)}
             onOpenMeeting={() => setIsMeetingModalOpen(true)}
             onOpenAiMonitor={() => setIsAiMonitorModalOpen(true)}
-            onOpenLocalBridge={() => setIsLocalBridgeModalOpen(true)}
+            onOpenLocalBridge={() => {
+              setLocalBridgeInitialTab('projects');
+              setIsLocalBridgeModalOpen(true);
+            }}
             onSelectView={(v) => { playClickSound(); setActiveView(v); }}
           />
         )}
