@@ -1,41 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Network, RefreshCw, Terminal } from 'lucide-react';
 import { AgentRouterVisualizer } from './hud/AgentRouterVisualizer';
-
-const BRIDGE_CANDIDATES = ['http://localhost:4199', 'http://127.0.0.1:4199'];
+import { discoverRouterBackend } from '../../services/jevRouterClient';
 
 /**
  * Full-page Dashboard View for JEV Agent Router Node Graph (01 STATE IN -> Gate -> Queue -> 8 Workers)
+ * Automatically runs on Local Bridge (4199) when on PC, or Vercel Cloud Serverless (/api/jev-router) on mobile/web.
  */
 export function AgentRouterView({ onShowToast, onOpenLocalBridgeModal }) {
-  const [bridgeUrl, setBridgeUrl] = useState(BRIDGE_CANDIDATES[0]);
-  const [online, setOnline] = useState(false);
+  const [backend, setBackend] = useState({ mode: 'offline', baseUrl: '' });
   const [checking, setChecking] = useState(false);
 
   const checkBridge = useCallback(async () => {
     setChecking(true);
-    for (const candidate of BRIDGE_CANDIDATES) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 2500);
-      try {
-        const res = await fetch(`${candidate}/health`, { method: 'GET', signal: controller.signal });
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.ok) {
-            setBridgeUrl(candidate);
-            setOnline(true);
-            setChecking(false);
-            clearTimeout(timer);
-            return;
-          }
-        }
-      } catch {
-        // try next candidate
-      } finally {
-        clearTimeout(timer);
-      }
-    }
-    setOnline(false);
+    const detected = await discoverRouterBackend();
+    setBackend(detected);
     setChecking(false);
   }, []);
 
@@ -83,8 +62,9 @@ export function AgentRouterView({ onShowToast, onOpenLocalBridgeModal }) {
       </div>
 
       <AgentRouterVisualizer
-        bridgeUrl={bridgeUrl}
-        online={online}
+        bridgeUrl={backend.baseUrl}
+        online={backend.mode === 'local'}
+        routerMode={backend.mode}
         onRefreshBridge={checkBridge}
         onShowToast={onShowToast}
       />

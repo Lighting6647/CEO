@@ -2,12 +2,12 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Eye, EyeOff, Mic, Network, ShieldAlert } from 'lucide-react';
 import { getStoredMemories } from '../../../services/mem0Service';
 import { getMicMeterEnabled, setMicMeterEnabled } from '../../../services/hudStudioStore';
+import { discoverRouterBackend, fetchRouterStateFromBackend } from '../../../services/jevRouterClient';
 
 const CHART_WIDTH = 220;
 const CHART_HEIGHT = 58;
 const PAD_X = 6;
 const PAD_Y = 8;
-const BRIDGE_CANDIDATES = ['http://localhost:4199', 'http://127.0.0.1:4199'];
 
 const COMMAND_FILTERS = [
   { id: 'ALL', label: 'ทั้งหมด ALL' },
@@ -102,7 +102,7 @@ export function VoiceStudioTelemetry({
   const [micMeterOn, setMicMeterOn] = useState(() => getMicMeterEnabled());
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [jevTelemetry, setJevTelemetry] = useState(null);
-  const [bridgeOnline, setBridgeOnline] = useState(false);
+  const [routerBackendMode, setRouterBackendMode] = useState('offline');
   const memories = useMemo(() => getStoredMemories(), []);
 
   useEffect(() => {
@@ -118,27 +118,16 @@ export function VoiceStudioTelemetry({
   }, []);
 
   const pollJevRouter = useCallback(async () => {
-    for (const candidate of BRIDGE_CANDIDATES) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 1800);
-      try {
-        const res = await fetch(`${candidate}/router/state`, { method: 'GET', signal: controller.signal });
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.ok && data.state) {
-            setBridgeOnline(true);
-            setJevTelemetry(data.state);
-            clearTimeout(timer);
-            return;
-          }
-        }
-      } catch {
-        // try next bridge candidate
-      } finally {
-        clearTimeout(timer);
+    try {
+      const detected = await discoverRouterBackend();
+      setRouterBackendMode(detected.mode);
+      if (detected.mode === 'local' || detected.mode === 'cloud') {
+        const st = await fetchRouterStateFromBackend(detected);
+        setJevTelemetry(st);
       }
+    } catch {
+      // keep previous state gracefully
     }
-    setBridgeOnline(false);
   }, []);
 
   useEffect(() => {
@@ -167,6 +156,7 @@ export function VoiceStudioTelemetry({
     isListening && micMeterOn ? Math.max(18, Math.round(normalizedAudio * scale * 100)) : 14
   );
 
+  const bridgeOnline = routerBackendMode === 'local' || routerBackendMode === 'cloud';
   const routerStats = jevTelemetry?.telemetry || { decisions: 0, heldAtGate: 0, avgLatencyMs: 0, totalCostUsd: 0 };
   const awaitingApprovalCount = jevTelemetry?.awaitingApprovalCount || 0;
 
@@ -426,12 +416,14 @@ export function VoiceStudioTelemetry({
             </div>
             <span
               className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${
-                bridgeOnline
+                routerBackendMode === 'local'
                   ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                  : routerBackendMode === 'cloud'
+                  ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300'
                   : 'border-slate-700 bg-slate-900 text-slate-400'
               }`}
             >
-              {bridgeOnline ? '4199 LIVE' : 'OFFLINE'}
+              {routerBackendMode === 'local' ? '4199 LIVE' : routerBackendMode === 'cloud' ? 'CLOUD LIVE' : 'OFFLINE'}
             </span>
           </div>
 

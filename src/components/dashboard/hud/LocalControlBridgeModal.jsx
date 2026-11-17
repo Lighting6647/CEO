@@ -13,8 +13,15 @@ import {
   Copy,
   Check,
   Network,
+  ExternalLink,
 } from 'lucide-react';
 import { AgentRouterVisualizer } from './AgentRouterVisualizer';
+import { INITIAL_PROJECTS } from '../../../data/projectsData';
+import {
+  discoverRouterBackend,
+  getCustomBridgeUrl,
+  setCustomBridgeUrl,
+} from '../../../services/jevRouterClient';
 
 const BRIDGE_CANDIDATES = ['http://localhost:4199', 'http://127.0.0.1:4199'];
 const BRIDGE_START_COMMAND = 'node d:\\AI\\Light\\CEO\\scripts\\local-agent.mjs';
@@ -22,14 +29,15 @@ const BRIDGE_START_COMMAND = 'node d:\\AI\\Light\\CEO\\scripts\\local-agent.mjs'
 /**
  * Local Control Bridge Modal
  * Connects CEO Hub UI directly to scripts/local-agent.mjs on the user's PC
- * to inspect all 21 D:\AI\Light folders and run allowlisted Git Status / Test / Build / Dev actions
- * as well as dispatch & visualize the JEV Agent Router (chief.py).
+ * or falls back seamlessly to Vercel Cloud Serverless (/api/jev-router) on mobile.
  */
 export function LocalControlBridgeModal({ isOpen, onClose, onShowToast, initialTab = 'projects' }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [approvalCount, setApprovalCount] = useState(0);
   const [bridgeUrl, setBridgeUrl] = useState(BRIDGE_CANDIDATES[0]);
   const [online, setOnline] = useState(false);
+  const [routerMode, setRouterMode] = useState('offline');
+  const [customUrlInput, setCustomUrlInput] = useState(() => getCustomBridgeUrl());
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [runningKey, setRunningKey] = useState('');
@@ -42,9 +50,12 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast, initialT
     setBridgeError('');
     let lastError = '';
 
-    for (const candidate of BRIDGE_CANDIDATES) {
+    const custom = getCustomBridgeUrl();
+    const candidates = custom ? [custom, ...BRIDGE_CANDIDATES] : BRIDGE_CANDIDATES;
+
+    for (const candidate of candidates) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 2500);
+      const timer = setTimeout(() => controller.abort(), 2000);
       try {
         const res = await fetch(`${candidate}/projects`, {
           method: 'GET',
@@ -55,6 +66,7 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast, initialT
           if (data?.ok) {
             setBridgeUrl(candidate);
             setOnline(true);
+            setRouterMode('local');
             setProjects(data.projects || []);
             setBridgeError('');
             setLoading(false);
@@ -72,6 +84,8 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast, initialT
     setOnline(false);
     setProjects([]);
     setBridgeError(lastError);
+    const detected = await discoverRouterBackend();
+    setRouterMode(detected.mode);
     setLoading(false);
   }, []);
 
@@ -140,8 +154,14 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast, initialT
     }
   };
 
+  const handleSaveCustomBridge = () => {
+    setCustomBridgeUrl(customUrlInput);
+    fetchBridge();
+  };
+
   const isHttpsPage = typeof window !== 'undefined' && window.location.protocol === 'https:';
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const cloudReady = routerMode === 'cloud';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
@@ -159,11 +179,17 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast, initialT
                   className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ${
                     online
                       ? 'border border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                      : cloudReady
+                      ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-300'
                       : 'border border-amber-500/40 bg-amber-500/10 text-amber-300'
                   }`}
                 >
-                  {online ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
-                  {online ? `BRIDGE ONLINE (${bridgeUrl.replace(/^https?:\/\//, '')})` : 'BRIDGE OFFLINE'}
+                  {online || cloudReady ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+                  {online
+                    ? `BRIDGE ONLINE (${bridgeUrl.replace(/^https?:\/\//, '')})`
+                    : cloudReady
+                    ? 'CLOUD ROUTER LIVE'
+                    : 'BRIDGE OFFLINE'}
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
@@ -235,39 +261,113 @@ export function LocalControlBridgeModal({ isOpen, onClose, onShowToast, initialT
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {!online && activeTab === 'projects' ? (
-            <div className="rounded-xl border border-amber-500/35 bg-amber-950/20 p-5 space-y-3 text-xs">
-              <div className="font-bold text-amber-300 text-sm">
-                ยังไม่ได้เปิด Local Control Bridge บนเครื่องของคุณไลท์
-              </div>
-              <p className="text-slate-300 leading-relaxed">
-                เพื่อความปลอดภัย เบราว์เซอร์จะสั่งรันคำสั่งในโฟลเดอร์ <code className="text-cyan-300">D:\AI\Light</code> ได้เมื่อเปิด Bridge บนเครื่องเท่านั้น — รันคำสั่งนี้ใน PowerShell หรือ Command Prompt (ใช้ได้ทั้งคู่) แล้วกดปุ่ม <strong className="text-white">รีเฟรช</strong>:
-              </p>
-              <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2">
-                <code className="text-emerald-400 font-bold">{BRIDGE_START_COMMAND}</code>
-                <button
-                  type="button"
-                  onClick={handleCopyCommand}
-                  className="inline-flex items-center gap-1 rounded bg-slate-800 px-2.5 py-1 text-[11px] text-slate-200 hover:bg-slate-700 cursor-pointer"
-                >
-                  {copiedCmd ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-                  {copiedCmd ? 'คัดลอกแล้ว' : 'คัดลอกคำสั่ง'}
-                </button>
-              </div>
-              {isHttpsPage && (
-                <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-3 text-[11px] text-slate-300 leading-relaxed">
-                  <strong className="text-cyan-300">หากเปิด Bridge แล้วยังขึ้น OFFLINE บนหน้า https://</strong>: Chrome/Edge อาจบล็อก <em>Local Network Access</em> — กดไอคอนรูปตัวล็อก/ตั้งค่าข้างแถบ URL ของเว็บนี้ แล้วอนุญาต <strong>Local network access</strong> หรือเปิดใช้งานผ่าน <a href="http://localhost:5173" className="underline text-cyan-300">http://localhost:5173</a> (รัน <code className="text-emerald-300">npm run dev</code>) แทนครับ
+            <div className="space-y-4">
+              {cloudReady && (
+                <div className="rounded-xl border border-cyan-500/40 bg-cyan-950/25 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div>
+                    <div className="font-bold text-cyan-300 text-sm">
+                      JEV Agent Router พร้อมใช้งานบน Cloud ทันที (แม้ไม่อยู่หน้าคอม)
+                    </div>
+                    <p className="text-slate-300 mt-1">
+                      สามารถสั่งวิเคราะห์งาน, ค้นหาเว็บ DuckDuckGo จริง, และกดอนุมัติ Review จากมือถือผ่าน Vercel Serverless ได้เลยครับ
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('router')}
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-cyan-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-cyan-500 cursor-pointer"
+                  >
+                    <Network className="h-4 w-4" /> เปิด Agent Router (Cloud)
+                  </button>
                 </div>
               )}
-              {bridgeError && (
-                <div className="text-[11px] text-slate-400">
-                  สถานะการเชื่อมต่อล่าสุด ({currentOrigin || 'browser'}): <code className="text-amber-300">{bridgeError}</code>
+
+              <div className="rounded-xl border border-amber-500/35 bg-amber-950/20 p-5 space-y-3 text-xs">
+                <div className="font-bold text-amber-300 text-sm">
+                  สั่งรัน Local Files / Git บน PC (ต้องเปิด Bridge ที่เครื่อง PC ก่อน)
                 </div>
-              )}
+                <p className="text-slate-300 leading-relaxed">
+                  หากอยู่หน้าคอม รันคำสั่งนี้ใน PowerShell หรือ Command Prompt แล้วกด <strong className="text-white">รีเฟรช</strong>:
+                </p>
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2">
+                  <code className="text-emerald-400 font-bold truncate">{BRIDGE_START_COMMAND}</code>
+                  <button
+                    type="button"
+                    onClick={handleCopyCommand}
+                    className="shrink-0 inline-flex items-center gap-1 rounded bg-slate-800 px-2.5 py-1 text-[11px] text-slate-200 hover:bg-slate-700 cursor-pointer"
+                  >
+                    {copiedCmd ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    {copiedCmd ? 'คัดลอกแล้ว' : 'คัดลอกคำสั่ง'}
+                  </button>
+                </div>
+
+                {/* Optional Remote Bridge URL */}
+                <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                  <input
+                    type="url"
+                    value={customUrlInput}
+                    onChange={(e) => setCustomUrlInput(e.target.value)}
+                    placeholder="Remote Tunnel URL (ถ้ามี เช่น https://xxx.trycloudflare.com)"
+                    className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] text-slate-100 placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveCustomBridge}
+                    className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-[11px] text-slate-200 hover:border-cyan-400 cursor-pointer"
+                  >
+                    เชื่อมต่อ URL
+                  </button>
+                </div>
+
+                {isHttpsPage && (
+                  <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-2.5 text-[11px] text-slate-300 leading-relaxed">
+                    หากเปิดบน PC ผ่าน <code className="text-amber-300">https://</code> แล้วขึ้น Offline ให้กดไอคอนข้างแถบ URL เพื่ออนุญาต <strong>Local network access</strong>
+                  </div>
+                )}
+                {bridgeError && (
+                  <div className="text-[11px] text-slate-400">
+                    สถานะ Local ({currentOrigin || 'browser'}): <code className="text-amber-300">{bridgeError}</code>
+                  </div>
+                )}
+              </div>
+
+              {/* Cloud Read-Only Directory of 21 Projects */}
+              <div className="space-y-2">
+                <div className="text-[11px] font-bold text-slate-300">
+                  รายชื่อ 21 โปรเจกต์ใน Ecosystem (Cloud Directory)
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {INITIAL_PROJECTS.map((proj) => (
+                    <div
+                      key={proj.id}
+                      className="rounded-lg border border-slate-800 bg-slate-950/70 px-3 py-2 flex items-center justify-between gap-2 text-[11px]"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-bold text-white truncate">{proj.name}</div>
+                        <div className="text-[10px] text-slate-400 truncate">{proj.path}</div>
+                      </div>
+                      {proj.repo ? (
+                        <a
+                          href={`https://github.com/${proj.repo}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="shrink-0 inline-flex items-center gap-1 rounded border border-cyan-500/40 bg-cyan-500/10 px-2 py-1 text-[10px] text-cyan-300 hover:bg-cyan-500/20"
+                        >
+                          GitHub <ExternalLink className="h-2.5 w-2.5" />
+                        </a>
+                      ) : (
+                        <span className="shrink-0 text-[10px] text-emerald-400">{proj.score}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : activeTab === 'router' ? (
             <AgentRouterVisualizer
               bridgeUrl={bridgeUrl}
               online={online}
+              routerMode={routerMode}
               onRefreshBridge={fetchBridge}
               onShowToast={onShowToast}
               onApprovalCountChange={setApprovalCount}

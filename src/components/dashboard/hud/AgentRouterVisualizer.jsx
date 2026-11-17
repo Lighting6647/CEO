@@ -20,6 +20,13 @@ import {
   Terminal,
   XCircle,
 } from 'lucide-react';
+import {
+  approveRouterJob,
+  dispatchRouterGoal,
+  fetchRouterStateFromBackend,
+  rejectRouterJob,
+  resetRouterQueue,
+} from '../../../services/jevRouterClient';
 
 const PRESET_GOALS = [
   { label: 'Research คู่แข่ง POS', goal: 'รวบรวมข้อมูลคู่แข่งระบบ POS และ Cloud Inventory ล่าสุด' },
@@ -56,10 +63,20 @@ const NODE_DESCRIPTIONS = {
 export function AgentRouterVisualizer({
   bridgeUrl,
   online,
+  routerMode = online ? 'local' : 'offline',
   onRefreshBridge,
   onShowToast,
   onApprovalCountChange,
 }) {
+  const backend = useMemo(
+    () => ({
+      mode: online ? 'local' : routerMode === 'cloud' ? 'cloud' : 'offline',
+      baseUrl: online ? bridgeUrl : routerMode === 'cloud' ? '/api/jev-router' : '',
+    }),
+    [online, bridgeUrl, routerMode]
+  );
+  const isConnected = backend.mode === 'local' || backend.mode === 'cloud';
+
   const [routerState, setRouterState] = useState(null);
   const [loadingState, setLoadingState] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -71,81 +88,76 @@ export function AgentRouterVisualizer({
   const [actionBusyId, setActionBusyId] = useState('');
   const [errorBanner, setErrorBanner] = useState('');
 
+  const syncStateIntoUi = useCallback(
+    (nextState) => {
+      if (!nextState) return;
+      setRouterState(nextState);
+      setErrorBanner('');
+      onApprovalCountChange?.(nextState.awaitingApprovalCount || 0);
+      setSelectedJobId((prev) => {
+        if (prev && nextState.jobs?.some((j) => j.job_id === prev)) return prev;
+        return nextState.jobs?.[0]?.job_id || '';
+      });
+    },
+    [onApprovalCountChange]
+  );
+
   const fetchRouterState = useCallback(
     async (silent = false) => {
-      if (!online || !bridgeUrl) return;
+      if (!isConnected) return;
       if (!silent) setLoadingState(true);
       try {
-        const res = await fetch(`${bridgeUrl}/router/state`, { method: 'GET' });
-        const data = await res.json();
-        if (data?.ok && data.state) {
-          setRouterState(data.state);
-          setErrorBanner('');
-          onApprovalCountChange?.(data.state.awaitingApprovalCount || 0);
-          setSelectedJobId((prev) => {
-            if (prev && data.state.jobs?.some((j) => j.job_id === prev)) return prev;
-            return data.state.jobs?.[0]?.job_id || '';
-          });
-        } else if (!silent) {
-          setErrorBanner(data?.error || 'ไม่สามารถอ่านสถานะ Router จาก Bridge ได้');
-        }
+        const nextState = await fetchRouterStateFromBackend(backend);
+        syncStateIntoUi(nextState);
       } catch (err) {
         if (!silent) {
-          setErrorBanner(err instanceof Error ? err.message : 'เชื่อมต่อ /router/state ไม่สำเร็จ');
+          setErrorBanner(err instanceof Error ? err.message : 'เชื่อมต่อ Router ไม่สำเร็จ');
         }
       } finally {
         if (!silent) setLoadingState(false);
       }
     },
-    [bridgeUrl, online, onApprovalCountChange]
+    [backend, isConnected, syncStateIntoUi]
   );
 
   useEffect(() => {
-    if (!online) return undefined;
+    if (!isConnected) return undefined;
     fetchRouterState(false);
-    const interval = setInterval(() => fetchRouterState(true), 5000);
-    return () => clearInterval(interval);
-  }, [online, fetchRouterState]);
+    if (backend.mode === 'local') {
+      const interval = setInterval(() => fetchRouterState(true), 5000);
+      return () => clearInterval(interval);
+    }
+    return undefined;
+  }, [isConnected, backend.mode, fetchRouterState]);
 
   const handleDispatch = async ({ goal, runSampleBatch = false }) => {
-    if (!online) return;
+    if (!isConnected) return;
     if (!runSampleBatch && !goal.trim()) {
-      onShowToast?.('error', 'กรุณาใส่เป้าหมายงาน', 'พิมพ์คำสั่งหรือเลือกตัวอย่างด้านล่างก่อนส่งเข้า chief.py');
+      onShowToast?.('error', 'กรุณาใส่เป้าหมายงาน', 'พิมพ์คำสั่งหรือเลือกตัวอย่างด้านล่างก่อนส่งเข้า JEV Router');
       return;
     }
     setSubmitting(true);
     setErrorBanner('');
     try {
-      const res = await fetch(`${bridgeUrl}/router/dispatch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          goal: goal.trim(),
-          live: useLiveGemini,
-          gate: gateThreshold,
-          runSampleBatch,
-        }),
+      const data = await dispatchRouterGoal(backend, {
+        goal: goal.trim(),
+        live: useLiveGemini,
+        gate: gateThreshold,
+        runSampleBatch,
       });
-      const data = await res.json();
-      if (data?.ok && data.state) {
-        setRouterState(data.state);
-        onApprovalCountChange?.(data.state.awaitingApprovalCount || 0);
-        const latestJob = data.state.jobs?.[0];
-        if (latestJob) setSelectedJobId(latestJob.job_id);
+      if (data?.state) {
+        syncStateIntoUi(data.state);
         if (!runSampleBatch) setGoalInput('');
         onShowToast?.(
           'success',
-          runSampleBatch ? 'รัน Batch 4 งานตัวอย่างสำเร็จ' : 'ส่งเข้า chief.py สำเร็จ',
+          runSampleBatch ? 'รัน Batch 4 งานตัวอย่างสำเร็จ' : 'ส่งเข้า JEV Router สำเร็จ',
           data.workerResults?.[0]?.result || 'อัปเดตคิวและ RUN LOG เรียบร้อย'
         );
-      } else {
-        setErrorBanner(data?.error || 'รัน chief.py ไม่สำเร็จ');
-        onShowToast?.('error', 'ส่งงานไม่สำเร็จ', data?.error || 'เกิดข้อผิดพลาดจาก Bridge');
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'เชื่อมต่อ Bridge ล้มเหลว';
+      const msg = err instanceof Error ? err.message : 'เชื่อมต่อ Router ล้มเหลว';
       setErrorBanner(msg);
-      onShowToast?.('error', 'เชื่อมต่อ Bridge ไม่ได้', msg);
+      onShowToast?.('error', 'ส่งงานไม่สำเร็จ', msg);
     } finally {
       setSubmitting(false);
     }
@@ -154,22 +166,14 @@ export function AgentRouterVisualizer({
   const handleApprove = async (jobId, target) => {
     setActionBusyId(`${jobId}:approve`);
     try {
-      const res = await fetch(`${bridgeUrl}/router/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, target, live: useLiveGemini }),
-      });
-      const data = await res.json();
-      if (data?.ok && data.state) {
-        setRouterState(data.state);
-        onApprovalCountChange?.(data.state.awaitingApprovalCount || 0);
+      const data = await approveRouterJob(backend, { jobId, target, live: useLiveGemini });
+      if (data?.state) {
+        syncStateIntoUi(data.state);
         setSelectedJobId(jobId);
         onShowToast?.('success', `อนุมัติงาน ${jobId} -> ${target}`, data.workerResult?.result || 'Worker ทำงานเสร็จสิ้น');
-      } else {
-        onShowToast?.('error', 'อนุมัติไม่สำเร็จ', data?.error || 'เกิดข้อผิดพลาด');
       }
     } catch (err) {
-      onShowToast?.('error', 'เชื่อมต่อไม่สำเร็จ', err instanceof Error ? err.message : 'Error');
+      onShowToast?.('error', 'อนุมัติไม่สำเร็จ', err instanceof Error ? err.message : 'Error');
     } finally {
       setActionBusyId('');
     }
@@ -178,21 +182,13 @@ export function AgentRouterVisualizer({
   const handleReject = async (jobId) => {
     setActionBusyId(`${jobId}:reject`);
     try {
-      const res = await fetch(`${bridgeUrl}/router/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId }),
-      });
-      const data = await res.json();
-      if (data?.ok && data.state) {
-        setRouterState(data.state);
-        onApprovalCountChange?.(data.state.awaitingApprovalCount || 0);
+      const data = await rejectRouterJob(backend, { jobId });
+      if (data?.state) {
+        syncStateIntoUi(data.state);
         onShowToast?.('success', `ปฏิเสธงาน ${jobId}`, 'ระงับงานใน queue/review เรียบร้อย');
-      } else {
-        onShowToast?.('error', 'ปฏิเสธไม่สำเร็จ', data?.error || 'เกิดข้อผิดพลาด');
       }
     } catch (err) {
-      onShowToast?.('error', 'เชื่อมต่อไม่สำเร็จ', err instanceof Error ? err.message : 'Error');
+      onShowToast?.('error', 'ปฏิเสธไม่สำเร็จ', err instanceof Error ? err.message : 'Error');
     } finally {
       setActionBusyId('');
     }
@@ -201,9 +197,8 @@ export function AgentRouterVisualizer({
   const handleResetQueue = async () => {
     setSubmitting(true);
     try {
-      const res = await fetch(`${bridgeUrl}/router/reset`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-      const data = await res.json();
-      if (data?.ok && data.state) {
+      const data = await resetRouterQueue(backend);
+      if (data?.state) {
         setRouterState(data.state);
         onApprovalCountChange?.(0);
         setSelectedJobId('');
@@ -259,17 +254,23 @@ export function AgentRouterVisualizer({
         <div className="flex items-center gap-2">
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-              online
+              backend.mode === 'local'
                 ? 'border border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                : backend.mode === 'cloud'
+                ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-300'
                 : 'border border-amber-500/40 bg-amber-500/10 text-amber-300'
             }`}
           >
-            {online ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
-            {online ? 'BRIDGE CONNECTED' : 'BRIDGE OFFLINE (PREVIEW TOPOLOGY)'}
+            {isConnected ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+            {backend.mode === 'local'
+              ? 'LOCAL BRIDGE (4199)'
+              : backend.mode === 'cloud'
+              ? 'CLOUD BRIDGE (VERCEL LIVE)'
+              : 'BRIDGE OFFLINE'}
           </span>
           <button
             type="button"
-            onClick={() => (online ? fetchRouterState(false) : onRefreshBridge?.())}
+            onClick={() => (isConnected ? fetchRouterState(false) : onRefreshBridge?.())}
             disabled={loadingState}
             className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] text-slate-200 hover:border-cyan-400 cursor-pointer disabled:opacity-50"
           >
@@ -288,13 +289,13 @@ export function AgentRouterVisualizer({
               value={goalInput}
               onChange={(e) => setGoalInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !submitting && online) {
+                if (e.key === 'Enter' && !submitting && isConnected) {
                   handleDispatch({ goal: goalInput });
                 }
               }}
-              placeholder="ป้อน Goal เพื่อส่งให้ chief.py ตัดสินใจ เช่น วิเคราะห์คู่แข่ง POS ปี 2026..."
+              placeholder="ป้อน Goal เพื่อส่งให้ JEV Router ตัดสินใจ เช่น วิเคราะห์คู่แข่ง POS ปี 2026..."
               className="w-full rounded-lg border border-slate-700 bg-[#05080f] pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
-              disabled={!online || submitting}
+              disabled={!isConnected || submitting}
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -321,16 +322,16 @@ export function AgentRouterVisualizer({
             <button
               type="button"
               onClick={() => handleDispatch({ goal: goalInput })}
-              disabled={!online || submitting}
+              disabled={!isConnected || submitting}
               className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/50 bg-cyan-600/20 px-3 py-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-600/35 disabled:opacity-40 cursor-pointer"
             >
               {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              ส่งเข้า chief.py
+              ส่งเข้า Router
             </button>
             <button
               type="button"
               onClick={() => handleDispatch({ goal: '', runSampleBatch: true })}
-              disabled={!online || submitting}
+              disabled={!isConnected || submitting}
               className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1.5 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-40 cursor-pointer"
             >
               <Play className="h-3 w-3" /> รัน Batch 4 ตัวอย่าง
@@ -338,7 +339,7 @@ export function AgentRouterVisualizer({
             <button
               type="button"
               onClick={handleResetQueue}
-              disabled={!online || submitting}
+              disabled={!isConnected || submitting}
               className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[11px] text-slate-300 hover:border-rose-400 hover:text-rose-300 disabled:opacity-40 cursor-pointer"
               title="ล้างคิวและ RUN LOG"
             >
@@ -354,7 +355,7 @@ export function AgentRouterVisualizer({
             <button
               key={preset.label}
               type="button"
-              disabled={!online || submitting}
+              disabled={!isConnected || submitting}
               onClick={() => {
                 setGoalInput(preset.goal);
                 handleDispatch({ goal: preset.goal });
