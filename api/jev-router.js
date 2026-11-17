@@ -353,27 +353,66 @@ async function searchDuckDuckGoAndWiki(query, limit = 5) {
   for (const lang of ['th', 'en']) {
     if (sources.length >= limit) break;
     try {
-      const wRes = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topic)}`, {
+      const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&utf8=&format=json&srlimit=3`;
+      const sRes = await fetch(searchUrl, {
         headers: { 'User-Agent': 'JarvisAgentRouter/1.0' },
         signal: AbortSignal.timeout(5000),
       });
-      if (wRes.ok) {
-        const wdata = await wRes.json();
-        const pageUrl = wdata?.content_urls?.desktop?.page || '';
-        const extract = (wdata?.extract || '').trim();
-        if (extract && wdata?.type !== 'disambiguation' && pageUrl && !sources.some((s) => s.url === pageUrl)) {
-          sources.push({
-            provider: `wikipedia-${lang}`,
-            title: wdata.title || topic,
-            url: pageUrl,
-            domain: `${lang}.wikipedia.org`,
-            snippet: extract.length > 260 ? `${extract.slice(0, 260)}...` : extract,
-          });
-          break;
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        const hits = sData?.query?.search || [];
+        for (const hit of hits) {
+          if (sources.length >= limit) break;
+          const pageUrl = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(String(hit.title || '').replace(/\s+/g, '_'))}`;
+          const snippet = String(hit.snippet || '').replace(/<[^>]+>/g, '').trim();
+          if (hit.title && !sources.some((s) => s.url === pageUrl)) {
+            sources.push({
+              provider: `wikipedia-${lang}`,
+              title: hit.title,
+              url: pageUrl,
+              domain: `${lang}.wikipedia.org`,
+              snippet: snippet || `บทความอ้างอิงจาก Wikipedia (${lang})`,
+            });
+          }
         }
       }
     } catch {
-      // ignore wiki fallback miss
+      // ignore wiki search miss
+    }
+  }
+
+  if (sources.length < limit) {
+    try {
+      const iaRes = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(cleanQ)}&format=json&no_html=1&skip_disambig=1`, {
+        headers: { 'User-Agent': 'JarvisAgentRouter/1.0' },
+        signal: AbortSignal.timeout(4500),
+      });
+      if (iaRes.ok) {
+        const ia = await iaRes.json();
+        if (ia?.AbstractURL && ia?.AbstractText && !sources.some((s) => s.url === ia.AbstractURL)) {
+          sources.push({
+            provider: 'duckduckgo-instant',
+            title: ia.Heading || cleanQ,
+            url: ia.AbstractURL,
+            domain: new URL(ia.AbstractURL).hostname,
+            snippet: ia.AbstractText.slice(0, 260),
+          });
+        }
+        for (const rel of ia?.RelatedTopics || []) {
+          if (sources.length >= limit) break;
+          if (rel?.FirstURL && rel?.Text && !sources.some((s) => s.url === rel.FirstURL)) {
+            sources.push({
+              provider: 'duckduckgo-instant',
+              title: rel.Text.split(' - ')[0].slice(0, 90),
+              url: rel.FirstURL,
+              domain: new URL(rel.FirstURL).hostname,
+              snippet: rel.Text.slice(0, 240),
+            });
+          }
+        }
+      }
+    } catch {
+      // ignore instant answer miss
     }
   }
 
