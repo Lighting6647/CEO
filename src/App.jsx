@@ -272,6 +272,7 @@ export default function App() {
             playClickSound();
             setActiveView('router');
           }}
+          isMeetingOpen={isMeetingModalOpen}
           onOpenAdmin={() => { playClickSound(); setActiveView('dashboard'); }}
           onOpenCompany={() => { playClickSound(); setActiveView('company'); }}
           onSelectBrandTheme={(brandId) => {

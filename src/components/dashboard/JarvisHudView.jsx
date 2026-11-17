@@ -134,6 +134,7 @@ export function JarvisHudView({
   onShowToast,
   onOpenAdmin,
   onOpenCompany,
+  isMeetingOpen = false,
 }) {
   const [userTitle, setUserTitleState] = useState(USER_TITLE);
   const [messages, setMessages] = useState([
@@ -222,6 +223,7 @@ export function JarvisHudView({
   const lastDispatchedRef = useRef({ text: '', time: 0 });
   const isSpeakingRef = useRef(false);
   const isListeningRef = useRef(false);
+  const isMeetingOpenRef = useRef(isMeetingOpen);
   const isConversationActiveRef = useRef(false);
   const conversationTimerRef = useRef(null);
   const speechSafetyTimerRef = useRef(null);
@@ -2892,9 +2894,17 @@ export function JarvisHudView({
     ]
   );
 
+  useEffect(() => {
+    isMeetingOpenRef.current = isMeetingOpen;
+    if (isMeetingOpen) {
+      stopRecognition();
+      stopConversationSession();
+    }
+  }, [isMeetingOpen, stopRecognition, stopConversationSession]);
+
   // Web Speech Recognition (Always-on Hands-free Natural Conversational Loop)
   const startRecognition = useCallback(() => {
-    if (isSpeakingRef.current) return;
+    if (isSpeakingRef.current || isMeetingOpenRef.current) return;
 
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -3020,9 +3030,9 @@ export function JarvisHudView({
         isListeningRef.current = false;
         setIsListening(false);
         // Automatically restart speech recognition with a fresh instance
-        if (!isSpeakingRef.current && (continuousVoice || isConversationActiveRef.current || wakeWordActive)) {
+        if (!isSpeakingRef.current && !isMeetingOpenRef.current && (continuousVoice || isConversationActiveRef.current || wakeWordActive)) {
           setTimeout(() => {
-            if (startRecognitionRef.current) startRecognitionRef.current();
+            if (!isMeetingOpenRef.current && startRecognitionRef.current) startRecognitionRef.current();
           }, 250);
         }
       };

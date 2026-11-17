@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Mic,
   Pause,
@@ -12,6 +12,8 @@ import {
   X,
   Plus,
   AlertCircle,
+  Loader2,
+  Volume2,
 } from 'lucide-react';
 import {
   formatClock,
@@ -24,33 +26,128 @@ import {
   transcriptLength,
 } from '../../../utils/meetingEngine';
 
+const DRAFT_STORAGE_KEY = 'ceo.meeting.draft.v1';
+
+function loadDraft() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && Array.isArray(parsed.entries)) return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(draft) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
+function pickSupportedAudioMime() {
+  if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
+    return '';
+  }
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+    'audio/ogg;codecs=opus',
+  ];
+  return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || '';
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = String(reader.result || '');
+      const comma = result.indexOf(',');
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์เสียงได้'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function describeSpeechError(code) {
+  switch (code) {
+    case 'not-allowed':
+    case 'service-not-allowed':
+      return 'เบราว์เซอร์บล็อกสิทธิ์ไมโครโฟนหรือ Speech Recognition — กรุณากดอนุญาตไมโครโฟนข้างแถบ URL (หรือใช้ปุ่มบันทึกเสียง/พิมพ์ข้อความด้านล่าง)';
+    case 'audio-capture':
+      return 'ไม่พบไมโครโฟนที่ใช้งานได้บนอุปกรณ์นี้';
+    case 'network':
+      return 'บริการแปลงเสียงเป็นข้อความขาดการเชื่อมต่อ — ยังคงอัดเสียงจริงเก็บไว้ได้และกดถอดเสียงภายหลังได้ครับ';
+    default:
+      return `การแปลงเสียงสดหยุดชั่วคราว (${code}) — ยังอัดไฟล์เสียงจริงและพิมพ์บันทึกต่อได้ปกติ`;
+  }
+}
+
 /**
- * Meeting Notes & Summary Export Modal (Ported from D:\AI\Light\Javis MeetingPanel + MeetingExport)
- * Supports Web Speech API (th-TH), manual transcript entry, AI/local summary, and CRLF .txt download.
+ * Dual-Engine Meeting Notes & Audio Recorder Modal
+ * Engine 1: Real MediaRecorder audio capture + live AudioContext mic level bars + AI audio transcription
+ * Engine 2: Live Web Speech API (th-TH) captions with iOS-safe restart & partial-text flush
  */
 export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
-  const [status, setStatus] = useState('idle'); // 'idle' | 'recording' | 'paused' | 'summarizing' | 'done'
-  const [startedAt, setStartedAt] = useState(() => Date.now());
+  const initialDraft = loadDraft();
+  const [status, setStatus] = useState(() =>
+    initialDraft?.summary ? 'done' : initialDraft?.entries?.length ? 'paused' : 'idle'
+  );
+  const [startedAt, setStartedAt] = useState(() => initialDraft?.startedAt || Date.now());
   const [now, setNow] = useState(() => Date.now());
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState(() => initialDraft?.entries || []);
   const [partialText, setPartialText] = useState('');
   const [manualInput, setManualInput] = useState('');
-  const [summary, setSummary] = useState('');
-  const [summarySource, setSummarySource] = useState('');
+  const [summary, setSummary] = useState(() => initialDraft?.summary || '');
+  const [summarySource, setSummarySource] = useState(() => initialDraft?.summarySource || '');
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [copiedTarget, setCopiedTarget] = useState(null);
-  const [speechSupported, setSpeechSupported] = useState(true);
+  const [micWarning, setMicWarning] = useState('');
+  const [micLevel, setMicLevel] = useState(0);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioUrl, setAudioUrl] = useState('');
+  const [transcribingAudio, setTranscribingAudio] = useState(false);
 
+  const speechSupported =
+    typeof window !== 'undefined' && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const recorderSupported =
+    typeof navigator !== 'undefined' &&
+    Boolean(navigator.mediaDevices?.getUserMedia) &&
+    typeof MediaRecorder !== 'undefined';
+
+  const isRecordingRef = useRef(false);
   const recognitionRef = useRef(null);
+  const restartTimerRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const audioContextRef = useRef(null);
+  const rafMeterRef = useRef(null);
+  const partialTextRef = useRef('');
+  const startedAtRef = useRef(startedAt);
   const listRef = useRef(null);
 
   useEffect(() => {
-    const SpeechRec = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
-    setSpeechSupported(Boolean(SpeechRec));
-  }, []);
+    partialTextRef.current = partialText;
+  }, [partialText]);
 
   useEffect(() => {
-    if (status !== 'recording') return;
+    startedAtRef.current = startedAt;
+  }, [startedAt]);
+
+  useEffect(() => {
+    saveDraft({ entries, summary, summarySource, startedAt });
+  }, [entries, summary, summarySource, startedAt]);
+
+  useEffect(() => {
+    if (status !== 'recording') return undefined;
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [status]);
@@ -63,133 +160,341 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
 
   useEffect(() => {
     return () => {
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+    };
+  }, [audioUrl]);
+
+  const appendEntry = useCallback(
+    (text, baseStart) => {
+      const clean = String(text || '').trim();
+      if (!clean) return;
+      setEntries((prev) => {
+        const next = [...prev, { at: Math.max(0, Date.now() - baseStart), text: clean }];
+        if (transcriptLength(next) > MAX_TRANSCRIPT_LENGTH) {
+          onShowToast?.('info', 'บันทึกใกล้เต็มความจุ', 'ถึงขีดจำกัด 80,000 ตัวอักษรแล้ว แนะนำให้กดสรุปและดาวน์โหลด');
+          return prev;
+        }
+        return next;
+      });
+    },
+    [onShowToast]
+  );
+
+  const stopHardwareAndSpeech = useCallback(
+    (flushPartial = true) => {
+      isRecordingRef.current = false;
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
+
+      if (flushPartial && partialTextRef.current.trim()) {
+        appendEntry(partialTextRef.current, startedAtRef.current);
+      }
+      partialTextRef.current = '';
+      setPartialText('');
+
       if (recognitionRef.current) {
         try {
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onerror = null;
+          recognitionRef.current.onend = null;
           recognitionRef.current.stop();
         } catch {
           // ignore cleanup error
         }
+        recognitionRef.current = null;
       }
+
+      if (rafMeterRef.current) {
+        cancelAnimationFrame(rafMeterRef.current);
+        rafMeterRef.current = null;
+      }
+      setMicLevel(0);
+
+      if (audioContextRef.current) {
+        try {
+          audioContextRef.current.close();
+        } catch {
+          // ignore
+        }
+        audioContextRef.current = null;
+      }
+
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch {
+          // ignore
+        }
+      }
+      mediaRecorderRef.current = null;
+
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch {
+            // ignore
+          }
+        });
+        mediaStreamRef.current = null;
+      }
+    },
+    [appendEntry]
+  );
+
+  useEffect(() => {
+    return () => {
+      stopHardwareAndSpeech(false);
     };
-  }, []);
+  }, [stopHardwareAndSpeech]);
 
   if (!isOpen) return null;
 
-  const stopSpeech = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.onend = null;
-        recognitionRef.current.stop();
-      } catch {
-        // ignore stop error
-      }
-      recognitionRef.current = null;
-    }
-    setPartialText('');
-  };
-
-  const appendEntry = (text, baseStart) => {
-    const clean = text.trim();
-    if (!clean) return;
-    setEntries((prev) => {
-      const next = [...prev, { at: Math.max(0, Date.now() - baseStart), text: clean }];
-      if (transcriptLength(next) > MAX_TRANSCRIPT_LENGTH) {
-        onShowToast?.('info', 'บันทึกใกล้เต็มความจุ', 'ถึงขีดจำกัด 80,000 ตัวอักษรแล้ว แนะนำให้กดสรุปและดาวน์โหลด');
-        return prev;
-      }
-      return next;
-    });
-  };
-
-  const startSpeech = (baseStart) => {
+  const startLiveSpeech = (baseStart) => {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRec) return;
+    if (!SpeechRec || !isRecordingRef.current) return;
 
+    const isIos = /iPad|iPhone|iPod/i.test(navigator.userAgent || '');
     const rec = new SpeechRec();
     rec.lang = 'th-TH';
-    rec.continuous = true;
+    rec.continuous = !isIos;
     rec.interimResults = true;
 
     rec.onresult = (event) => {
       let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const res = event.results[i];
+        const transcript = res[0]?.transcript || '';
         if (res.isFinal) {
-          appendEntry(res[0].transcript, baseStart);
+          appendEntry(transcript, baseStart);
         } else {
-          interim += res[0].transcript;
+          interim += transcript;
         }
       }
       setPartialText(interim);
     };
 
-    rec.onerror = () => {
-      setPartialText('');
+    rec.onerror = (event) => {
+      const code = event?.error || 'unknown';
+      if (code === 'no-speech' || code === 'aborted') return;
+      setMicWarning(describeSpeechError(code));
+      if (code === 'not-allowed' || code === 'service-not-allowed' || code === 'audio-capture') {
+        // Stop retrying speech recognition, keep MediaRecorder or manual notes working
+        recognitionRef.current = null;
+      }
     };
 
     rec.onend = () => {
-      if (recognitionRef.current === rec) {
-        try {
-          rec.start();
-        } catch {
-          // ignore restart race
+      if (!isRecordingRef.current || recognitionRef.current !== rec) return;
+      restartTimerRef.current = setTimeout(() => {
+        if (isRecordingRef.current && recognitionRef.current === rec) {
+          try {
+            rec.start();
+          } catch {
+            // Recreate cleanly on next attempt if browser blocks reuse
+            startLiveSpeech(baseStart);
+          }
         }
-      }
+      }, 220);
     };
 
     recognitionRef.current = rec;
     try {
       rec.start();
-    } catch {
-      onShowToast?.('info', 'โหมดพิมพ์บันทึก', 'เบราว์เซอร์ไม่อนุญาตไมโครโฟน สามารถพิมพ์หรือวางบันทึกคำพูดด้านล่างได้');
+    } catch (err) {
+      setMicWarning(err instanceof Error ? err.message : 'ไม่สามารถเริ่มแปลงเสียงสดได้');
+    }
+  };
+
+  const startAudioCapture = async () => {
+    if (typeof window !== 'undefined' && !window.isSecureContext) {
+      setMicWarning('ไมโครโฟนใช้งานได้เฉพาะบน HTTPS หรือ localhost เท่านั้น (ยังพิมพ์บันทึกด้านล่างได้ตามปกติ)');
+      return false;
+    }
+    if (!recorderSupported) {
+      return false;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!isRecordingRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        return false;
+      }
+      mediaStreamRef.current = stream;
+
+      // Live audio level meter
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const source = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 128;
+        source.connect(analyser);
+        audioContextRef.current = ctx;
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const tickMeter = () => {
+          if (!isRecordingRef.current || !audioContextRef.current) return;
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+          const avg = sum / Math.max(1, dataArray.length);
+          setMicLevel(Math.min(1, avg / 95));
+          rafMeterRef.current = requestAnimationFrame(tickMeter);
+        };
+        rafMeterRef.current = requestAnimationFrame(tickMeter);
+      }
+
+      // Real audio MediaRecorder
+      const mimeType = pickSupportedAudioMime();
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      recorder.onstop = () => {
+        if (audioChunksRef.current.length > 0) {
+          const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || mimeType || 'audio/webm' });
+          setAudioBlob(blob);
+          setAudioUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return URL.createObjectURL(blob);
+          });
+        }
+      };
+      recorder.start(1000);
+      mediaRecorderRef.current = recorder;
+      return true;
+    } catch (err) {
+      const name = err?.name || '';
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        setMicWarning('ยังไม่ได้อนุญาตสิทธิ์ไมโครโฟน — กดอนุญาตที่แถบ URL ของเบราว์เซอร์ หรือพิมพ์ข้อความประชุมด้านล่างได้ทันที');
+      } else if (name === 'NotFoundError') {
+        setMicWarning('ไม่พบอุปกรณ์ไมโครโฟน — สามารถพิมพ์หรือวางข้อความการประชุมด้านล่างได้ทันที');
+      } else {
+        setMicWarning(`ไม่สามารถเปิดไมโครโฟนได้ (${err instanceof Error ? err.message : 'unknown'})`);
+      }
+      return false;
+    }
+  };
+
+  const beginRecordingSession = async (baseStart, clearPrevious) => {
+    if (clearPrevious) {
+      setStartedAt(baseStart);
+      setNow(baseStart);
+      setEntries([]);
+      setSummary('');
+      setSummarySource('');
+      setAudioBlob(null);
+      setAudioUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return '';
+      });
+    }
+    setMicWarning('');
+    setConfirmCancel(false);
+    setStatus('recording');
+    isRecordingRef.current = true;
+
+    const micGranted = await startAudioCapture();
+    if (isRecordingRef.current && speechSupported && (micGranted || !recorderSupported)) {
+      startLiveSpeech(baseStart);
     }
   };
 
   const handleStart = () => {
-    const start = Date.now();
-    setStartedAt(start);
-    setNow(start);
-    setEntries([]);
-    setSummary('');
-    setSummarySource('');
-    setConfirmCancel(false);
-    setStatus('recording');
-    if (speechSupported) startSpeech(start);
+    beginRecordingSession(Date.now(), true);
   };
 
   const handlePause = () => {
-    stopSpeech();
+    stopHardwareAndSpeech(true);
     setStatus('paused');
   };
 
   const handleResume = () => {
-    setStatus('recording');
-    if (speechSupported) startSpeech(startedAt);
+    beginRecordingSession(startedAt, false);
+  };
+
+  const handleTranscribeRecordedAudio = async () => {
+    if (!audioBlob || transcribingAudio) return;
+    setTranscribingAudio(true);
+    setMicWarning('');
+    try {
+      const audioBase64 = await blobToBase64(audioBlob);
+      const res = await fetch('/api/meeting-transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audioBase64, mimeType: audioBlob.type || 'audio/webm' }),
+      });
+      const data = await res.json();
+      if (data?.ok && data.transcript) {
+        const lines = data.transcript
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter(Boolean);
+        lines.forEach((line) => appendEntry(line, startedAt));
+        onShowToast?.('success', 'ถอดเสียงจากไฟล์อัดสำเร็จ', `เพิ่ม ${lines.length} บรรทัดลงบันทึกการประชุมแล้ว`);
+      } else {
+        setMicWarning(data?.error || 'ไม่สามารถถอดเสียงจากไฟล์อัดได้');
+        onShowToast?.('info', 'ถอดเสียงไม่สำเร็จ', data?.error || 'กรุณาตรวจ GEMINI_API_KEY หรือพิมพ์เพิ่มด้านล่าง');
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'เชื่อมต่อระบบถอดเสียงไม่สำเร็จ';
+      setMicWarning(msg);
+      onShowToast?.('error', 'ถอดเสียงล้มเหลว', msg);
+    } finally {
+      setTranscribingAudio(false);
+    }
   };
 
   const handleAddManualLine = (e) => {
     e.preventDefault();
-    if (!manualInput.trim()) return;
+    const raw = manualInput.trim();
+    if (!raw) return;
     const base = status === 'idle' ? Date.now() : startedAt;
     if (status === 'idle') {
       setStartedAt(base);
       setNow(base);
       setStatus('paused');
     }
-    appendEntry(manualInput, base);
+    raw
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .forEach((line) => appendEntry(line, base));
     setManualInput('');
   };
 
   const handleFinishAndSummarize = async () => {
-    stopSpeech();
-    const transcript = formatTranscript(entries);
+    const pendingText = partialTextRef.current.trim();
+    stopHardwareAndSpeech(false);
+    const mergedEntries = pendingText
+      ? [...entries, { at: Math.max(0, Date.now() - startedAt), text: pendingText }]
+      : entries;
+    if (pendingText) {
+      setEntries(mergedEntries);
+    }
+
+    const transcript = formatTranscript(mergedEntries);
     if (!transcript.trim()) {
-      onShowToast?.('info', 'ยังไม่มีคำพูดที่จดไว้', 'กรุณาพูดหรือพิมพ์ข้อความการประชุมก่อนกดสรุป');
+      setStatus(audioBlob ? 'paused' : 'idle');
+      onShowToast?.(
+        'info',
+        'ยังไม่มีข้อความที่จดไว้',
+        audioBlob
+          ? 'มีไฟล์เสียงที่อัดไว้แล้ว กดปุ่ม "ถอดเสียงจากไฟล์อัด (AI)" หรือพิมพ์ข้อความเพิ่มเติมได้ครับ'
+          : 'กรุณาพูด พิมพ์ หรือวางข้อความการประชุมก่อนกดสรุป'
+      );
       return;
     }
 
     setStatus('summarizing');
-    const lastAt = entries.at(-1)?.at ?? 0;
+    const lastAt = mergedEntries.at(-1)?.at ?? 0;
     const mins = meetingMinutes(0, lastAt);
 
     try {
@@ -210,7 +515,7 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
         }
       }
     } catch {
-      // Fallback gracefully when running Vite static dev without serverless routes
+      // Fallback gracefully when running without serverless routes
     }
 
     setSummary(summarizeMeetingLocally(transcript, mins));
@@ -220,12 +525,19 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
   };
 
   const handleDiscard = () => {
-    stopSpeech();
+    stopHardwareAndSpeech(false);
     setEntries([]);
     setSummary('');
     setSummarySource('');
+    setMicWarning('');
+    setAudioBlob(null);
+    setAudioUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return '';
+    });
     setConfirmCancel(false);
     setStatus('idle');
+    saveDraft({ entries: [], summary: '', summarySource: '', startedAt: Date.now() });
   };
 
   const handleCopy = async (target) => {
@@ -257,7 +569,21 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
     onShowToast?.('success', 'ดาวน์โหลดสำเร็จ', `บันทึกไฟล์ ${meetingFileName(startedAt)} เรียบร้อย`);
   };
 
+  const handleDownloadAudio = () => {
+    if (!audioBlob || !audioUrl) return;
+    const ext = audioBlob.type.includes('mp4') ? 'm4a' : 'webm';
+    const a = document.createElement('a');
+    a.href = audioUrl;
+    a.download = `javis-meeting-audio-${Date.now()}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const transcriptText = formatTranscript(entries);
+  const micBars = [0.45, 0.75, 1.0, 0.85, 0.6, 0.4].map((scale) =>
+    status === 'recording' ? Math.max(18, Math.round(micLevel * scale * 100)) : 16
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
@@ -270,23 +596,23 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
             </div>
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
-                J.A.R.V.I.S. Meeting Notes & Summary
+                J.A.R.V.I.S. Meeting Notes &amp; Recorder
                 <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-mono text-emerald-400">
-                  FROM JAVIS CORE
+                  DUAL ENGINE
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                จดบันทึกคำพูดการประชุมแบบเรียลไทม์ สรุปประเด็นสำคัญ และส่งออกไฟล์ .txt (Windows CRLF)
+                อัดเสียงจริง + ถอดความภาษาไทยสด (th-TH) + สรุปประชุม + บันทึกร่างอัตโนมัติ
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => {
-              stopSpeech();
+              stopHardwareAndSpeech(true);
               onClose();
             }}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
             aria-label="ปิดหน้าต่าง"
           >
             <X className="h-5 w-5" />
@@ -311,18 +637,29 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
                 }`}
               />
               {status === 'idle' && 'พร้อมบันทึก'}
-              {status === 'recording' && 'กำลังจดบันทึก'}
+              {status === 'recording' && 'กำลังอัด & จดบันทึก'}
               {status === 'paused' && 'พักการจด'}
               {status === 'summarizing' && 'กำลังสรุป...'}
               {status === 'done' && 'สรุปเสร็จสิ้น'}
             </span>
             {status === 'recording' && (
-              <span className="font-mono text-sm font-bold text-cyan-400 tabular-nums">
-                {formatClock(now - startedAt)}
-              </span>
+              <>
+                <span className="font-mono text-sm font-bold text-cyan-400 tabular-nums">
+                  {formatClock(now - startedAt)}
+                </span>
+                <span className="inline-flex items-end gap-0.5 h-4" title="ระดับเสียงไมโครโฟนสด">
+                  {micBars.map((h, i) => (
+                    <span
+                      key={i}
+                      className="w-1 rounded-full bg-emerald-400 transition-all duration-100"
+                      style={{ height: `${h}%` }}
+                    />
+                  ))}
+                </span>
+              </>
             )}
             <span className="text-xs text-slate-400">
-              {entries.length > 0 ? `จดแล้ว ${entries.length} ช่วงคำพูด` : 'ยังไม่มีข้อความ'}
+              {entries.length > 0 ? `จดแล้ว ${entries.length} ช่วง` : 'ยังไม่มีข้อความ'}
             </span>
           </div>
 
@@ -331,7 +668,7 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
               <button
                 type="button"
                 onClick={handleStart}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500 transition-colors cursor-pointer"
               >
                 <Mic className="h-3.5 w-3.5" /> เริ่มอัดเสียงประชุม
               </button>
@@ -340,7 +677,7 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
               <button
                 type="button"
                 onClick={handlePause}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700 cursor-pointer"
               >
                 <Pause className="h-3.5 w-3.5" /> พัก
               </button>
@@ -349,43 +686,43 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
               <button
                 type="button"
                 onClick={handleResume}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20 cursor-pointer"
               >
-                <Play className="h-3.5 w-3.5" /> จดต่อ
+                <Play className="h-3.5 w-3.5" /> อัด/จดต่อ
               </button>
             )}
-            {entries.length > 0 && status !== 'summarizing' && (
+            {(entries.length > 0 || Boolean(partialText.trim())) && status !== 'summarizing' && (
               <button
                 type="button"
                 onClick={handleFinishAndSummarize}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 transition-colors cursor-pointer"
               >
                 <Sparkles className="h-3.5 w-3.5" /> จบและสรุป
               </button>
             )}
-            {entries.length > 0 && !confirmCancel && (
+            {(entries.length > 0 || audioBlob) && !confirmCancel && (
               <button
                 type="button"
                 onClick={() => setConfirmCancel(true)}
-                className="inline-flex items-center gap-1 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/20"
+                className="inline-flex items-center gap-1 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/20 cursor-pointer"
               >
-                <Trash2 className="h-3.5 w-3.5" /> ทิ้ง
+                <Trash2 className="h-3.5 w-3.5" /> ล้าง
               </button>
             )}
             {confirmCancel && (
               <div className="flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-950/60 px-2.5 py-1">
-                <span className="text-[11px] text-rose-200">ยืนยันทิ้งบันทึก?</span>
+                <span className="text-[11px] text-rose-200">ยืนยันล้างบันทึก?</span>
                 <button
                   type="button"
                   onClick={handleDiscard}
-                  className="rounded bg-rose-600 px-2 py-0.5 text-[11px] font-bold text-white hover:bg-rose-500"
+                  className="rounded bg-rose-600 px-2 py-0.5 text-[11px] font-bold text-white hover:bg-rose-500 cursor-pointer"
                 >
-                  ทิ้งเลย
+                  ล้างเลย
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmCancel(false)}
-                  className="rounded bg-slate-700 px-2 py-0.5 text-[11px] text-slate-200 hover:bg-slate-600"
+                  className="rounded bg-slate-700 px-2 py-0.5 text-[11px] text-slate-200 hover:bg-slate-600 cursor-pointer"
                 >
                   เก็บไว้
                 </button>
@@ -396,10 +733,48 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
 
         {/* Body */}
         <div ref={listRef} className="flex-1 overflow-y-auto p-5 space-y-4">
-          {!speechSupported && (
-            <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+          {micWarning && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-950/30 px-3 py-2.5 text-xs text-amber-200">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
+              <span>{micWarning}</span>
+            </div>
+          )}
+
+          {!speechSupported && !micWarning && (
+            <div className="flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-950/20 px-3 py-2 text-xs text-cyan-200">
               <AlertCircle className="h-4 w-4 shrink-0" />
-              เบราว์เซอร์นี้ไม่รองรับ Web Speech API — สามารถพิมพ์หรือวางบันทึกคำพูดด้านล่างเพื่อสรุปได้ทันทีครับ
+              <span>
+                เบราว์เซอร์นี้ไม่รองรับการถอดเสียงสด Web Speech — ระบบจะอัดเป็นไฟล์เสียงจริงแล้วกดปุ่มถอดเสียง AI หรือพิมพ์จดด้านล่างได้ครับ
+              </span>
+            </div>
+          )}
+
+          {audioUrl && status !== 'recording' && (
+            <div className="rounded-xl border border-cyan-500/30 bg-slate-950/70 p-3 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300">
+                  <Volume2 className="h-4 w-4" /> ไฟล์เสียงที่อัดไว้ ({Math.max(1, Math.round((audioBlob?.size || 0) / 1024))} KB)
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={transcribingAudio}
+                    onClick={handleTranscribeRecordedAudio}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-50 cursor-pointer"
+                  >
+                    {transcribingAudio ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    ถอดเสียงจากไฟล์อัด (AI)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadAudio}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-[11px] text-slate-200 hover:border-cyan-400 cursor-pointer"
+                  >
+                    <Download className="h-3 w-3" /> โหลดไฟล์เสียง
+                  </button>
+                </div>
+              </div>
+              <audio controls src={audioUrl} className="w-full h-9" />
             </div>
           )}
 
@@ -422,7 +797,7 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
             </h3>
             {entries.length === 0 && !partialText ? (
               <div className="rounded-xl border border-dashed border-slate-800 bg-slate-950/40 p-6 text-center text-xs text-slate-500">
-                กด &quot;เริ่มอัดเสียงประชุม&quot; หรือพิมพ์ข้อความการประชุมด้านล่างเพื่อเริ่มต้น
+                กด &quot;เริ่มอัดเสียงประชุม&quot; หรือพิมพ์/วางข้อความการประชุมด้านล่างเพื่อเริ่มต้น
               </div>
             ) : (
               <ul className="space-y-1.5">
@@ -460,7 +835,7 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
             />
             <button
               type="submit"
-              className="inline-flex items-center gap-1 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20"
+              className="inline-flex items-center gap-1 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20 cursor-pointer"
             >
               <Plus className="h-3.5 w-3.5" /> เพิ่มบรรทัด
             </button>
@@ -472,7 +847,7 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
                 <button
                   type="button"
                   onClick={() => handleCopy('summary')}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-200 hover:border-emerald-500/50"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-200 hover:border-emerald-500/50 cursor-pointer"
                 >
                   {copiedTarget === 'summary' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                   {copiedTarget === 'summary' ? 'คัดลอกคำสรุปแล้ว' : 'คัดลอกคำสรุป'}
@@ -481,7 +856,7 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
               <button
                 type="button"
                 onClick={() => handleCopy('transcript')}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-200 hover:border-cyan-500/50"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-200 hover:border-cyan-500/50 cursor-pointer"
               >
                 {copiedTarget === 'transcript' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                 {copiedTarget === 'transcript' ? 'คัดลอกบันทึกแล้ว' : 'คัดลอกบันทึกคำพูด'}
@@ -489,7 +864,7 @@ export function MeetingNotesModal({ isOpen, onClose, onShowToast }) {
               <button
                 type="button"
                 onClick={handleDownload}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-900 hover:bg-white"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-900 hover:bg-white cursor-pointer"
               >
                 <Download className="h-3.5 w-3.5" /> ดาวน์โหลดเป็นไฟล์ .txt
               </button>
